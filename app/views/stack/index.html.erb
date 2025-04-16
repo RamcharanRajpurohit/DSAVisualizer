@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Stack & Queue Visualizer - Black Edition</title>
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --black: #000000;
+            --dark-gray: #121212;
+            --medium-gray: #1e1e1e;
+            --light-gray: #2d2d2d;
+            --accent: #00f2ff;
+            --accent-alt: #8a2be2;
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --card-bg: rgba(30, 30, 30, 0.7);
+            --glass-effect: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            background-color: var(--black);
+            color: var(--text);
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 20%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text);
+            padding: 1.2rem 2rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .logo span {
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .back-button {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            color: var(--text);
+        }
+
+        .back-button i {
+            margin-right: 0.5rem;
+        }
+        
+        .main-container {
+            max-width: 1600px;
+            margin: 7rem auto 3rem;
+            padding: 0 2rem;
+            display: flex;
+            gap: 20px;
+        }
+        
+        /* Left sidebar - Controls */
+        .controls-sidebar {
+            width: 25%;
+            position: sticky;
+            top: 7rem;
+            align-self: flex-start;
+        }
+        
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .controls-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(0, 242, 255, 0.05), 
+                rgba(138, 43, 226, 0.05));
+            z-index: -1;
+        }
+        
+        .glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(20px);
+        }
+        
+        .glow-1 {
+            width: 150px;
+            height: 150px;
+            background-color: rgba(0, 242, 255, 0.1);
+            top: -75px;
+            left: -75px;
+        }
+        
+        .glow-2 {
+            width: 100px;
+            height: 100px;
+            background-color: rgba(138, 43, 226, 0.1);
+            bottom: -50px;
+            right: -50px;
+        }
+        
+        .control-section {
+            margin-bottom: 15px;
+        }
+        
+        .control-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--medium-gray);
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 3px;
+            background-color: var(--text);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .operation-inputs {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .utility-buttons {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .explanation-compact {
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .explanation-compact h4 {
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0 5px;
+        }
+        
+        .explanation-compact p {
+            color: var(--text-secondary);
+            margin: 5px 0;
+            font-size: 0.85rem;
+        }
+        
+        /* Right content area - Visualization */
+        .visualization-area {
+            width: 75%;
+        }
+        
+        .structure-title {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            text-align: center;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            height: 500px;
+            position: relative;
+            border-radius: 16px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .array-representation {
+            width: 100%;
+            padding: 20px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .array-representation h3 {
+            margin-bottom: 1rem;
+            color: var(--text);
+            text-align: center;
+        }
+        
+        .array-cells {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 3px;
+            margin: 10px 0;
+        }
+        
+        .array-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background-color: var(--medium-gray);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .array-cell.filled {
+            background: linear-gradient(45deg, 
+                rgba(0, 242, 255, 0.3), 
+                rgba(138, 43, 226, 0.3));
+            border-color: var(--accent);
+        }
+        
+        .array-indices {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 3px;
+        }
+        
+        .array-index {
+            width: 40px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .array-pointers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            color: var(--text-secondary);
+        }
+        
+        button {
+            padding: 10px 16px;
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            color: var(--black);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--accent-alt), var(--accent));
+            border-radius: 30px;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        
+        button:hover::before {
+            opacity: 1;
+        }
+        
+        input {
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text);
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+        
+        footer {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .footer-text {
+            font-size: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .controls-sidebar,
+            .visualization-area {
+                width: 100%;
+            }
+            
+            .controls-sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .logo {
+                font-size: 1.5rem;
+            }
+            
+            .main-container {
+                padding: 0 1rem;
+                margin-top: 5rem;
+            }
+            
+            .action-buttons,
+            .utility-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .canvas-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="back-button"><i class="fas fa-arrow-left"></i> Back</a>
+        <h2 class="structure-title" id="structureTitle">Stack</h2>
+        <div class="logo">DSA<span>Visualizer</span></div>
+    </nav>
+    
+    <div class="main-container">
+        <!-- Left Side - Controls (1/4 of screen) -->
+        <div class="controls-sidebar">
+            <div class="controls-container">
+                <div class="glow glow-1"></div>
+                <div class="glow glow-2"></div>
+                
+                <div class="control-section">
+                    <h3>Data Structure</h3>
+                    <div class="toggle-container">
+                        <span>Stack</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="structureToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span>Queue</span>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Operations</h3>
+                    <div class="operation-inputs">
+                        <div class="input-group">
+                            <input type="text" id="valueInput" placeholder="Enter value">
+                        </div>
+                        <div class="action-buttons">
+                            <button id="pushBtn">Push</button>
+                            <button id="popBtn">Pop</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Utilities</h3>
+                    <div class="utility-buttons">
+                        <button id="randomBtn">Add Random</button>
+                        <button id="preloadBtn">Preload Data</button>
+                        <button id="clearBtn">Clear All</button>
+                    </div>
+                </div>
+                
+                <!-- Compact explanation -->
+                <div class="explanation-compact">
+                    <div id="stackExplanation">
+                        <h4>Stack (LIFO)</h4>
+                        <p><strong>Push:</strong> Adds to top</p>
+                        <p><strong>Pop:</strong> Removes from top</p>
+                        <p>Like a stack of plates</p>
+                    </div>
+                    <div id="queueExplanation" style="display: none;">
+                        <h4>Queue (FIFO)</h4>
+                        <p><strong>Enqueue:</strong> Adds to back</p>
+                        <p><strong>Dequeue:</strong> Removes from front</p>
+                        <p>Like a line of people</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Visualization (3/4 of screen) -->
+        <div class="visualization-area">
+            
+            
+            <div class="canvas-container" id="canvasContainer">
+                <!-- Canvas will be inserted here by JS -->
+            </div>
+            
+            <div class="array-representation">
+                <h3>Array Representation</h3>
+                <div class="array-indices" id="arrayIndices"></div>
+                <div class="array-cells" id="arrayCells"></div>
+                <div class="array-pointers" id="arrayPointers"></div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p class="footer-text">DSA Visualizer © 2025 | An interactive platform for learning Data Structures & Algorithms</p>
+    </footer>
+
+
+    <script>
+        // Constants
+        const MAX_ITEMS = 20;
+        const ITEM_WIDTH = 100;
+        const ITEM_HEIGHT = 50;
+        const ITEM_MARGIN = 5;
+        const COLORS = ['#FF9999', '#99FF99', '#9999FF', '#FFFF99', '#FF99FF', '#99FFFF'];
+        
+        // Virtual canvas size
+        const VIRTUAL_WIDTH = 1000;
+        const VIRTUAL_HEIGHT = 600;
+        
+        // Data structures
+        let stack = [];
+        let queue = [];
+        let currentStructure = 'stack'; // Default to stack
+        
+        // Initialize Konva stage
+        const stage = new Konva.Stage({
+            container: 'canvasContainer',
+            width: VIRTUAL_WIDTH,
+            height: VIRTUAL_HEIGHT
+        });
+        
+        // Create layer
+        const layer = new Konva.Layer();
+        stage.add(layer);
+        
+        // DOM elements
+        const structureToggle = document.getElementById('structureToggle');
+        const structureTitle = document.getElementById('structureTitle');
+        const pushBtn = document.getElementById('pushBtn');
+        const popBtn = document.getElementById('popBtn');
+        const valueInput = document.getElementById('valueInput');
+        const randomBtn = document.getElementById('randomBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const preloadBtn = document.getElementById('preloadBtn');
+        const stackExplanation = document.getElementById('stackExplanation');
+        const queueExplanation = document.getElementById('queueExplanation');
+        const arrayIndices = document.getElementById('arrayIndices');
+        const arrayCells = document.getElementById('arrayCells');
+        const arrayPointers = document.getElementById('arrayPointers');
+        
+        // Initialize array representation
+        function initArrayRepresentation() {
+            arrayIndices.innerHTML = '';
+            arrayCells.innerHTML = '';
+            
+            for (let i = 0; i < MAX_ITEMS; i++) {
+                const indexDiv = document.createElement('div');
+                indexDiv.className = 'array-index';
+                indexDiv.textContent = i;
+                arrayIndices.appendChild(indexDiv);
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.className = 'array-cell';
+                cellDiv.id = `cell-${i}`;
+                arrayCells.appendChild(cellDiv);
+            }
+            
+            updateArrayPointers();
+        }
+        
+        // Update array representation
+        function updateArrayRepresentation() {
+            // Reset all cells
+            for (let i = 0; i < MAX_ITEMS; i++) {
+                const cell = document.getElementById(`cell-${i}`);
+                cell.className = 'array-cell';
+                cell.textContent = '';
+            }
+            
+            // Fill cells based on current structure
+            const data = currentStructure === 'stack' ? stack : queue;
+            
+            data.forEach((value, index) => {
+                const cell = document.getElementById(`cell-${index}`);
+                cell.className = 'array-cell filled';
+                cell.textContent = value;
+            });
+            
+            updateArrayPointers();
+        }
+        
+        // Update array pointers
+        function updateArrayPointers() {
+            arrayPointers.innerHTML = '';
+            
+            if (currentStructure === 'stack') {
+                const topPointer = document.createElement('div');
+                topPointer.innerHTML = `<strong>TOP = ${stack.length - 1}</strong>`;
+                arrayPointers.appendChild(topPointer);
+            } else {
+                // For queue, show front and rear pointers
+                const frontPointer = document.createElement('div');
+                frontPointer.innerHTML = `<strong>FRONT = ${queue.length > 0 ? 0 : -1}</strong>`;
+                
+                const rearPointer = document.createElement('div');
+                rearPointer.innerHTML = `<strong>REAR = ${queue.length - 1}</strong>`;
+                
+                arrayPointers.appendChild(frontPointer);
+                arrayPointers.appendChild(rearPointer);
+            }
+        }
+        
+        // Draw stack visualization
+        function drawStack() {
+            layer.destroyChildren();
+            
+            // Draw stack base
+            const baseWidth = 120;
+            const baseX = VIRTUAL_WIDTH / 2 - baseWidth / 2;
+            const baseY = VIRTUAL_HEIGHT - 50;
+            
+            const base = new Konva.Rect({
+                x: baseX,
+                y: baseY,
+                width: baseWidth,
+                height: 10,
+                fill: '#333',
+                cornerRadius: 2
+            });
+            
+            const leftWall = new Konva.Rect({
+                x: baseX,
+                y: baseY - 400,
+                width: 5,
+                height: 400,
+                fill: '#333',
+                cornerRadius: 2
+            });
+            
+            const rightWall = new Konva.Rect({
+                x: baseX + baseWidth - 5,
+                y: baseY - 400,
+                width: 5,
+                height: 400,
+                fill: '#333',
+                cornerRadius: 2
+            });
+            
+            layer.add(base, leftWall, rightWall);
+            
+            // Draw stack items
+            stack.forEach((value, index) => {
+                const y = baseY - ((index + 1) * (ITEM_HEIGHT + ITEM_MARGIN));
+                const colorIndex = index % COLORS.length;
+                
+                const rect = new Konva.Rect({
+                    x: baseX + 10,
+                    y: y,
+                    width: baseWidth - 20,
+                    height: ITEM_HEIGHT,
+                    fill: COLORS[colorIndex],
+                    stroke: '#333',
+                    strokeWidth: 1,
+                    cornerRadius: 5
+                });
+                
+                const text = new Konva.Text({
+                    x: baseX + 10,
+                    y: y + ITEM_HEIGHT / 3,
+                    width: baseWidth - 20,
+                    text: value,
+                    fontSize: 18,
+                    fontFamily: 'Arial',
+                    fill: '#333',
+                    align: 'center'
+                });
+                
+                layer.add(rect, text);
+            });
+            
+            // Add TOP label if stack has items
+            if (stack.length > 0) {
+                const topY = baseY - (stack.length * (ITEM_HEIGHT + ITEM_MARGIN));
+                
+                const topLabel = new Konva.Text({
+                    x: baseX + baseWidth + 10,
+                    y: topY,
+                    text: 'TOP',
+                    fontSize: 16,
+                    fontFamily: 'Arial',
+                    fill: '#333'
+                });
+                
+                layer.add(topLabel);
+            }
+            
+            layer.draw();
+            updateArrayRepresentation();
+        }
+        
+        // Draw queue visualization
+        // Draw queue visualization
+function drawQueue() {
+    layer.destroyChildren();
+    
+    // Draw queue base
+    const baseWidth = VIRTUAL_WIDTH - 100;
+    const baseX = 50;
+    const baseY = VIRTUAL_HEIGHT / 2;
+    
+    const base = new Konva.Rect({
+        x: baseX,
+        y: baseY,
+        width: baseWidth,
+        height: 5,
+        fill: '#333',
+        cornerRadius: 2
+    });
+    
+    // Add FRONT label
+    const frontLabel = new Konva.Text({
+        x: baseX,
+        y: baseY + 10,
+        text: 'FRONT',
+        fontSize: 16,
+        fontFamily: 'Arial',
+        fill: '#333'
+    });
+    
+    // Add BACK label
+    const backLabel = new Konva.Text({
+        x: baseX + baseWidth - 50,
+        y: baseY + 10,
+        text: 'BACK',
+        fontSize: 16,
+        fontFamily: 'Arial',
+        fill: '#333'
+    });
+    
+    layer.add(base, frontLabel, backLabel);
+    
+    // Draw queue items
+    queue.forEach((value, index) => {
+        const x = baseX + (index * (ITEM_WIDTH + ITEM_MARGIN));
+        const colorIndex = index % COLORS.length;
+        
+        const rect = new Konva.Rect({
+            x: x,
+            y: baseY - ITEM_HEIGHT - 5,
+            width: ITEM_WIDTH,
+            height: ITEM_HEIGHT,
+            fill: COLORS[colorIndex],
+            stroke: '#333',
+            strokeWidth: 1,
+            cornerRadius: 5
+        });
+        
+        const text = new Konva.Text({
+            x: x,
+            y: baseY - ITEM_HEIGHT + 15,
+            width: ITEM_WIDTH,
+            text: value,
+            fontSize: 18,
+            fontFamily: 'Arial',
+            fill: '#333',
+            align: 'center'
+        });
+        
+        layer.add(rect, text);
+    });
+    
+    // Add REAR label if queue has items - positioned at the last element
+    if (queue.length > 0) {
+        const rearX = baseX + ((queue.length -.7) * (ITEM_WIDTH + ITEM_MARGIN)) ;
+        
+        const rearLabel = new Konva.Text({
+            x: rearX,
+            y: baseY - ITEM_HEIGHT - 30,
+            text: 'REAR',
+            fontSize: 16,
+            fontFamily: 'Arial',
+            fill: '#333'
+        });
+        
+        layer.add(rearLabel);
+    }
+    
+    layer.draw();
+    updateArrayRepresentation();
+}
+        // Push operation
+        function push() {
+            const value = valueInput.value.trim();
+            if (!value) return;
+            
+            if (currentStructure === 'stack') {
+                if (stack.length >= MAX_ITEMS) {
+                  
+                    return;
+                }
+                
+                stack.push(value);
+                drawStack();
+            } else {
+                if (queue.length >= MAX_ITEMS) {
+                    
+                    return;
+                }
+                
+                queue.push(value);
+                drawQueue();
+            }
+            
+            valueInput.value = '';
+        }
+        
+        // Pop operation
+        function pop() {
+            if (currentStructure === 'stack') {
+                if (stack.length === 0) {
+                 
+                    return;
+                }
+                
+                const popped = stack.pop();
+               
+                drawStack();
+            } else {
+                if (queue.length === 0) {
+                    return;
+                }
+                
+                const dequeued = queue.shift();
+    
+                drawQueue();
+            }
+        }
+        
+        // Add random value
+        function addRandom() {
+            const randomValue = Math.floor(Math.random() * 100);
+            valueInput.value = randomValue;
+            push();
+        }
+        
+        // Clear structure
+        function clearStructure() {
+            if (currentStructure === 'stack') {
+                stack = [];
+                drawStack();
+            } else {
+                queue = [];
+                drawQueue();
+            }
+        }
+        
+        // Preload with sample data
+        function preload() {
+            clearStructure();
+            
+            if (currentStructure === 'stack') {
+                stack = [10, 20, 30, 40, 50];
+                drawStack();
+            } else {
+                queue = [10, 20, 30, 40, 50];
+                drawQueue();
+            }
+        }
+        // Toggle between stack and queue
+        function toggleStructure() {
+            currentStructure = structureToggle.checked ? 'queue' : 'stack';
+            structureTitle.textContent = currentStructure.charAt(0).toUpperCase() + currentStructure.slice(1);
+            
+            // Update button labels
+            if (currentStructure === 'stack') {
+                pushBtn.textContent = 'Push';
+                popBtn.textContent = 'Pop';
+                stackExplanation.style.display = 'block';
+                queueExplanation.style.display = 'none';
+            } else {
+                pushBtn.textContent = 'Enqueue';
+                popBtn.textContent = 'Dequeue';
+                stackExplanation.style.display = 'none';
+                queueExplanation.style.display = 'block';
+            }
+            
+            // Redraw visualization
+            if (currentStructure === 'stack') {
+                drawStack();
+            } else {
+                drawQueue();
+            }
+        }
+        
+        // Make canvas responsive
+        function fitStageIntoContainer() {
+            const container = document.getElementById('canvasContainer');
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            
+            // Calculate scale to fit while maintaining aspect ratio
+            const scaleX = containerWidth / VIRTUAL_WIDTH;
+            const scaleY = containerHeight / VIRTUAL_HEIGHT;
+            const scale = Math.min(scaleX, scaleY);
+            
+            stage.width(VIRTUAL_WIDTH * scale);
+            stage.height(VIRTUAL_HEIGHT * scale);
+            stage.scale({ x: scale, y: scale });
+            stage.draw();
+        }
+        
+        // Handle window resize
+        function handleResize() {
+            console.log('Resizing...');
+            fitStageIntoContainer();
+        }
+        
+        // Initialize
+        function init() {
+            initArrayRepresentation();
+            drawStack(); // Start with stack visualization
+            fitStageIntoContainer();
+            
+            // Add event listeners
+            structureToggle.addEventListener('change', toggleStructure);
+            pushBtn.addEventListener('click', push);
+            popBtn.addEventListener('click', pop);
+            randomBtn.addEventListener('click', addRandom);
+            clearBtn.addEventListener('click', clearStructure);
+            preloadBtn.addEventListener('click', preload);
+            window.addEventListener('resize', handleResize);
+            
+            valueInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    push();
+                }
+            });
+        }
+        
+        // Start the application
+        init();
+    </script>
+</body>
+</html>

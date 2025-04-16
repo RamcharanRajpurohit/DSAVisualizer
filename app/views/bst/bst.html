@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BST Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #2a9d8f;
+            --secondary-color: #e9c46a;
+            --bg-color: #f8f9fa;
+            --dark-color: #264653;
+            --light-color: #ffffff;
+            --danger-color: #e76f51;
+            --success-color: #43aa8b;
+            --tree-transition: 0.5s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            padding: 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        .control-panel {
+            background-color: var(--light-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .operations {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .operation-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        h3 {
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+        }
+
+        input, button {
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--dark-color);
+        }
+
+        .button-danger {
+            background-color: var(--danger-color);
+        }
+
+        .button-success {
+            background-color: var(--success-color);
+        }
+
+        .traversal-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .traversal-result {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            min-height: 2.5rem;
+        }
+
+        .visualization-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: auto;
+            background-color: var(--light-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+        }
+
+        .tree-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: auto;
+        }
+
+        .node {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            transition: all var(--tree-transition);
+            z-index: 2;
+        }
+
+        .node.highlight {
+            background-color: var(--secondary-color);
+            transform: scale(1.2);
+        }
+
+        .node.found {
+            background-color: var(--success-color);
+        }
+
+        .node.not-found {
+            background-color: var(--danger-color);
+        }
+
+        .edge {
+            position: absolute;
+            height: 2px;
+            background-color: var(--dark-color);
+            transform-origin: 0 0;
+            z-index: 1;
+            transition: all var(--tree-transition);
+        }
+
+        .info-panel {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .log-container {
+            margin-top: 1rem;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .help-link {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .help-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .help-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .operations {
+                flex-direction: column;
+            }
+            .operation-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Binary Search Tree Visualizer</h1>
+        <p class="subtitle">Interactive tool for learning BST operations</p>
+    </header>
+
+    <main>
+        <div class="control-panel">
+            <div class="operations">
+                <div class="operation-group">
+                    <h3>Basic Operations</h3>
+                    <div class="controls-row">
+                        <input type="number" id="valueInput" placeholder="Enter a value">
+                        <button id="insertBtn">Insert</button>
+                        <button id="searchBtn">Search</button>
+                        <button id="deleteBtn" class="button-danger">Delete</button>
+                    </div>
+                    <div class="controls-row">
+                        <button id="clearBtn" class="button-danger">Clear Tree</button>
+                        <button id="randomBtn">Random Tree</button>
+                    </div>
+                </div>
+
+                <div class="operation-group">
+                    <h3>Traversals</h3>
+                    <div class="traversal-buttons">
+                        <button id="inorderBtn">Inorder</button>
+                        <button id="preorderBtn">Preorder</button>
+                        <button id="postorderBtn">Postorder</button>
+                        <button id="levelOrderBtn">Level Order</button>
+                    </div>
+                    <div class="traversal-result" id="traversalResult">Result will be shown here</div>
+                </div>
+            </div>
+
+            <div class="speed-control">
+                <label for="speedSlider">Animation Speed:</label>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1">
+                <span id="speedValue">1x</span>
+            </div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="tree-container" id="treeContainer"></div>
+            <div class="info-panel">
+                <h3>Operation Log</h3>
+                <div class="log-container" id="logContainer"></div>
+            </div>
+        </div>
+
+        <div class="help-link">
+            <a href="#" id="helpBtn">Help & BST Concept Guide</a>
+        </div>
+    </main>
+
+    <script>
+        class TreeNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.x = 0;
+                this.y = 0;
+                this.element = null;
+            }
+        }
+
+        class BST {
+            constructor() {
+                this.root = null;
+                this.nodes = new Map(); // Map to store node elements
+                this.edges = new Map(); // Map to store edge elements
+                this.animationSpeed = 1; // Default speed
+                this.nodeDistance = { x: 60, y: 60 }; // Distance between nodes
+                this.isAnimating = false; // Flag to prevent overlapping animations
+            }
+
+            // Insert a value into the BST
+            async insert(value) {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                if (this.root === null) {
+                    this.root = new TreeNode(value);
+                    this.updateNodePosition();
+                    await this.renderTree();
+                    log(`Inserted ${value} as root`);
+                    this.isAnimating = false;
+                    return;
+                }
+
+                const result = await this._insertRecursive(this.root, value);
+                this.updateNodePosition();
+                await this.renderTree();
+                this.isAnimating = false;
+                return result;
+            }
+
+            // Recursive helper for insertion
+            async _insertRecursive(node, value) {
+                // Highlight the current node being compared
+                await this.highlightNode(node, 'highlight');
+
+                if (value === node.value) {
+                    log(`Value ${value} already exists in the tree`);
+                    await this.highlightNode(node, '');
+                    return false;
+                }
+
+                if (value < node.value) {
+                    if (node.left === null) {
+                        node.left = new TreeNode(value);
+                        log(`Inserted ${value} as left child of ${node.value}`);
+                        await this.highlightNode(node, '');
+                        return true;
+                    }
+                    await this.highlightNode(node, '');
+                    return await this._insertRecursive(node.left, value);
+                } else {
+                    if (node.right === null) {
+                        node.right = new TreeNode(value);
+                        log(`Inserted ${value} as right child of ${node.value}`);
+                        await this.highlightNode(node, '');
+                        return true;
+                    }
+                    await this.highlightNode(node, '');
+                    return await this._insertRecursive(node.right, value);
+                }
+            }
+
+            // Search for a value in the BST
+            async search(value) {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                log(`Searching for value ${value}`);
+                const result = await this._searchRecursive(this.root, value);
+                this.isAnimating = false;
+                return result;
+            }
+
+            // Recursive helper for search
+            async _searchRecursive(node, value) {
+                if (node === null) {
+                    log(`Value ${value} not found in the tree`);
+                    return false;
+                }
+
+                await this.highlightNode(node, 'highlight');
+                await this.sleep(500 / this.animationSpeed);
+
+                if (value === node.value) {
+                    log(`Found value ${value} in the tree`);
+                    await this.highlightNode(node, 'found');
+                    await this.sleep(1000 / this.animationSpeed);
+                    await this.highlightNode(node, '');
+                    return true;
+                }
+
+                await this.highlightNode(node, '');
+
+                if (value < node.value) {
+                    log(`${value} is less than ${node.value}, going left`);
+                    return await this._searchRecursive(node.left, value);
+                } else {
+                    log(`${value} is greater than ${node.value}, going right`);
+                    return await this._searchRecursive(node.right, value);
+                }
+            }
+
+            // Delete a value from the BST
+            async delete(value) {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                log(`Attempting to delete ${value}`);
+                if (this.root === null) {
+                    log(`Tree is empty, nothing to delete`);
+                    this.isAnimating = false;
+                    return false;
+                }
+
+                let found = false;
+                this.root = await this._deleteRecursive(this.root, value, found);
+                
+                this.updateNodePosition();
+                await this.renderTree();
+                this.isAnimating = false;
+                return found;
+            }
+
+            // Recursive helper for deletion
+            async _deleteRecursive(node, value, found) {
+                if (node === null) {
+                    log(`Value ${value} not found in the tree`);
+                    return null;
+                }
+
+                await this.highlightNode(node, 'highlight');
+                await this.sleep(500 / this.animationSpeed);
+
+                if (value < node.value) {
+                    await this.highlightNode(node, '');
+                    log(`${value} is less than ${node.value}, going left`);
+                    node.left = await this._deleteRecursive(node.left, value, found);
+                    return node;
+                } else if (value > node.value) {
+                    await this.highlightNode(node, '');
+                    log(`${value} is greater than ${node.value}, going right`);
+                    node.right = await this._deleteRecursive(node.right, value, found);
+                    return node;
+                } else {
+                    // Node found - handle deletion cases
+                    found = true;
+                    log(`Found node with value ${value}, preparing to delete`);
+
+                    // Case 1: Leaf node
+                    if (node.left === null && node.right === null) {
+                        log(`Node ${value} is a leaf node, removing directly`);
+                        await this.highlightNode(node, 'not-found');
+                        await this.sleep(1000 / this.animationSpeed);
+                        return null;
+                    }
+
+                    // Case 2: Node with one child
+                    if (node.left === null) {
+                        log(`Node ${value} has only right child, replacing with right subtree`);
+                        await this.highlightNode(node, 'not-found');
+                        await this.sleep(1000 / this.animationSpeed);
+                        return node.right;
+                    }
+
+                    if (node.right === null) {
+                        log(`Node ${value} has only left child, replacing with left subtree`);
+                        await this.highlightNode(node, 'not-found');
+                        await this.sleep(1000 / this.animationSpeed);
+                        return node.left;
+                    }
+
+                    // Case 3: Node with two children
+                    log(`Node ${value} has two children, finding inorder successor`);
+                    await this.highlightNode(node, '');
+                    
+                    // Find the inorder successor (smallest node in right subtree)
+                    let successorParent = node;
+                    let successor = node.right;
+                    
+                    while (successor.left !== null) {
+                        successorParent = successor;
+                        successor = successor.left;
+                    }
+
+                    await this.highlightNode(successor, 'highlight');
+                    log(`Found inorder successor: ${successor.value}`);
+                    
+                    // If successor is not right child of current node
+                    if (successorParent !== node) {
+                        successorParent.left = successor.right;
+                        successor.right = node.right;
+                    }
+
+                    // Replace node with successor
+                    successor.left = node.left;
+                    
+                    await this.highlightNode(successor, '');
+                    await this.highlightNode(node, 'not-found');
+                    await this.sleep(1000 / this.animationSpeed);
+                    
+                    log(`Replaced ${value} with successor ${successor.value}`);
+                    return successor;
+                }
+            }
+
+            // Perform inorder traversal
+            async inorderTraversal() {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                const result = [];
+                log(`Starting inorder traversal (Left -> Root -> Right)`);
+                await this._inorderRecursive(this.root, result);
+                document.getElementById('traversalResult').textContent = result.join(' → ');
+                log(`Inorder traversal result: ${result.join(' → ')}`);
+                this.isAnimating = false;
+                return result;
+            }
+
+            // Recursive helper for inorder traversal
+            async _inorderRecursive(node, result) {
+                if (node === null) return;
+
+                // Visit left subtree
+                await this._inorderRecursive(node.left, result);
+                
+                // Visit node
+                await this.highlightNode(node, 'highlight');
+                await this.sleep(500 / this.animationSpeed);
+                result.push(node.value);
+                await this.highlightNode(node, '');
+                
+                // Visit right subtree
+                await this._inorderRecursive(node.right, result);
+            }
+
+            // Perform preorder traversal
+            async preorderTraversal() {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                const result = [];
+                log(`Starting preorder traversal (Root -> Left -> Right)`);
+                await this._preorderRecursive(this.root, result);
+                document.getElementById('traversalResult').textContent = result.join(' → ');
+                log(`Preorder traversal result: ${result.join(' → ')}`);
+                this.isAnimating = false;
+                return result;
+            }
+
+            // Recursive helper for preorder traversal
+            async _preorderRecursive(node, result) {
+                if (node === null) return;
+
+                // Visit node
+                await this.highlightNode(node, 'highlight');
+                await this.sleep(500 / this.animationSpeed);
+                result.push(node.value);
+                await this.highlightNode(node, '');
+                
+                // Visit left subtree
+                await this._preorderRecursive(node.left, result);
+                
+                // Visit right subtree
+                await this._preorderRecursive(node.right, result);
+            }
+
+            // Perform postorder traversal
+            async postorderTraversal() {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                const result = [];
+                log(`Starting postorder traversal (Left -> Right -> Root)`);
+                await this._postorderRecursive(this.root, result);
+                document.getElementById('traversalResult').textContent = result.join(' → ');
+                log(`Postorder traversal result: ${result.join(' → ')}`);
+                this.isAnimating = false;
+                return result;
+            }
+
+            // Recursive helper for postorder traversal
+            async _postorderRecursive(node, result) {
+                if (node === null) return;
+
+                // Visit left subtree
+                await this._postorderRecursive(node.left, result);
+                
+                // Visit right subtree
+                await this._postorderRecursive(node.right, result);
+                
+                // Visit node
+                await this.highlightNode(node, 'highlight');
+                await this.sleep(500 / this.animationSpeed);
+                result.push(node.value);
+                await this.highlightNode(node, '');
+            }
+
+            // Perform level order traversal
+            async levelOrderTraversal() {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                if (this.root === null) {
+                    log(`Tree is empty, no traversal possible`);
+                    document.getElementById('traversalResult').textContent = "Empty tree";
+                    this.isAnimating = false;
+                    return [];
+                }
+
+                const result = [];
+                const queue = [this.root];
+                log(`Starting level order traversal (breadth-first)`);
+
+                while (queue.length > 0) {
+                    const node = queue.shift();
+                    
+                    await this.highlightNode(node, 'highlight');
+                    await this.sleep(500 / this.animationSpeed);
+                    result.push(node.value);
+                    await this.highlightNode(node, '');
+                    
+                    if (node.left !== null) {
+                        queue.push(node.left);
+                    }
+                    
+                    if (node.right !== null) {
+                        queue.push(node.right);
+                    }
+                }
+
+                document.getElementById('traversalResult').textContent = result.join(' → ');
+                log(`Level order traversal result: ${result.join(' → ')}`);
+                this.isAnimating = false;
+                return result;
+            }
+
+            // Clear the entire tree
+            clear() {
+                this.root = null;
+                this.nodes.clear();
+                this.edges.clear();
+                this.renderTree();
+                log(`Tree cleared`);
+            }
+
+            // Generate a random BST with n nodes
+            async generateRandomTree(n = 7) {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                this.clear();
+                log(`Generating random tree with ${n} nodes`);
+                
+                // Create unique random values
+                const values = new Set();
+                while (values.size < n) {
+                    values.add(Math.floor(Math.random() * 100));
+                }
+                
+                for (const value of values) {
+                    await this.insert(value);
+                    await this.sleep(300 / this.animationSpeed);
+                }
+                
+                log(`Random tree generated with values: ${[...values].join(', ')}`);
+                this.isAnimating = false;
+            }
+
+            // Calculate positions for all nodes in the tree
+            updateNodePosition() {
+                if (this.root === null) return;
+                
+                // Calculate the width of the tree
+                const maxDepth = this.getMaxDepth(this.root);
+                const treeWidth = Math.pow(2, maxDepth) * this.nodeDistance.x;
+                
+                // Calculate initial position of the root
+                const containerWidth = document.getElementById('treeContainer').offsetWidth;
+                const initialX = containerWidth / 2;
+                const initialY = 40;
+                
+                // Position the root node
+                this._calculatePositions(this.root, initialX, initialY, treeWidth / 2);
+            }
+
+            // Recursive helper to calculate positions
+            _calculatePositions(node, x, y, offset) {
+                if (node === null) return;
+                
+                // Update node position
+                node.x = x;
+                node.y = y;
+                
+                // Calculate positions for children
+                const nextY = y + this.nodeDistance.y;
+                const nextOffset = offset / 2;
+                
+                if (node.left !== null) {
+                    this._calculatePositions(node.left, x - nextOffset, nextY, nextOffset);
+                }
+                
+                if (node.right !== null) {
+                    this._calculatePositions(node.right, x + nextOffset, nextY, nextOffset);
+                }
+            }
+
+            // Get maximum depth of the tree
+            getMaxDepth(node, depth = 0) {
+                if (node === null) return depth;
+                
+                const leftDepth = this.getMaxDepth(node.left, depth + 1);
+                const rightDepth = this.getMaxDepth(node.right, depth + 1);
+                
+                return Math.max(leftDepth, rightDepth);
+            }
+
+            // Render the tree visualization
+            async renderTree() {
+                const container = document.getElementById('treeContainer');
+                container.innerHTML = '';
+                
+                this.nodes.clear();
+                this.edges.clear();
+                
+                if (this.root === null) return;
+                
+                // First create all nodes
+                this._createNodes(this.root, container);
+                
+                // Then create edges
+                this._createEdges(this.root, container);
+            }
+
+            // Create DOM elements for all nodes
+            _createNodes(node, container) {
+                if (node === null) return;
+                
+                // Create node element
+                const nodeElement = document.createElement('div');
+                nodeElement.className = 'node';
+                nodeElement.textContent = node.value;
+                nodeElement.style.left = `${node.x - 20}px`; // Adjust for node size
+                nodeElement.style.top = `${node.y - 20}px`;
+                container.appendChild(nodeElement);
+                
+                // Store reference to DOM element
+                this.nodes.set(node, nodeElement);
+                
+                // Create children nodes
+                this._createNodes(node.left, container);
+                this._createNodes(node.right, container);
+            }
+
+            // Create DOM elements for edges between nodes
+            _createEdges(node, container) {
+                if (node === null) return;
+                
+                // Create edges to children
+                if (node.left !== null) {
+                    this._createEdge(node, node.left, container);
+                }
+                
+                if (node.right !== null) {
+                    this._createEdge(node, node.right, container);
+                }
+                
+                // Create edges for children subtrees
+                this._createEdges(node.left, container);
+                this._createEdges(node.right, container);
+            }
+
+            // Create an edge between parent and child nodes
+            _createEdge(parent, child, container) {
+                const startX = parent.x;
+                const startY = parent.y;
+                const endX = child.x;
+                const endY = child.y;
+                
+                // Calculate length and angle
+                const dx = endX - startX;
+                const dy = endY - startY;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                // Create edge element
+                const edge = document.createElement('div');
+                edge.className = 'edge';
+                edge.style.width = `${length}px`;
+                edge.style.left = `${startX}px`;
+                edge.style.top = `${startY}px`;
+                edge.style.transform = `rotate(${angle}deg)`;
+                container.appendChild(edge);
+                
+                // Store reference to edge
+                if (!this.edges.has(parent)) {
+                    this.edges.set(parent, []);
+                }
+                this.edges.get(parent).push(edge);
+            }
+
+            // Highlight a node with a specific class
+            async highlightNode(node, className) {
+                if (node === null || !this.nodes.has(node)) return;
+                
+                const nodeElement = this.nodes.get(node);
+                
+                // Remove all highlight classes
+                nodeElement.classList.remove('highlight', 'found', 'not-found');
+                
+                // Add requested class if any
+                if (className) {
+                    nodeElement.classList.add(className);
+                }
+                
+                await this.sleep(500 / this.animationSpeed);
+            }
+
+            // Helper method for sleep/delay
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // Set animation speed
+            setAnimationSpeed(speed) {
+                this.animationSpeed = speed;
+                document.documentElement.style.setProperty('--tree-transition', `${0.5 / speed}s`);
+                log(`Animation speed set to ${speed}x`);
+            }
+        }
+
+        // Create BST instance
+        const bst = new BST();
+
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Basic operations
+            document.getElementById('insertBtn').addEventListener('click', async () => {
+                const value = parseInt(document.getElementById('valueInput').value);
+                if (!isNaN(value)) {
+                    await bst.insert(value);
+                    document.getElementById('valueInput').value = '';
+                } else {
+                    alert('Please enter a valid number');
+                }
+            });
+
+            document.getElementById('searchBtn').addEventListener('click', async () => {
+                const value = parseInt(document.getElementById('valueInput').value);
+                if (!isNaN(value)) {
+                    await bst.search(value);
+                    document.getElementById('valueInput').value = '';
+                } else {
+                    alert('Please enter a valid number');
+                }
+            });
+
+            document.getElementById('deleteBtn').addEventListener('click', async () => {
+                const value = parseInt(document.getElementById('valueInput').value);
+                if (!isNaN(value)) {
+                    await bst.delete(value);
+                    document.getElementById('valueInput').value = '';
+                } else {
+                    alert('Please enter a valid number');
+                }
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                bst.clear();
+            });
+
+            document.getElementById('randomBtn').addEventListener('click', async () => {
+                await bst.generateRandomTree();
+            });
+
+            // Traversal operations
+            document.getElementById('inorderBtn').addEventListener('click', async () => {
+                await bst.inorderTraversal();
+            });
+
+            document.getElementById('preorderBtn').addEventListener('click', async () => {
+                await bst.preorderTraversal();
+            });
+
+            document.getElementById('postorderBtn').addEventListener('click', async () => {
+                await bst.postorderTraversal();
+            });
+
+            document.getElementById('levelOrderBtn').addEventListener('click', async () => {
+                await bst.levelOrderTraversal();
+            });
+
+            // Speed control
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValue = document.getElementById('speedValue');
+            
+            speedSlider.addEventListener('input', () => {
+                const speed = parseFloat(speedSlider.value);
+                speedValue.textContent = `${speed}x`;
+                bst.setAnimationSpeed(speed);
+            });
+
+            // Enter key handling for input
+            document.getElementById('valueInput').addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value)) {
+                        await bst.insert(value);
+                        e.target.value = '';
+                    } else {
+                        alert('Please enter a valid number');
+                    }
+                }
+            });
+
+            // Help button
+            document.getElementById('helpBtn').addEventListener('click', showHelp);
+
+            // Initialize with random tree
+            setTimeout(() => {
+                bst.generateRandomTree(5);
+            }, 500);
+        });
+
+        // Log to operation log
+        function log(message) {
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            logContainer.prepend(logEntry);
+            
+            // Limit log entries
+            if (logContainer.children.length > 20) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+       // Show help dialog
+function showHelp() {
+    const helpContent = `
+        <h2>Binary Search Tree (BST) Guide</h2>
+        <h3>What is a Binary Search Tree?</h3>
+        <p>A Binary Search Tree is a tree data structure where each node has at most two children (left and right), and for each node:</p>
+        <ul>
+            <li>All values in the left subtree are less than the node's value</li>
+            <li>All values in the right subtree are greater than the node's value</li>
+            <li>No duplicate values are allowed (in this implementation)</li>
+        </ul>
+        
+        <h3>BST Operations</h3>
+        <ul>
+            <li><strong>Insert:</strong> Adds a new value to the tree while maintaining the BST property</li>
+            <li><strong>Search:</strong> Finds a value in the tree (fast lookup is a key advantage of BSTs)</li>
+            <li><strong>Delete:</strong> Removes a value while preserving the BST property</li>
+        </ul>
+        
+        <h3>Tree Traversals</h3>
+        <ul>
+            <li><strong>Inorder:</strong> Left → Root → Right (gives values in ascending order)</li>
+            <li><strong>Preorder:</strong> Root → Left → Right (useful for copying a tree)</li>
+            <li><strong>Postorder:</strong> Left → Right → Root (useful for deleting a tree)</li>
+            <li><strong>Level Order:</strong> Visit nodes level by level (breadth-first)</li>
+        </ul>
+        
+        <h3>Using This Visualizer</h3>
+        <ol>
+            <li>Enter values in the input field and use Insert, Search, or Delete buttons</li>
+            <li>Watch the animation to understand how BST operations work</li>
+            <li>Try different traversals to see different node visit orders</li>
+            <li>Adjust animation speed with the slider</li>
+            <li>Use "Random Tree" to generate a new random BST</li>
+            <li>Use "Clear Tree" to start from scratch</li>
+        </ol>
+    `;
+    
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '999';
+    
+    // Create modal content
+    const content = document.createElement('div');
+    content.style.backgroundColor = 'white';
+    content.style.padding = '20px';
+    content.style.borderRadius = '8px';
+    content.style.maxWidth = '800px';
+    content.style.maxHeight = '80vh';
+    content.style.overflow = 'auto';
+    content.innerHTML = helpContent;
+    
+    // Create close button
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Close';
+    closeButton.style.marginTop = '20px';
+    closeButton.style.padding = '8px 16px';
+    closeButton.style.backgroundColor = 'var(--primary-color)';
+    closeButton.style.color = 'white';
+    closeButton.style.border = 'none';
+    closeButton.style.borderRadius = '4px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    // Append elements
+    content.appendChild(closeButton);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+}
+</script>
+</body>
+</html>

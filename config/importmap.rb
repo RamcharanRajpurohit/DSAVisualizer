@@ -1,0 +1,15 @@
+# Pin npm packages by running ./bin/importmap
+
+pin "application"
+pin "bst"
+pin "konva_setup", to: "konva_setup.js"
+pin "draw_bst", to: "draw_bst.js"
+pin "bst_animation", to: "bst_animation.js"
+pin "bst_operations", to: "bst_operations.js"
+pin "bst_zoom", to: "bst_zoom.js"
+pin "avl_tree", to: "avl_tree.js"
+pin "draw_avl", to: "draw_avl.js"
+pin "avl_operations", to: "avl_operations.js"
+pin "avl_zoom", to: "avl_zoom.js"
+pin "avl_animations", to: "avl_animations.js"
+pin "konva_avl" , to: "konva_avl.js"

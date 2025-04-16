@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            AVL Tree Visualization with Animations
+        </title>
+        <script src="https://unpkg.com/konva@8.4.2/konva.min.js">
+        </script>
+        
+         <style>
+             # body { # margin: 0; # padding: 20px; # overflow-x: hidden; # background-color:
+             #f5f5f5; # font-family: 'Arial', sans-serif; # } # #container { # width:
+             100%; # height: 70vh; # background-color: white; # border-radius: 8px;
+             # box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); # overflow: hidden; # } # .controls
+             { # margin: 20px 0; # display: flex; # gap: 15px; # flex-wrap: wrap; #
+             align-items: center; # } # button { # padding: 12px 20px; # background-color:
+             #3f51b5; # color: white; # border: none; # border-radius: 4px; # cursor:
+             pointer; # font-size: 15px; # transition: all 0.3s ease; # box-shadow:
+             0 2px 4px rgba(0,0,0,0.1); # } # button:hover { # background-color: #303f9f;
+             # transform: translateY(-2px); # box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+             # } # button:active { # transform: translateY(0); # } # input { # padding:
+             12px; # border: 1px solid #ddd; # border-radius: 4px; # font-size: 15px;
+             # width: 120px; # box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); # } # select
+             { # padding: 12px; # border: 1px solid #ddd; # border-radius: 4px; # font-size:
+             15px; # width: 160px; # box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); #
+             } # .info { # margin-top: 20px; # padding: 15px; # background-color: #e8eaf6;
+             # border-radius: 8px; # border-left: 5px solid #3f51b5; # line-height:
+             1.6; # } # h1 { # color: #303f9f; # margin-bottom: 25px; # } # .status
+             { # margin-top: 15px; # padding: 10px; # background-color: #e8eaf6; # border-radius:
+             4px; # font-weight: bold; # min-height: 20px; # } # .tree-info { # margin-top:
+             15px; # padding: 15px; # background-color: #e1f5fe; # border-radius: 8px;
+             # overflow-x: auto; # } # .operation-buttons { # display: flex; # gap:
+             10px; # margin-bottom: 15px; # flex-wrap: wrap; # } # .traversal-buttons
+             { # display: flex; # gap: 10px; # margin-top: 15px; # flex-wrap: wrap;
+             # } #
+         </style>
+    </head>
+  
+    <body>
+        <h1>
+            AVL Tree Visualization with Animations
+        </h1>
+        <div class="operation-buttons">
+            <input type="number" id="valueInput" placeholder="Enter value">
+            <button id="insertBtn">
+                Insert
+            </button>
+            <button id="removeBtn">
+                Remove
+            </button>
+            <button id="findBtn">
+                Find
+            </button>
+            <button id="clearBtn">
+                Clear Tree
+            </button>
+            <button id="randomTreeBtn">
+                Random Tree
+            </button>
+        </div>
+        <div class="traversal-buttons">
+            <select id="traversalSelect">
+                <option value="inorder">
+                    In-order
+                </option>
+                <option value="preorder">
+                    Pre-order
+                </option>
+                <option value="postorder">
+                    Post-order
+                </option>
+                <option value="levelorder">
+                    Level-order
+                </option>
+            </select>
+            <button id="traverseBtn">
+                Traverse
+            </button>
+        </div>
+        <div id="container">
+        </div>
+        <div class="status" id="statusText">
+        </div>
+        <div class="tree-info" id="treeInfo">
+        </div>
+        <div class="info">
+            <h3>
+                AVL Tree Properties:
+            </h3>
+            <p>
+                • An AVL tree is a self-balancing binary search tree
+            </p>
+            <p>
+                • The heights of the two child subtrees of any node differ by at most
+                one
+            </p>
+            <p>
+                • If the difference becomes more than one, rebalancing is done via rotations
+            </p>
+            <p>
+                • AVL trees maintain O(log n) height, ensuring O(log n) operations
+            </p>
+            <h3>
+                AVL Tree Rotations:
+            </h3>
+            <p>
+                •
+                <strong>
+                    Left Rotation:
+                </strong>
+                When a node is right-heavy and its right child is right-heavy or balanced
+            </p>
+            <p>
+                •
+                <strong>
+                    Right Rotation:
+                </strong>
+                When a node is left-heavy and its left child is left-heavy or balanced
+            </p>
+            <p>
+                •
+                <strong>
+                    Left-Right Rotation:
+                </strong>
+                When a node is left-heavy and its left child is right-heavy
+            </p>
+            <p>
+                •
+                <strong>
+                    Right-Left Rotation:
+                </strong>
+                When a node is right-heavy and its right child is left-heavy
+            </p>
+            <h3>
+                Tree Traversals:
+            </h3>
+            <p>
+                •
+                <strong>
+                    In-order:
+                </strong>
+                Left subtree, Root, Right subtree (gives nodes in ascending order)
+            </p>
+            <p>
+                •
+                <strong>
+                    Pre-order:
+                </strong>
+                Root, Left subtree, Right subtree
+            </p>
+            <p>
+                •
+                <strong>
+                    Post-order:
+                </strong>
+                Left subtree, Right subtree, Root
+            </p>
+            <p>
+                •
+                <strong>
+                    Level-order:
+                </strong>
+                Breadth-first traversal, level by level from top to bottom
+            </p>
+        </div>
+        <script>
+     
+Konva.pixelRatio = 1;
+// Initialize Konva Stage
+const width = window.innerWidth - 40;
+const height = window.innerHeight * 0.7;
+const stage = new Konva.Stage({
+    container: 'container',
+    width: width,
+    height: height
+});
+const layer = new Konva.Layer();
+stage.add(layer);
+// Status text update function
+function updateStatus(text) {
+    document.getElementById('statusText').textContent = text;
+}
+// Tree info update function
+function updateTreeInfo(text) {
+    document.getElementById('treeInfo').innerHTML = text;
+}
+class AVLTreeNode {
+    constructor(value) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+        this.height = 1;
+        this.balanceFactor = 0;
+        this.id = Math.random().toString(36).substring(2, 9); // Unique ID for animation tracking
+    }
+}
+class AVLTree {
+    constructor() {
+        this.root = null;
+        this.nodeGroups = {};
+        this.edgeLines = {};
+        this.nodeRadius = 30;
+        this.levelHeight = 80;
+        this.horizontalSpacing = 50;
+        this.animationSpeed = 1.5; // Slower animation speed for better visibility
+        this.animationQueue = [];
+        this.isAnimating = false;
+        this.pauseAnimations = false;
+        this.traversalResult = [];
+        this.rotationInProgress = false;
+    }
+    // Get height of a node
+    height(node) {
+        return node ? node.height : 0;
+    }
+    // Update height and balance factor of a node
+    updateHeightAndBalance(node) {
+        if (!node) return;
+        node.height = Math.max(this.height(node.left), this.height(node.right)) + 1;
+        node.balanceFactor = this.height(node.left) - this.height(node.right);
+    }
+    // Right rotation
+    rightRotate(y) {
+        // Show rotation info in status
+        const rotationType = "RIGHT ROTATION";
+        updateStatus(`Performing ${rotationType} at node ${y.value}...`);
+        // Highlight the rotation in the visualization
+        this.highlightRotation(y, "right");
+        const x = y.left;
+        const T3 = x.right;
+        // Perform rotation
+        x.right = y;
+        y.left = T3;
+        // Update heights
+        this.updateHeightAndBalance(y);
+        this.updateHeightAndBalance(x);
+        return x;
+    }
+    // Left rotation
+    leftRotate(x) {
+        // Show rotation info in status
+        const rotationType = "LEFT ROTATION";
+        updateStatus(`Performing ${rotationType} at node ${x.value}...`);
+        // Highlight the rotation in the visualization
+        this.highlightRotation(x, "left");
+        const y = x.right;
+        const T2 = y.left;
+        // Perform rotation
+        y.left = x;
+        x.right = T2;
+        // Update heights
+        this.updateHeightAndBalance(x);
+        this.updateHeightAndBalance(y);
+        return y;
+    }
+    // Insert a node
+    insert(value) {
+        this.root = this.insertNode(this.root, value);
+        this.updateVisualization();
+    }
+    // Helper function to insert a node
+    // Check balance and perform rotations if needed
+    insertNode(node, value) {
+        // Normal BST insertion
+        if (!node) {
+            updateStatus(`Creating new node with value ${value}`);
+            return new AVLTreeNode(value);
+        }
+        if (value < node.value) {
+            updateStatus(`${value} < ${node.value}, going to left subtree`);
+            node.left = this.insertNode(node.left, value);
+        } else if (value > node.value) {
+            updateStatus(`${value} > ${node.value}, going to right subtree`);
+            node.right = this.insertNode(node.right, value);
+        } else {
+            updateStatus(`Value ${value} already exists in the tree`);
+            return node; // Duplicate values not allowed
+        }
+        // Update height and balance factor
+        this.updateHeightAndBalance(node);
+        // Update the visualization to show current state before rotation
+        this.updateVisualization();
+        // Check balance and perform rotations if needed with detailed status messages
+        if (node.balanceFactor > 1) {
+            // Left subtree is higher
+            if (node.left && node.left.balanceFactor >= 0) {
+                // Left-Left case
+                updateStatus(`IMBALANCE DETECTED: Left-Left case at node ${node.value} (BF: ${node.balanceFactor}). Performing right rotation.`);
+                this.showRotationCase(node, "Left-Left Case");
+                return this.rightRotate(node);
+            } else if (node.left && node.left.balanceFactor < 0) {
+                // Left-Right case
+                updateStatus(`IMBALANCE DETECTED: Left-Right case at node ${node.value} (BF: ${node.balanceFactor}). Performing left-right rotation.`);
+                this.showRotationCase(node, "Left-Right Case");
+                node.left = this.leftRotate(node.left);
+                return this.rightRotate(node);
+            }
+        } else if (node.balanceFactor < -1) {
+            // Right subtree is higher
+            if (node.right && node.right.balanceFactor <= 0) {
+                // Right-Right case
+                updateStatus(`IMBALANCE DETECTED: Right-Right case at node ${node.value} (BF: ${node.balanceFactor}). Performing left rotation.`);
+                this.showRotationCase(node, "Right-Right Case");
+                return this.leftRotate(node);
+            } else if (node.right && node.right.balanceFactor > 0) {
+                // Right-Left case
+                updateStatus(`IMBALANCE DETECTED: Right-Left case at node ${node.value} (BF: ${node.balanceFactor}). Performing right-left rotation.`);
+                this.showRotationCase(node, "Right-Left Case");
+                node.right = this.rightRotate(node.right);
+                return this.leftRotate(node);
+            }
+        }
+        return node;
+    }
+    // Find the node with minimum value
+    findMinNode(node) {
+        let current = node;
+        while (current && current.left) {
+            current = current.left;
+        }
+        return current;
+    }
+    // Remove a node
+    remove(value) {
+        if (!this.root) {
+            updateStatus("Tree is empty. Nothing to remove.");
+            return;
+        }
+        this.root = this.removeNode(this.root, value);
+        this.updateVisualization();
+    }
+    // Helper function to remove a node
+    removeNode(node, value) {
+        if (!node) {
+            updateStatus(`Value ${value} not found in the tree`);
+            return null;
+        }
+        if (value < node.value) {
+            updateStatus(`${value} < ${node.value}, searching in left subtree`);
+            node.left = this.removeNode(node.left, value);
+        } else if (value > node.value) {
+            updateStatus(`${value} > ${node.value}, searching in right subtree`);
+            node.right = this.removeNode(node.right, value);
+        } else {
+            // Node found, proceed with removal
+            updateStatus(`Found node ${value} to remove`);
+            // Node with one child or no child
+            if (!node.left) {
+                updateStatus(`Node ${value} has no left child, replacing with right child`);
+                return node.right;
+            } else if (!node.right) {
+                updateStatus(`Node ${value} has no right child, replacing with left child`);
+                return node.left;
+            }
+            // Node with two children
+            updateStatus(`Node ${value} has two children, finding successor`);
+            const successor = this.findMinNode(node.right);
+            updateStatus(`Found successor ${successor.value}`);
+            node.value = successor.value;
+            node.right = this.removeNode(node.right, successor.value);
+        }
+        // Update height and balance factor
+        this.updateHeightAndBalance(node);
+        // Update the visualization to show current state before rotation
+        this.updateVisualization();
+        // Check balance and perform rotations if needed
+        if (node.balanceFactor > 1) {
+            // Left subtree is higher
+            if (node.left && node.left.balanceFactor >= 0) {
+                // Left-Left case
+                updateStatus(`IMBALANCE DETECTED: Left-Left case at node ${node.value} (BF: ${node.balanceFactor}). Performing right rotation.`);
+                this.showRotationCase(node, "Left-Left Case");
+                return this.rightRotate(node);
+            } else if (node.left && node.left.balanceFactor < 0) {
+                // Left-Right case
+                updateStatus(`IMBALANCE DETECTED: Left-Right case at node ${node.value} (BF: ${node.balanceFactor}). Performing left-right rotation.`);
+                this.showRotationCase(node, "Left-Right Case");
+                node.left = this.leftRotate(node.left);
+                return this.rightRotate(node);
+            }
+        } else if (node.balanceFactor < -1) {
+            // Right subtree is higher
+            if (node.right && node.right.balanceFactor <= 0) {
+                // Right-Right case
+                updateStatus(`IMBALANCE DETECTED: Right-Right case at node ${node.value} (BF: ${node.balanceFactor}). Performing left rotation.`);
+                this.showRotationCase(node, "Right-Right Case");
+                return this.leftRotate(node);
+            } else if (node.right && node.right.balanceFactor > 0) {
+                // Right-Left case
+                updateStatus(`IMBALANCE DETECTED: Right-Left case at node ${node.value} (BF: ${node.balanceFactor}). Performing right-left rotation.`);
+                this.showRotationCase(node, "Right-Left Case");
+                node.right = this.rightRotate(node.right);
+                return this.leftRotate(node);
+            }
+        }
+        return node;
+    }
+    showRotationCase(node, caseText) {
+        if (!node || !this.nodeGroups[node.id]) return;
+        // Create a temporary label above the node
+        const group = this.nodeGroups[node.id];
+        const x = group.x();
+        const y = group.y();
+        const label = new Konva.Label({
+            x: x,
+            y: y - this.nodeRadius - 40,
+            opacity: 0
+        });
+        const tag = new Konva.Tag({
+            fill: '#e91e63',
+            stroke: '#c2185b',
+            strokeWidth: 1,
+            cornerRadius: 5,
+            pointerDirection: 'down',
+            pointerWidth: 10,
+            pointerHeight: 10,
+            shadowColor: 'black',
+            shadowBlur: 10,
+            shadowOffset: {
+                x: 5,
+                y: 5
+            },
+            shadowOpacity: 0.3
+        });
+        const text = new Konva.Text({
+            text: caseText,
+            fontSize: 18,
+            fontStyle: 'bold',
+            lineHeight: 1.2,
+            padding: 10,
+            fill: 'white'
+        });
+        label.add(tag);
+        label.add(text);
+        layer.add(label);
+        // Animation sequence
+        const fadeIn = new Konva.Tween({
+            node: label,
+            duration: 0.5 * this.animationSpeed,
+            opacity: 1,
+            easing: Konva.Easings.EaseIn,
+            onFinish: () => {
+                setTimeout(() => {
+                    const fadeOut = new Konva.Tween({
+                        node: label,
+                        duration: 0.5 * this.animationSpeed,
+                        opacity: 0,
+                        easing: Konva.Easings.EaseOut,
+                        onFinish: () => {
+                            label.destroy();
+                        }
+                    });
+                    fadeOut.play();
+                }, 2500 * this.animationSpeed); // Display for longer
+            }
+        });
+        fadeIn.play();
+    }
+    highlightRotation(node, rotationType) {
+        if (!node || !this.nodeGroups[node.id]) return;
+        // Set rotation in progress flag
+        this.rotationInProgress = true;
+        // Get nodes involved in rotation
+        const pivot = rotationType === "right" ? (node.left ? this.nodeGroups[node.left.id] : null) : (node.right ? this.nodeGroups[node.right.id] : null);
+        const rootGroup = this.nodeGroups[node.id];
+        if (!rootGroup || !pivot) {
+            this.rotationInProgress = false;
+            return;
+        }
+        // Store original colors
+        const rootCircle = rootGroup.findOne('Circle');
+        const pivotCircle = pivot.findOne('Circle');
+        if (!rootCircle || !pivotCircle) {
+            this.rotationInProgress = false;
+            return;
+        }
+        const originalRootFill = rootCircle.fill();
+        const originalPivotFill = pivotCircle.fill();
+        // Highlight the nodes involved in rotation
+        rootCircle.fill('#ff5722'); // Orange for root node
+        pivotCircle.fill('#9c27b0'); // Purple for pivot node
+        // Create labels for the nodes
+        const createRotationLabel = (group, text) => {
+            const x = group.x();
+            const y = group.y() - this.nodeRadius - 25;
+            const label = new Konva.Label({
+                x: x,
+                y: y,
+                opacity: 0
+            });
+            const tag = new Konva.Tag({
+                fill: '#ffc107',
+                stroke: '#ff9800',
+                strokeWidth: 1,
+                cornerRadius: 3
+            });
+            const textNode = new Konva.Text({
+                text: text,
+                fontSize: 14,
+                fontStyle: 'bold',
+                padding: 5,
+                fill: '#000'
+            });
+            label.add(tag);
+            label.add(textNode);
+            layer.add(label);
+            return label;
+        };
+        const rootLabel = createRotationLabel(rootGroup, rotationType === "right" ? "Unbalanced Node" : "Unbalanced Node");
+        const pivotLabel = createRotationLabel(pivot, rotationType === "right" ? "Pivot Node" : "Pivot Node");
+        // Fade in the labels
+        const fadeInLabels = () => {
+            new Konva.Tween({
+                node: rootLabel,
+                duration: 0.4 * this.animationSpeed,
+                opacity: 1,
+                easing: Konva.Easings.EaseIn
+            }).play();
+            new Konva.Tween({
+                node: pivotLabel,
+                duration: 0.4 * this.animationSpeed,
+                opacity: 1,
+                easing: Konva.Easings.EaseIn
+            }).play();
+        };
+        // Fade out the labels and reset colors
+        const fadeOutLabelsAndReset = () => {
+            new Konva.Tween({
+                node: rootLabel,
+                duration: 0.4 * this.animationSpeed,
+                opacity: 0,
+                easing: Konva.Easings.EaseOut,
+                onFinish: () => rootLabel.destroy()
+            }).play();
+            new Konva.Tween({
+                node: pivotLabel,
+                duration: 0.4 * this.animationSpeed,
+                opacity: 0,
+                easing: Konva.Easings.EaseOut,
+                onFinish: () => {
+                    pivotLabel.destroy();
+                    // Reset flag
+                    this.rotationInProgress = false;
+                }
+            }).play();
+            // Reset colors
+            rootCircle.fill(originalRootFill);
+            pivotCircle.fill(originalPivotFill);
+        };
+        // Sequence the animation
+        fadeInLabels();
+        // Allow time to see the animation then reset
+        setTimeout(() => {
+            fadeOutLabelsAndReset();
+        }, 3000 * this.animationSpeed); // Show for longer
+      
+        layer.batchDraw();
+    }
+    // Find a node
+    find(value) {
+        this.resetNodeColors();
+        return this.findNode(this.root, value);
+    }
+    // Helper function to find a node
+    findNode(node, value) {
+        if (!node) {
+            updateStatus(`Value ${value} not found in the tree`);
+            return null;
+        }
+        // Highlight the current node being visited
+        this.animateFind(node.id);
+        if (value === node.value) {
+            updateStatus(`Found value ${value} in the tree!`);
+            return node;
+        } else if (value < node.value) {
+            updateStatus(`${value} < ${node.value}, searching in left subtree`);
+            return this.findNode(node.left, value);
+        } else {
+            updateStatus(`${value} > ${node.value}, searching in right subtree`);
+            return this.findNode(node.right, value);
+        }
+    }
+    // Clear the tree
+    clear() {
+        this.root = null;
+        this.updateVisualization();
+        updateStatus("Tree cleared");
+    }
+    // Generate a random tree
+    generateRandomTree(size = 10) {
+        this.clear();
+        const values = new Set();
+        // Generate unique random values
+        while (values.size < size) {
+            values.add(Math.floor(Math.random() * 100));
+        }
+        // Insert values into the tree
+        for (const value of values) {
+            this.insert(value);
+        }
+        updateStatus(`Generated random tree with ${values.size} nodes`);
+    }
+    // Perform tree traversal
+    traverse(type) {
+        this.traversalResult = [];
+        switch (type) {
+            case 'inorder':
+                this.inorderTraversal(this.root);
+                updateStatus(`In-order traversal: ${this.traversalResult.join(' → ')}`);
+                break;
+            case 'preorder':
+                this.preorderTraversal(this.root);
+                updateStatus(`Pre-order traversal: ${this.traversalResult.join(' → ')}`);
+                break;
+            case 'postorder':
+                this.postorderTraversal(this.root);
+                updateStatus(`Post-order traversal: ${this.traversalResult.join(' → ')}`);
+                break;
+            case 'levelorder':
+                this.levelOrderTraversal();
+                updateStatus(`Level-order traversal: ${this.traversalResult.join(' → ')}`);
+                break;
+            default:
+                updateStatus("Unknown traversal type");
+        }
+        // Animate the traversal
+        this.animateTraversal();
+    }
+    // In-order traversal (Left -> Root -> Right)
+    inorderTraversal(node) {
+        if (node) {
+            this.inorderTraversal(node.left);
+            this.traversalResult.push(node.value);
+            this.inorderorderTraversal(node.right);
+          }
+      }
+    
+      // Pre-order traversal (Root -> Left -> Right)
+      preorderTraversal(node) {
+          if (node) {
+              this.traversalResult.push(node.value);
+              this.preorderTraversal(node.left);
+              this.preorderTraversal(node.right);
+          }
+      }
+    
+      // Post-order traversal (Left -> Right -> Root)
+      postorderTraversal(node) {
+          if (node) {
+              this.postorderTraversal(node.left);
+              this.postorderTraversal(node.right);
+              this.traversalResult.push(node.value);
+          }
+      }
+    
+      // Level-order (breadth-first) traversal
+      levelOrderTraversal() {
+          if (!this.root) return;
+    
+          const queue = [this.root];
+    
+          while (queue.length > 0) {
+              const node = queue.shift();
+              this.traversalResult.push(node.value);
+    
+              if (node.left) queue.push(node.left);
+              if (node.right) queue.push(node.right);
+          }
+      }
+    
+      // ===== VISUALIZATION METHODS =====
+      // Calculate positions for nodes
+      calculateNodePositions() {
+          const positions = {};
+    
+          const calculatePositionsRecursively = (node, x, y, level, leftBound, rightBound) => {
+              if (!node) return;
+    
+              // Save position for this node
+              positions[node.id] = {
+                  x,
+                  y               };
+    
+              // Calculate bounds for children
+              const xOffset = (rightBound - leftBound) / 2;
+    
+              // Recursively calculate positions for children
+              if (node.left) {
+                  calculatePositionsRecursively(node.left, x - xOffset, y + this.levelHeight, level + 1, leftBound, x);
+              }
+    
+              if (node.right) {                   calculatePositionsRecursively(node.right, x + xOffset, y + this.levelHeight, level + 1, x, rightBound);
+              }
+          };
+    
+          if (this.root) {
+              const startX = width / 2;
+              const startY = 60;
+              const maxLevel = this.getTreeHeight();
+              const totalWidth = Math.min(width * 0.9, Math.pow(2, maxLevel) * this.nodeRadius * 3);
+                   calculatePositionsRecursively(this.root, startX, startY, 0, startX - totalWidth / 2, startX + totalWidth / 2);
+          }
+               return positions;
+      }
+           // Get the height of the tree
+      getTreeHeight() {
+          const calculateHeight = (node) => {
+              if (!node) return 0;               return Math.max(calculateHeight(node.left), calculateHeight(node.right)) + 1;
+          };
+    
+          return calculateHeight(this.root);
+      }
+           // Update the visualization
+      updateVisualization() {
+          if (this.rotationInProgress) {
+              setTimeout(() => this.updateVisualization(), 500 * this.animationSpeed);
+             return;
+         }              this.resetNodeColors();
+             // Calculate new positions
+         const positions = this.calculateNodePositions();
+             // Remove nodes and edges that no longer exist
+         this.cleanupVisualization();    
+         // Create or update nodes and edges
+          if (this.root) {
+              this.visualizeTree(this.root, positions);
+          }
+    
+          // Update tree information
+          this.updateTreeInformation();
+      }
+    
+      // Remove nodes and edges that no longer exist
+      cleanupVisualization() {
+          // Get all current node IDs in the tree
+          const currentNodeIds = new Set();
+          const collectNodeIds = (node) => {
+              if (!node) return;
+              currentNodeIds.add(node.id);
+              collectNodeIds(node.left);
+              collectNodeIds(node.right);
+          };
+    
+          collectNodeIds(this.root);
+    
+          // Remove nodes that are no longer in the tree
+          for (const id in this.nodeGroups) {
+              if (!currentNodeIds.has(id)) {
+                  this.nodeGroups[id].destroy();
+                  delete this.nodeGroups[id];
+              }
+          }
+    
+          // Remove all edges (they will be recreated)
+          for (const key in this.edgeLines) {
+              this.edgeLines[key].destroy();
+              delete this.edgeLines[key];
+          }
+    
+          layer.batchDraw();
+      }
+    
+      // Create nodes and edges for the tree
+      visualizeTree(node, positions) {
+          if (!node || !positions[node.id]) return;
+    
+          const pos = positions[node.id];
+    
+          // Create or update node
+          if (!this.nodeGroups[node.id]) {
+              this.createNode(node, pos);
+          } else {
+              this.updateNode(node, pos);
+          }
+    
+          // Create edges to children
+          if (node.left && positions[node.left.id]) {
+              this.createEdge(node.id, node.left.id, positions);
+          }
+    
+          if (node.right && positions[node.right.id]) {
+              this.createEdge(node.id, node.right.id, positions);
+          }
+    
+          // Recursively visualize children
+          if (node.left) this.visualizeTree(node.left, positions);
+          if (node.right) this.visualizeTree(node.right, positions);
+      }
+    
+      // Create a node
+      createNode(node, position) {
+          const group = new Konva.Group({
+              x: position.x,
+              y: position.y,
+              opacity: 0
+          });
+    
+          // Node shape
+          const circle = new Konva.Circle({
+              radius: this.nodeRadius,
+              fill: '#3f51b5',
+              stroke: '#303f9f',
+              strokeWidth: 2
+          });
+    
+          // Node value
+          const text = new Konva.Text({
+              text: node.value.toString(),
+              fontSize: 18,
+              fontFamily: 'Arial',
+              fontStyle: 'bold',
+              fill: 'white',
+              align: 'center',
+              verticalAlign: 'middle',
+              x: -this.nodeRadius,
+              y: -9,
+              width: this.nodeRadius * 2
+          });
+    
+          // Balance factor
+          const balanceText = new Konva.Text({
+              text: node.balanceFactor.toString(),
+              fontSize: 14,
+              fontFamily: 'Arial',
+              fill: node.balanceFactor > 1 || node.balanceFactor < -1 ? '#f44336' : '#fff',
+              align: 'center',
+              x: -this.nodeRadius,
+              y: this.nodeRadius + 5,
+              width: this.nodeRadius * 2
+          });
+    
+          group.add(circle);
+          group.add(text);
+          group.add(balanceText);
+          layer.add(group);
+    
+          // Store reference to the node
+          this.nodeGroups[node.id] = group;
+    
+          // Fade in animation
+          const nodeAnim = new Konva.Tween({
+              node: group,
+              duration: 0.5 * this.animationSpeed,
+              opacity: 1,
+              easing: Konva.Easings.ElasticEaseOut
+          });
+    
+          nodeAnim.play();
+      }
+    
+      // Update an existing node
+      updateNode(node, position) {
+          const group = this.nodeGroups[node.id];
+          if (!group) return;
+    
+          // Update position with slower animation
+          const nodeAnim = new Konva.Tween({
+              node: group,
+              duration: 1.2 * this.animationSpeed,
+              // Slower movement
+              x: position.x,
+              y: position.y,
+              easing: Konva.Easings.EaseInOut
+          });
+    
+          nodeAnim.play();
+    
+          // Update balance factor with highlight if it changed
+          const balanceText = group.findOne('Text:nth-child(3)');
+          if (balanceText) {
+              const oldBalance = balanceText.text();
+              const newBalance = node.balanceFactor.toString();
+    
+              balanceText.text(newBalance);
+    
+              // Highlight balance factor change
+              if (oldBalance !== newBalance) {
+                  balanceText.fontSize(18); // Temporarily enlarge
+                  balanceText.fill(node.balanceFactor > 1 || node.balanceFactor < -1 ? '#f44336' : '#fff');
+    
+                  setTimeout(() => {
+                      // Return to normal size
+                      new Konva.Tween({
+                          node: balanceText,
+                          duration: 0.5 * this.animationSpeed,
+                          fontSize: 14,
+                          easing: Konva.Easings.EaseInOut
+                      }).play();
+                  }, 1000 * this.animationSpeed);
+              }
+          }
+    
+          // Update node color based on balance
+          const circle = group.findOne('Circle');
+          if (circle) {
+              let color = '#3f51b5';
+              if (node.balanceFactor > 1 || node.balanceFactor < -1) {
+                  color = '#f44336'; // Unbalanced (red)
+              } else if (node.balanceFactor === 1 || node.balanceFactor === -1) {
+                  color = '#673ab7'; // Almost unbalanced (purple)
+              } else {
+                  color = '#3f51b5'; // Balanced (blue)
+              }
+    
+              // Use animation for color change too
+              new Konva.Tween({
+                  node: circle,
+                  duration: 0.5 * this.animationSpeed,
+                  fill: color,
+                  easing: Konva.Easings.EaseInOut
+              }).play();
+          }
+      }
+    
+      // Create an edge between two nodes
+      createEdge(fromId, toId, positions) {
+          const edgeKey = `${fromId}-${toId}`;
+    
+          if (this.edgeLines[edgeKey]) return;
+    
+          const fromPos = positions[fromId];
+          const toPos = positions[toId];
+    
+          if (!fromPos || !toPos) return;
+    
+          // Create the edge
+          const edge = new Konva.Line({
+              points: [fromPos.x, fromPos.y, toPos.x, toPos.y],
+              stroke: '#7986cb',
+              strokeWidth: 2,
+              opacity: 0
+          });
+    
+          layer.add(edge);
+    
+          // Make sure edges are behind nodes
+          edge.moveToBottom();
+    
+          // Store reference to the edge
+          this.edgeLines[edgeKey] = edge;
+    
+          // Fade in animation
+          const edgeAnim = new Konva.Tween({
+              node: edge,
+              duration: 0.3 * this.animationSpeed,
+              opacity: 1,
+              easing: Konva.Easings.EaseInOut
+          });
+    
+          edgeAnim.play();
+      }
+    
+      // Reset all node colors
+      resetNodeColors() {
+          for (const id in this.nodeGroups) {
+              const group = this.nodeGroups[id];
+              const circle = group.findOne('Circle');
+              if (circle) {
+                  let node = this.findNodeById(this.root, id);
+                  if (node) {
+                      let color = '#3f51b5';
+                      if (node.balanceFactor > 1 || node.balanceFactor < -1) {
+                          color = '#f44336'; // Unbalanced (red)
+                      } else if (node.balanceFactor === 1 || node.balanceFactor === -1) {
+                          color = '#673ab7'; // Almost unbalanced (purple)
+                      } else {
+                          color = '#3f51b5'; // Balanced (blue)
+                      }
+                      circle.fill(color);
+                  }
+              }
+          }
+          layer.batchDraw();
+      }
+    
+      // Find a node by ID
+      findNodeById(node, id) {
+          if (!node) return null;
+          if (node.id === id) return node;
+    
+          const leftResult = this.findNodeById(node.left, id);
+          if (leftResult) return leftResult;
+    
+          return this.findNodeById(node.right, id);
+      }
+    
+      // Animate find operation
+      animateFind(nodeId) {
+          const group = this.nodeGroups[nodeId];
+          if (!group) return;
+    
+          const circle = group.findOne('Circle');
+          if (!circle) return;
+    
+          // Original color
+          const originalFill = circle.fill();
+    
+          // Highlight animation
+          circle.fill('#ff9800');
+          layer.batchDraw();
+    
+          setTimeout(() => {
+              circle.fill(originalFill);
+              layer.batchDraw();
+          }, 800 * this.animationSpeed);
+      }
+    
+      // Animate traversal
+      animateTraversal() {
+          if (this.traversalResult.length === 0) return;
+    
+          let index = 0;
+          const animateNext = () => {
+              if (index >= this.traversalResult.length) {
+                  setTimeout(() => this.resetNodeColors(), 1000 * this.animationSpeed);
+                  return;
+              }
+    
+              const value = this.traversalResult[index];
+              index++;
+    
+              // Find the node with this value
+              const node = this.findNodeByValue(this.root, value);
+              if (!node) return animateNext();
+    
+              // Highlight the node
+              const group = this.nodeGroups[node.id];
+              if (!group) return animateNext();
+    
+              const circle = group.findOne('Circle');
+              if (!circle) return animateNext();
+    
+              // Original color
+              const originalFill = circle.fill();
+    
+              // Highlight animation
+              circle.fill('#4caf50');
+              layer.batchDraw();
+    
+              setTimeout(() => {
+                  circle.fill(originalFill);
+                  layer.batchDraw();
+    
+                  // Animate next node after a delay
+                  setTimeout(animateNext, 300 * this.animationSpeed);
+              }, 500 * this.animationSpeed);
+          };
+    
+          // Start animation
+          animateNext();
+      }
+    
+      // Find a node by value
+      findNodeByValue(node, value) {
+          if (!node) return null;
+          if (node.value === value) return node;
+    
+          const leftResult = this.findNodeByValue(node.left, value);
+          if (leftResult) return leftResult;
+    
+          return this.findNodeByValue(node.right, value);
+      }
+    
+      // Update tree information in the info panel
+      updateTreeInformation() {
+          if (!this.root) {
+              updateTreeInfo("<p>Tree is empty</p>");
+              return;
+          }
+    
+          const height = this.getTreeHeight();
+          const nodeCount = this.countNodes(this.root);
+          const balancedString = this.isBalanced(this.root) ? "Yes" : "No";
+    
+          const infoHTML = `<p><strong>Tree Height:</strong> ${height}</p><p><strong>Node Count:</strong> ${nodeCount}</p><p><strong>Is Balanced:</strong> ${balancedString}</p><p><strong>Tree Structure:</strong></p><pre>${this.getTreeStructureString(this.root, 0)}</pre>`;
+        
+          updateTreeInfo(infoHTML);
+      }
+    
+      // Count nodes in the tree
+      countNodes(node) {
+          if (!node) return 0;
+          return 1 + this.countNodes(node.left) + this.countNodes(node.right);
+      }
+    
+      // Check if the tree is balanced
+      isBalanced(node) {
+          if (!node) return true;
+    
+          const balanceFactor = this.height(node.left) - this.height(node.right);
+    
+          return (Math.abs(balanceFactor) <= 1 && this.isBalanced(node.left) && this.isBalanced(node.right));
+      }
+    
+      // Get a string representation of the tree structure
+      getTreeStructureString(node, indent) {
+          if (!node) return "";
+    
+          let result = "";
+    
+          // Add right subtree
+          if (node.right) {
+              result += this.getTreeStructureString(node.right, indent + 4);
+          }
+    
+          // Add current node
+          result += " ".repeat(indent) + node.value + " [BF: " + node.balanceFactor + "]\n";
+    
+          // Add left subtree
+          if (node.left) {
+              result += this.getTreeStructureString(node.left, indent + 4);
+          }
+    
+          return result;
+      }
+      }
+    
+      // Create AVL Tree
+      const avlTree = new AVLTree();
+    
+      // Event listeners
+      document.getElementById('insertBtn').addEventListener('click', () => {
+          const valueInput = document.getElementById('valueInput');
+          const value = parseInt(valueInput.value);
+    
+          if (!isNaN(value)) {
+              avlTree.insert(value);
+              valueInput.value = '';
+              valueInput.focus();
+          } else {
+              updateStatus("Please enter a valid number");
+          }
+      });
+    
+      document.getElementById('removeBtn').addEventListener('click', () => {
+          const valueInput = document.getElementById('valueInput');
+          const value = parseInt(valueInput.value);
+    
+          if (!isNaN(value)) {
+              avlTree.remove(value);
+              valueInput.value = '';
+              valueInput.focus();
+          } else {
+              updateStatus("Please enter a valid number");
+          }
+      });
+    
+      document.getElementById('findBtn').addEventListener('click', () => {
+          const valueInput = document.getElementById('valueInput');
+          const value = parseInt(valueInput.value);
+    
+          if (!isNaN(value)) {
+              avlTree.find(value);
+              valueInput.focus();
+          } else {
+              updateStatus("Please enter a valid number");
+          }
+      });
+    
+      document.getElementById('clearBtn').addEventListener('click', () => {
+          avlTree.clear();
+      });
+    
+      document.getElementById('randomTreeBtn').addEventListener('click', () => {
+          avlTree.generateRandomTree();
+      });
+    
+      document.getElementById('traverseBtn').addEventListener('click', () => {
+          const traversalType = document.getElementById('traversalSelect').value;
+          avlTree.traverse(traversalType);
+      });
+    
+      // Handle input keypress
+      document.getElementById('valueInput').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+              document.getElementById('insertBtn').click();
+          }
+      });
+    
+      // Allow resizing
+      window.addEventListener('resize', () => {
+          stage.width(window.innerWidth - 40);
+          stage.height(window.innerHeight * 0.7);
+          avlTree.updateVisualization();
+      });
+    
+      // Add balance factor legend
+      function addBalanceFactorLegend() {
+          const infoElement = document.querySelector('.info');
+    
+          const bfLegend = document.createElement('div');
+          bfLegend.innerHTML = `<h3>Balance Factor Legend:</h3>
+          <p style="display:flex; align-items:center; margin-bottom:8px;">
+              <span style="display:inline-block; width:20px; height:20px; background-color:#3f51b5; border-radius:50%; margin-right:10px;"></span><strong>BF = 0:</strong> Perfectly balanced node
+          </p>
+          <p style="display:flex; align-items:center; margin-bottom:8px;">
+              <span style="display:inline-block; width:20px; height:20px; background-color:#673ab7; border-radius:50%; margin-right:10px;"></span>
+              <strong>BF = +1 or -1:</strong> Slightly imbalanced but still valid AVL node
+          </p>
+          <p style="display:flex; align-items:center; margin-bottom:8px;">
+              <span style="display:inline-block; width:20px; height:20px; background-color:#f44336; border-radius:50%; margin-right:10px;"></span><strong>BF > +1 or < -1:</strong> Imbalanced node that requires rotation
+          </p>`;
+    
+          infoElement.appendChild(bfLegend);
+        }
+      
+      
+      
+        // Event listeners
+        document.getElementById('insertBtn').addEventListener('click', () => {
+        const valueInput = document.getElementById('valueInput');
+        const value = parseInt(valueInput.value);
+        if (!isNaN(value)) {
+    avlTree.insert(value);
+    valueInput.value = '';
+    valueInput.focus();
+} else {
+    updateStatus("Please enter a valid number");
+}
+});
+document.getElementById('removeBtn').addEventListener('click', () => {
+const valueInput = document.getElementById('valueInput');
+const value = parseInt(valueInput.value);
+if (!isNaN(value)) {
+    avlTree.remove(value);
+    valueInput.value = '';
+    valueInput.focus();
+} else {
+    updateStatus("Please enter a valid number");
+}
+});
+document.getElementById('findBtn').addEventListener('click', () => {
+const valueInput = document.getElementById('valueInput');
+const value = parseInt(valueInput.value);
+if (!isNaN(value)) {
+    avlTree.find(value);
+    valueInput.focus();
+} else {
+    updateStatus("Please enter a valid number");
+}
+});
+document.getElementById('clearBtn').addEventListener('click', () => {
+avlTree.clear();
+});
+document.getElementById('randomTreeBtn').addEventListener('click', () => {
+avlTree.generateRandomTree();
+});
+document.getElementById('traverseBtn').addEventListener('click', () => {
+const traversalType = document.getElementById('traversalSelect').value;
+avlTree.traverse(traversalType);
+});
+// Handle input keypress
+document.getElementById('valueInput').addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+document.getElementById('insertBtn').click();
+}
+});
+// Allow resizing
+window.addEventListener('resize', () => {
+stage.width(window.innerWidth - 40);
+stage.height(window.innerHeight * 0.7);
+avlTree.updateVisualization();
+});
+window.addEventListener('DOMContentLoaded', addBalanceFactorLegend);
+// Generate initial random tree
+avlTree.generateRandomTree(7);
+// Initial status
+updateStatus("AVL Tree Visualization ready");
+    
+           </script>
+          
+  
+    </body>
+
+</html>

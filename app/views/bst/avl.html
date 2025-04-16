@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVL Tree Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --warning-color: #fbbc05;
+            --danger-color: #ea4335;
+            --background-color: #f8f9fa;
+            --text-color: #202124;
+            --node-color: #fff;
+            --node-border: #4285f4;
+            --node-radius: 30px;
+            --line-color: #757575;
+            --animation-duration: 0.8s;
+            --highlight-color: #fbbc05;
+            --imbalance-color: #ea4335;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .description {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input, button, select {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3367d6;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+
+        button.secondary:hover {
+            background-color: #2e974a;
+        }
+
+        button.warning {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+
+        button.warning:hover {
+            background-color: #e6aa04;
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+
+        button.danger:hover {
+            background-color: #d33426;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            background-color: white;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .info-panel {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-panel h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .logs {
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fff;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.highlight {
+            background-color: #fffde7;
+            border-left: 3px solid var(--warning-color);
+            padding-left: 10px;
+        }
+
+        .operation-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .operation-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .operation-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .operation-card p {
+            font-size: 14px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .slider-container label {
+            min-width: 150px;
+        }
+
+        .slider {
+            flex: 1;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            background-color: white;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                flex-wrap: wrap;
+            }
+            
+            input, button {
+                width: 100%;
+            }
+            
+            #canvas-container {
+                height: 400px;
+            }
+        }
+
+        /* Animation related styles */
+        .animated {
+            transition: all var(--animation-duration) ease;
+        }
+
+        .highlight {
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                filter: brightness(1);
+            }
+            100% {
+                filter: brightness(1.2);
+            }
+        }
+
+        /* Legend styles */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .step-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .current-operation {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 576px) {
+            .controls {
+                gap: 10px;
+            }
+            
+            input, button, select {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            #canvas-container {
+                height: 300px;
+            }
+            
+            .legend {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        /* Hide all features in the reduced mode */
+        .reduced-mode .advanced-feature {
+            display: none !important;
+        }
+        
+        /* Tutorial overlay */
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .tutorial-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 80%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .tutorial-content h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .tutorial-steps {
+            margin-bottom: 20px;
+        }
+        
+        .tutorial-step {
+            margin-bottom: 15px;
+        }
+        
+        .tutorial-step h4 {
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+        }
+        
+        .tutorial-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AVL Tree Visualizer</h1>
+            <p class="description">
+                Visualize AVL tree operations with interactive animations. Focus on understanding rotations,
+                balance factors, and how AVL trees maintain balance.
+            </p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <input type="number" id="node-value" placeholder="Enter value" min="1" max="999">
+                <button id="insert-btn">Insert</button>
+                <button id="delete-btn" class="danger">Delete</button>
+            </div>
+            <div class="control-group">
+                <button id="random-btn" class="secondary">Random Node</button>
+                <button id="clear-btn" class="warning">Clear Tree</button>
+            </div>
+            <div class="control-group advanced-feature">
+                <select id="animation-speed">
+                    <option value="2">Slow</option>
+                    <option value="1" selected>Normal</option>
+                    <option value="0.5">Fast</option>
+                </select>
+                <button id="tutorial-btn">Tutorial</button>
+            </div>
+        </div>
+
+        <div class="slider-container advanced-feature">
+            <label for="animation-speed-slider">Animation Speed:</label>
+            <input type="range" id="animation-speed-slider" class="slider" min="0.2" max="2" step="0.1" value="1">
+            <span id="speed-value">1x</span>
+        </div>
+
+        <div class="current-operation" id="current-operation">
+            Ready for operations
+        </div>
+
+        <div class="step-controls advanced-feature">
+            <button id="prev-step-btn" disabled>Previous Step</button>
+            <button id="next-step-btn" disabled>Next Step</button>
+            <button id="play-btn">Auto Play</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--node-color); border: 2px solid var(--node-border);"></div>
+                <span>Normal Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--highlight-color);"></div>
+                <span>Current Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--imbalance-color);"></div>
+                <span>Imbalanced Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--secondary-color);"></div>
+                <span>Rotation Pivot</span>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="tree-canvas"></canvas>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="operations">Operations</div>
+            <div class="tab" data-tab="logs">Logs</div>
+            <div class="tab advanced-feature" data-tab="theory">AVL Theory</div>
+        </div>
+
+        <div class="tab-content active" id="operations-tab">
+            <div class="operation-info">
+                <div class="operation-card">
+                    <h4>Left Rotation</h4>
+                    <p>Used when a node becomes right-heavy. The right child becomes the new root of the subtree,
+                       and the original root becomes the left child of the new root.</p>
+                </div>
+                <div class="operation-card">
+                    <h4>Right Rotation</h4>
+                    <p>Used when a node becomes left-heavy. The left child becomes the new root of the subtree,
+                       and the original root becomes the right child of the new root.</p>
+                </div>
+                <div class="operation-card">
+                    <h4>Left-Right Rotation</h4>
+                    <p>A double rotation used when a node is left-heavy and its left child is right-heavy.
+                       First, a left rotation on the left child, then a right rotation on the root.</p>
+                </div>
+                <div class="operation-card">
+                    <h4>Right-Left Rotation</h4>
+                    <p>A double rotation used when a node is right-heavy and its right child is left-heavy.
+                       First, a right rotation on the right child, then a left rotation on the root.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="logs-tab">
+            <div class="logs" id="log-container"></div>
+        </div>
+
+        <div class="tab-content advanced-feature" id="theory-tab">
+            <div class="info-panel">
+                <h3>What is an AVL Tree?</h3>
+                <p>
+                    An AVL tree is a self-balancing binary search tree where the height difference between the left and right subtrees
+                    of any node (called the balance factor) is at most 1. This balance ensures O(log n) time complexity for search,
+                    insert, and delete operations.
+                </p>
+                <h3>Balance Factor</h3>
+                <p>
+                    The balance factor of a node is calculated as:
+                    <br>
+                    <strong>Balance Factor = Height of Left Subtree - Height of Right Subtree</strong>
+                    <br>
+                    A balance factor of -1, 0, or 1 indicates the node is balanced. Any other value means the node is imbalanced
+                    and requires rotation(s) to restore balance.
+                </p>
+                <h3>Types of Rotations</h3>
+                <p>
+                    <strong>Single Rotations:</strong>
+                    <br>
+                    - <strong>Left Rotation (LL):</strong> Used when a node has a balance factor < -1 (right-heavy)
+                    <br>
+                    - <strong>Right Rotation (RR):</strong> Used when a node has a balance factor > 1 (left-heavy)
+                    <br><br>
+                    <strong>Double Rotations:</strong>
+                    <br>
+                    - <strong>Left-Right Rotation (LR):</strong> Used when a node has a balance factor > 1 and its left child has a balance factor < 0
+                    <br>
+                    - <strong>Right-Left Rotation (RL):</strong> Used when a node has a balance factor < -1 and its right child has a balance factor > 0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tutorial-overlay" style="display: none;">
+        <div class="tutorial-content">
+            <h2>AVL Tree Visualizer Tutorial</h2>
+            <div class="tutorial-steps">
+                <div class="tutorial-step">
+                    <h4>Step 1: Adding Nodes</h4>
+                    <p>Enter a value in the input field and click "Insert" to add a node to the AVL tree. The tree will automatically rebalance if necessary.</p>
+                </div>
+                <div class="tutorial-step">
+                    <h4>Step 2: Understanding Rotations</h4>
+                    <p>Watch the animation when a rotation occurs. You'll see which node became imbalanced and how the tree rebalances itself.</p>
+                </div>
+                <div class="tutorial-step">
+                    <h4>Step 3: Balance Factors</h4>
+                    <p>Each node displays its value and balance factor. A balance factor of -1, 0, or 1 is balanced. Any other value triggers rotations.</p>
+                </div>
+                <div class="tutorial-step">
+                    <h4>Step 4: Step-by-Step Animation</h4>
+                    <p>Use the "Previous Step" and "Next Step" buttons to move through complex rotations one step at a time for better understanding.</p>
+                </div>
+                <div class="tutorial-step">
+                    <h4>Step 5: Removing Nodes</h4>
+                    <p>Enter a value and click "Delete" to remove a node. The tree will rebalance if needed after deletion.</p>
+                </div>
+            </div>
+            <div class="tutorial-buttons">
+                <button id="close-tutorial">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const ANIMATION_DURATION = 800; // in milliseconds
+        const NODE_RADIUS = 30;
+        const HORIZONTAL_SPACING = 50;
+        const VERTICAL_SPACING = 80;
+        const COLORS = {
+            NODE: '#fff',
+            NODE_BORDER: '#4285f4',
+            LINE: '#757575',
+            HIGHLIGHT: '#fbbc05',
+            IMBALANCE: '#ea4335',
+            PIVOT: '#34a853'
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('tree-canvas');
+        const ctx = canvas.getContext('2d');
+        const nodeValueInput = document.getElementById('node-value');
+        const insertBtn = document.getElementById('insert-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const randomBtn = document.getElementById('random-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const logContainer = document.getElementById('log-container');
+        const currentOperationElement = document.getElementById('current-operation');
+        const prevStepBtn = document.getElementById('prev-step-btn');
+        const nextStepBtn = document.getElementById('next-step-btn');
+        const playBtn = document.getElementById('play-btn');
+        const animationSpeedSlider = document.getElementById('animation-speed-slider');
+        const speedValueDisplay = document.getElementById('speed-value');
+        const canvasContainer = document.getElementById('canvas-container');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const tutorialBtn = document.getElementById('tutorial-btn');
+        const tutorialOverlay = document.querySelector('.tutorial-overlay');
+        const closeTutorialBtn = document.getElementById('close-tutorial');
+
+        // AVL Tree Class
+        class AVLNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.height = 1;
+                this.balanceFactor = 0;
+                this.x = 0;
+                this.y = 0;
+                this.color = COLORS.NODE;
+                this.borderColor = COLORS.NODE_BORDER;
+                this.highlighted = false;
+                this.imbalanced = false;
+                this.pivot = false;
+            }
+        }
+
+        class AVLTree {
+            constructor() {
+                this.root = null;
+                this.animationQueue = [];
+                this.animationStep = 0;
+                this.isAnimating = false;
+                this.autoPlayInterval = null;
+                this.nodeMap = new Map(); // Maps node values to their node objects for faster access
+            }
+
+            // Calculate height of a node
+            height(node) {
+                if (node === null) return 0;
+                return node.height;
+            }
+
+            // Calculate balance factor of a node
+            getBalanceFactor(node) {
+                if (node === null) return 0;
+                return this.height(node.left) - this.height(node.right);
+            }
+
+            // Update height and balance factor of a node
+            updateHeightAndBalanceFactor(node) {
+                if (node === null) return;
+                
+                node.height = Math.max(this.height(node.left), this.height(node.right)) + 1;
+                node.balanceFactor = this.getBalanceFactor(node);
+            }
+
+            // Right rotation
+            rightRotate(y) {
+                const x = y.left;
+                const T3 = x.right;
+
+                // Store original positions for animation
+                const originalYPos = { x: y.x, y: y.y };
+                const originalXPos = { x: x.x, y: x.y };
+                
+                // Perform rotation
+                x.right = y;
+                y.left = T3;
+
+                // Update heights and balance factors
+                this.updateHeightAndBalanceFactor(y);
+                this.updateHeightAndBalanceFactor(x);
+
+                // Return the new root
+                return x;
+            }
+
+            // Left rotation
+            leftRotate(x) {
+                const y = x.right;
+                const T2 = y.left;
+
+                // Store original positions for animation
+                const originalXPos = { x: x.x, y: x.y };
+                const originalYPos = { x: y.x, y: y.y };
+                
+                // Perform rotation
+                y.left = x;
+                x.right = T2;
+
+                // Update heights and balance factors
+                this.updateHeightAndBalanceFactor(x);
+                this.updateHeightAndBalanceFactor(y);
+
+                // Return the new root
+                return y;
+            }
+
+            // Insert a node
+            insert(value) {
+                // Clear any existing animations
+                this.clearAnimations();
+                this.animationQueue.push({
+                    type: 'message',
+                    message: `Starting insertion of node with value ${value}`
+                });
+
+                // Check if value already exists
+                if (this.nodeMap.has(value)) {
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `Node with value ${value} already exists in the tree`
+                    });
+                    return;
+                }
+
+                // Reset all node colors
+                this.resetNodeColors();
+                
+                this.root = this._insert(this.root, value);
+                this.updatePositions();
+                
+                this.animationQueue.push({
+                    type: 'message',
+                    message: `Insertion of value ${value} completed`
+                });
+
+                // Start animation if not already running
+                if (!this.isAnimating) {
+                    this.startAnimation();
+                }
+            }
+
+            // Helper method for insertion
+            _insert(node, value) {
+                // Base case: if node is null, create a new node
+                if (node === null) {
+                    const newNode = new AVLNode(value);
+                    this.nodeMap.set(value, newNode); // Add to map
+                    
+                    this.animationQueue.push({
+                        type: 'highlight',
+                        node: newNode,
+                        message: `Created new node with value ${value}`
+                    });
+
+                    return newNode;
+                }
+
+                // Highlight current node in traversal
+                this.animationQueue.push({
+                    type: 'highlight',
+                    node: node,
+                    message: `Comparing value ${value} with node ${node.value}`
+                });
+
+                // Regular BST insertion
+                if (value < node.value) {
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `${value} < ${node.value}, going to left subtree`
+                    });
+                    node.left = this._insert(node.left, value);
+                } else if (value > node.value) {
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `${value} > ${node.value}, going to right subtree`
+                    });
+                    node.right = this._insert(node.right, value);
+                }
+
+                // Update height and balance factor
+                this.updateHeightAndBalanceFactor(node);
+                
+                this.animationQueue.push({
+                    type: 'update',
+                    node: node,
+                    message: `Updated height to ${node.height} and balance factor to ${node.balanceFactor} for node with value ${node.value}`
+                });
+
+                // Check balance factor and perform rotations if needed
+                const balanceFactor = node.balanceFactor;
+
+                // Left heavy
+                if (balanceFactor > 1) {
+                    this.animationQueue.push({
+                        type: 'imbalance',
+                        node: node,
+                        message: `Node ${node.value} is left-heavy with balance factor ${balanceFactor}`
+                    });
+
+                    // Left-Left case
+                    if (value < node.left.value) {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Left-Left case detected (${value} < ${node.left.value}), performing right rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.left,
+                            message: `${node.left.value} will become new subtree root after rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'right',
+                            node: node,
+                            message: `Right rotation at node ${node.value}`
+                        });
+
+                        return this.rightRotate(node);
+                    } 
+                    // Left-Right case
+                    else {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Left-Right case detected (${value} > ${node.left.value}), performing left rotation on left child first`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.left.right,
+                            message: `${node.left.right.value} will become new subtree root after double rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'left',
+                            node: node.left,
+                            message: `Left rotation at node ${node.left.value}`
+                        });
+
+                        node.left = this.leftRotate(node.left);
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'right',
+                            node: node,
+                            message: `Right rotation at node ${node.value}`
+                        });
+
+                        return this.rightRotate(node);
+                    }
+                }
+
+                // Right heavy
+                if (balanceFactor < -1) {
+                    this.animationQueue.push({
+                        type: 'imbalance',
+                        node: node,
+                        message: `Node ${node.value} is right-heavy with balance factor ${balanceFactor}`
+                    });
+
+                    // Right-Right case
+                    if (value > node.right.value) {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Right-Right case detected (${value} > ${node.right.value}), performing left rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.right,
+                            message: `${node.right.value} will become new subtree root after rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'left',
+                            node: node,
+                            message: `Left rotation at node ${node.value}`
+                        });
+
+                        return this.leftRotate(node);
+                    } 
+                    // Right-Left case
+                    else {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Right-Left case detected (${value} < ${node.right.value}), performing right rotation on right child first`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.right.left,
+                            message: `${node.right.left.value} will become new subtree root after double rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'right',
+                            node: node.right,
+                            message: `Right rotation at node ${node.right.value}`
+                        });
+
+                        node.right = this.rightRotate(node.right);
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'left',
+                            node: node,
+                            message: `Left rotation at node ${node.value}`
+                        });
+
+                        return this.leftRotate(node);
+                    }
+                }
+
+                // No rotation needed
+                return node;
+            }
+
+            // Find the node with minimum value in a subtree
+            findMinValueNode(node) {
+                let current = node;
+                while (current.left !== null) {
+                    this.animationQueue.push({
+                        type: 'highlight',
+                        node: current,
+                        message: `Searching for minimum value, checking left child of ${current.value}`
+                    });
+                    current = current.left;
+                }
+                
+                this.animationQueue.push({
+                    type: 'highlight',
+                    node: current,
+                    message: `Found minimum value: ${current.value}`
+                });
+                
+                return current;
+            }
+
+            // Delete a node
+            delete(value) {
+                // Clear any existing animations
+                this.clearAnimations();
+                this.animationQueue.push({
+                    type: 'message',
+                    message: `Starting deletion of node with value ${value}`
+                });
+
+                // Reset all node colors
+                this.resetNodeColors();
+                
+                if (!this.nodeMap.has(value)) {
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `Node with value ${value} not found in the tree`
+                    });return;
+                }
+                
+                this.root = this._delete(this.root, value);
+                this.updatePositions();
+                
+                this.animationQueue.push({
+                    type: 'message',
+                    message: `Deletion of value ${value} completed`
+                });
+
+                // Start animation if not already running
+                if (!this.isAnimating) {
+                    this.startAnimation();
+                }
+            }
+
+            // Helper method for deletion
+            _delete(node, value) {
+                // Base case
+                if (node === null) {
+                    return null;
+                }
+
+                // Highlight current node in traversal
+                this.animationQueue.push({
+                    type: 'highlight',
+                    node: node,
+                    message: `Comparing value ${value} with node ${node.value}`
+                });
+
+                // Standard BST delete
+                if (value < node.value) {
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `${value} < ${node.value}, going to left subtree`
+                    });
+                    node.left = this._delete(node.left, value);
+                } else if (value > node.value) {
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `${value} > ${node.value}, going to right subtree`
+                    });
+                    node.right = this._delete(node.right, value);
+                } else {
+                    // Node found - handle deletion
+                    this.animationQueue.push({
+                        type: 'highlight',
+                        node: node,
+                        message: `Found node to delete with value ${value}`
+                    });
+
+                    // Node with only one child or no child
+                    if (node.left === null) {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Node ${value} has no left child, replacing with right child`
+                        });
+                        
+                        const temp = node.right;
+                        
+                        // Remove from map
+                        this.nodeMap.delete(node.value);
+                        
+                        if (temp !== null) {
+                            this.animationQueue.push({
+                                type: 'highlight',
+                                node: temp,
+                                message: `Right child ${temp.value} will replace node ${value}`
+                            });
+                        } else {
+                            this.animationQueue.push({
+                                type: 'message',
+                                message: `Node ${value} has no children, removing leaf node`
+                            });
+                        }
+                        
+                        return temp;
+                    } else if (node.right === null) {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Node ${value} has no right child, replacing with left child`
+                        });
+                        
+                        const temp = node.left;
+                        
+                        // Remove from map
+                        this.nodeMap.delete(node.value);
+                        
+                        this.animationQueue.push({
+                            type: 'highlight',
+                            node: temp,
+                            message: `Left child ${temp.value} will replace node ${value}`
+                        });
+                        
+                        return temp;
+                    }
+
+                    // Node with two children
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `Node ${value} has two children, will be replaced with in-order successor`
+                    });
+                    
+                    // Get the in-order successor (smallest in the right subtree)
+                    const successor = this.findMinValueNode(node.right);
+                    
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `In-order successor of ${value} is ${successor.value}`
+                    });
+
+                    // Copy the in-order successor's value to this node
+                    this.animationQueue.push({
+                        type: 'update',
+                        node: node,
+                        message: `Replacing value ${node.value} with ${successor.value}`
+                    });
+                    
+                    // Update map reference
+                    this.nodeMap.delete(node.value);
+                    node.value = successor.value;
+                    this.nodeMap.set(node.value, node);
+
+                    // Delete the in-order successor
+                    this.animationQueue.push({
+                        type: 'message',
+                        message: `Now deleting the duplicate successor node with value ${successor.value} from right subtree`
+                    });
+                    node.right = this._delete(node.right, successor.value);
+                }
+
+                // If tree had only one node
+                if (node === null) {
+                    return null;
+                }
+
+                // Update height and balance factor
+                this.updateHeightAndBalanceFactor(node);
+                
+                this.animationQueue.push({
+                    type: 'update',
+                    node: node,
+                    message: `Updated height to ${node.height} and balance factor to ${node.balanceFactor} for node with value ${node.value}`
+                });
+
+                // Check balance factor and perform rotations if needed
+                const balanceFactor = node.balanceFactor;
+
+                // Left heavy
+                if (balanceFactor > 1) {
+                    this.animationQueue.push({
+                        type: 'imbalance',
+                        node: node,
+                        message: `Node ${node.value} is left-heavy with balance factor ${balanceFactor}`
+                    });
+
+                    // Check balance factor of left child
+                    const leftChildBF = this.getBalanceFactor(node.left);
+                    
+                    // Left-Left case
+                    if (leftChildBF >= 0) {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Left-Left case detected (left child balance factor: ${leftChildBF} >= 0), performing right rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.left,
+                            message: `${node.left.value} will become new subtree root after rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'right',
+                            node: node,
+                            message: `Right rotation at node ${node.value}`
+                        });
+
+                        return this.rightRotate(node);
+                    } 
+                    // Left-Right case
+                    else {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Left-Right case detected (left child balance factor: ${leftChildBF} < 0), performing left rotation on left child first`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.left.right,
+                            message: `${node.left.right.value} will become new subtree root after double rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'left',
+                            node: node.left,
+                            message: `Left rotation at node ${node.left.value}`
+                        });
+
+                        node.left = this.leftRotate(node.left);
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'right',
+                            node: node,
+                            message: `Right rotation at node ${node.value}`
+                        });
+
+                        return this.rightRotate(node);
+                    }
+                }
+
+                // Right heavy
+                if (balanceFactor < -1) {
+                    this.animationQueue.push({
+                        type: 'imbalance',
+                        node: node,
+                        message: `Node ${node.value} is right-heavy with balance factor ${balanceFactor}`
+                    });
+
+                    // Check balance factor of right child
+                    const rightChildBF = this.getBalanceFactor(node.right);
+                    
+                    // Right-Right case
+                    if (rightChildBF <= 0) {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Right-Right case detected (right child balance factor: ${rightChildBF} <= 0), performing left rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.right,
+                            message: `${node.right.value} will become new subtree root after rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'left',
+                            node: node,
+                            message: `Left rotation at node ${node.value}`
+                        });
+
+                        return this.leftRotate(node);
+                    } 
+                    // Right-Left case
+                    else {
+                        this.animationQueue.push({
+                            type: 'message',
+                            message: `Right-Left case detected (right child balance factor: ${rightChildBF} > 0), performing right rotation on right child first`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'pivot',
+                            node: node.right.left,
+                            message: `${node.right.left.value} will become new subtree root after double rotation`
+                        });
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'right',
+                            node: node.right,
+                            message: `Right rotation at node ${node.right.value}`
+                        });
+
+                        node.right = this.rightRotate(node.right);
+
+                        this.animationQueue.push({
+                            type: 'rotation',
+                            rotationType: 'left',
+                            node: node,
+                            message: `Left rotation at node ${node.value}`
+                        });
+
+                        return this.leftRotate(node);
+                    }
+                }
+
+                // No rotation needed
+                return node;
+            }
+
+            // Reset all node colors to default
+            resetNodeColors() {
+                const resetNode = (node) => {
+                    if (node === null) return;
+                    
+                    node.color = COLORS.NODE;
+                    node.borderColor = COLORS.NODE_BORDER;
+                    node.highlighted = false;
+                    node.imbalanced = false;
+                    node.pivot = false;
+                    
+                    resetNode(node.left);
+                    resetNode(node.right);
+                };
+                
+                resetNode(this.root);
+            }
+
+            // Calculate positions for all nodes
+            updatePositions() {
+                const calculatePositions = (node, level, leftBound, rightBound) => {
+                    if (node === null) return;
+                    
+                    const x = (leftBound + rightBound) / 2;
+                    const y = level * VERTICAL_SPACING + 50;
+                    
+                    node.x = x;
+                    node.y = y;
+                    
+                    const nextLevel = level + 1;
+                    const gap = (rightBound - leftBound) / 2;
+                    
+                    calculatePositions(node.left, nextLevel, leftBound, x);
+                    calculatePositions(node.right, nextLevel, x, rightBound);
+                };
+                
+                if (this.root !== null) {
+                    // Calculate tree depth
+                    const getDepth = (node) => {
+                        if (node === null) return 0;
+                        return Math.max(getDepth(node.left), getDepth(node.right)) + 1;
+                    };
+                    
+                    const depth = getDepth(this.root);
+                    const canvasWidth = Math.max(canvas.width, 2 ** depth * 60);
+                    
+                    calculatePositions(this.root, 1, 0, canvasWidth);
+                }
+            }
+
+            // Draw the tree
+            draw() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const drawNode = (node) => {
+                    if (node === null) return;
+                    
+                    // Draw line to left child
+                    if (node.left !== null) {
+                        ctx.beginPath();
+                        ctx.moveTo(node.x, node.y);
+                        ctx.lineTo(node.left.x, node.left.y);
+                        ctx.strokeStyle = COLORS.LINE;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    
+                    // Draw line to right child
+                    if (node.right !== null) {
+                        ctx.beginPath();
+                        ctx.moveTo(node.x, node.y);
+                        ctx.lineTo(node.right.x, node.right.y);
+                        ctx.strokeStyle = COLORS.LINE;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    
+                    // Draw node
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, NODE_RADIUS, 0, 2 * Math.PI);
+                    
+                    // Apply node color
+                    if (node.highlighted) {
+                        ctx.fillStyle = COLORS.HIGHLIGHT;
+                    } else if (node.imbalanced) {
+                        ctx.fillStyle = COLORS.IMBALANCE;
+                    } else if (node.pivot) {
+                        ctx.fillStyle = COLORS.PIVOT;
+                    } else {
+                        ctx.fillStyle = node.color;
+                    }
+                    
+                    // Apply border color
+                    if (node.highlighted) {
+                        ctx.strokeStyle = COLORS.HIGHLIGHT;
+                    } else if (node.imbalanced) {
+                        ctx.strokeStyle = COLORS.IMBALANCE;
+                    } else if (node.pivot) {
+                        ctx.strokeStyle = COLORS.PIVOT;
+                    } else {
+                        ctx.strokeStyle = node.borderColor;
+                    }
+                    
+                    ctx.lineWidth = 3;
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Draw node value
+                    ctx.fillStyle = '#000';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(node.value, node.x, node.y - 5);
+                    
+                    // Draw balance factor
+                    ctx.font = '12px Arial';
+                    ctx.fillText(`BF: ${node.balanceFactor}`, node.x, node.y + 12);
+                    
+                    // Recursively draw children
+                    drawNode(node.left);
+                    drawNode(node.right);
+                };
+                
+                drawNode(this.root);
+            }
+
+            // Process animation queue
+            startAnimation() {
+                if (this.animationQueue.length === 0) {
+                    this.isAnimating = false;
+                    currentOperationElement.textContent = 'Ready for operations';
+                    prevStepBtn.disabled = true;
+                    nextStepBtn.disabled = true;
+                    return;
+                }
+                
+                this.isAnimating = true;
+                this.animationStep = 0;
+                this.processAnimationStep();
+            }
+
+            // Process a single animation step
+            processAnimationStep() {
+                if (this.animationStep >= this.animationQueue.length) {
+                    this.isAnimating = false;
+                    currentOperationElement.textContent = 'Animation completed';
+                    prevStepBtn.disabled = this.animationStep <= 0;
+                    nextStepBtn.disabled = true;
+                    return;
+                }
+                
+                prevStepBtn.disabled = this.animationStep <= 0;
+                nextStepBtn.disabled = this.animationStep >= this.animationQueue.length - 1;
+                            
+                const animation = this.animationQueue[this.animationStep];
+                
+                // Reset highlighting from previous step
+                this.resetNodeColors();
+                
+                // Update current operation text
+                currentOperationElement.textContent = animation.message || 'Processing operation';
+                
+                // Add log entry
+                this.addLogEntry(animation.message || 'Operation step', animation.type === 'rotation');
+                
+                // Apply animation effect based on type
+                switch (animation.type) {
+                    case 'highlight':
+                        if (animation.node) {
+                            animation.node.highlighted = true;
+                        }
+                        break;
+                    
+                    case 'imbalance':
+                        if (animation.node) {
+                            animation.node.imbalanced = true;
+                        }
+                        break;
+                    
+                    case 'pivot':
+                        if (animation.node) {
+                            animation.node.pivot = true;
+                        }
+                        break;
+                    
+                    case 'rotation':
+                        // Rotation animations handled in the main animation frame
+                        break;
+                    
+                    case 'update':
+                        // Update animations just highlight the node
+                        if (animation.node) {
+                            animation.node.highlighted = true;
+                        }
+                        break;
+                    
+                    case 'message':
+                        // Messages don't need visual effects
+                        break;
+                }
+                
+                // Redraw the tree
+                this.draw();
+                
+                // Move to next step automatically after delay unless it's a rotation
+                if (animation.type !== 'rotation') {
+                    setTimeout(() => {
+                        if (this.autoPlayInterval) {
+                            this.animationStep++;
+                            this.processAnimationStep();
+                        }
+                    }, ANIMATION_DURATION / parseFloat(animationSpeedSlider.value));
+                }
+            }
+
+            // Add a log entry
+            addLogEntry(message, highlight = false) {
+                const logEntry = document.createElement('div');
+                logEntry.className = highlight ? 'log-entry highlight' : 'log-entry';
+                logEntry.textContent = message;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            // Clear all animations
+            clearAnimations() {
+                this.animationQueue = [];
+                this.animationStep = 0;
+                this.isAnimating = false;
+                
+                if (this.autoPlayInterval) {
+                    clearInterval(this.autoPlayInterval);
+                    this.autoPlayInterval = null;
+                    playBtn.textContent = 'Auto Play';
+                }
+            }
+
+            // Move to next animation step
+            nextStep() {
+                if (this.animationStep < this.animationQueue.length - 1) {
+                    this.animationStep++;
+                    this.processAnimationStep();
+                }
+            }
+
+            // Move to previous animation step
+            prevStep() {
+                if (this.animationStep > 0) {
+                    this.animationStep--;
+                    this.processAnimationStep();
+                }
+            }
+
+            // Toggle auto play
+            toggleAutoPlay() {
+                if (this.autoPlayInterval) {
+                    clearInterval(this.autoPlayInterval);
+                    this.autoPlayInterval = null;
+                    playBtn.textContent = 'Auto Play';
+                } else {
+                    this.autoPlayInterval = setInterval(() => {
+                        if (this.animationStep < this.animationQueue.length - 1) {
+                            this.animationStep++;
+                            this.processAnimationStep();
+                        } else {
+                            clearInterval(this.autoPlayInterval);
+                            this.autoPlayInterval = null;
+                            playBtn.textContent = 'Auto Play';
+                        }
+                    }, ANIMATION_DURATION / parseFloat(animationSpeedSlider.value));
+                    playBtn.textContent = 'Pause';
+                }
+            }
+        }
+
+        // Create AVL tree instance
+        const avlTree = new AVLTree();
+
+        // Initialize canvas
+        function resizeCanvas() {
+            canvas.width = canvasContainer.clientWidth;
+            canvas.height = canvasContainer.clientHeight;
+            
+            if (avlTree) {
+                avlTree.updatePositions();
+                avlTree.draw();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Event listeners
+        insertBtn.addEventListener('click', () => {
+            const value = parseInt(nodeValueInput.value);
+            if (!isNaN(value) && value > 0 && value < 1000) {
+                avlTree.insert(value);
+                nodeValueInput.value = '';
+            } else {
+                alert('Please enter a valid number between 1 and 999');
+            }
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            const value = parseInt(nodeValueInput.value);
+            if (!isNaN(value)) {
+                avlTree.delete(value);
+                nodeValueInput.value = '';
+            } else {
+                alert('Please enter a valid number');
+            }
+        });
+
+        randomBtn.addEventListener('click', () => {
+            const randomValue = Math.floor(Math.random() * 100) + 1;
+            avlTree.insert(randomValue);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            avlTree.root = null;
+            avlTree.nodeMap.clear();
+            avlTree.clearAnimations();
+            logContainer.innerHTML = '';
+            currentOperationElement.textContent = 'Tree cleared';
+            avlTree.draw();
+        });
+
+        prevStepBtn.addEventListener('click', () => {
+            avlTree.prevStep();
+        });
+
+        nextStepBtn.addEventListener('click', () => {
+            avlTree.nextStep();
+        });
+
+        playBtn.addEventListener('click', () => {
+            avlTree.toggleAutoPlay();
+        });
+
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Remove active class from all tabs and tab contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+
+        // Animation speed slider
+        animationSpeedSlider.addEventListener('input', () => {
+            const value = parseFloat(animationSpeedSlider.value);
+            speedValueDisplay.textContent = `${value}x`;
+            document.documentElement.style.setProperty('--animation-duration', `${ANIMATION_DURATION / value}ms`);
+        });
+
+        // Tutorial overlay
+        tutorialBtn.addEventListener('click', () => {
+            tutorialOverlay.style.display = 'flex';
+        });
+
+        closeTutorialBtn.addEventListener('click', () => {
+            tutorialOverlay.style.display = 'none';
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.activeElement === nodeValueInput) {
+                insertBtn.click();
+            } else if (e.key === 'ArrowLeft' && !prevStepBtn.disabled) {
+                prevStepBtn.click();
+            } else if (e.key === 'ArrowRight' && !nextStepBtn.disabled) {
+                nextStepBtn.click();
+            } else if (e.key === ' ' && !playBtn.disabled) {
+                playBtn.click();
+            }
+        });
+
+        // Initialize with a few nodes
+        setTimeout(() => {
+            [50, 25, 75, 10, 40, 60, 90].forEach(value => {
+                setTimeout(() => {
+                    avlTree.insert(value);
+                }, 100);
+            });
+        }, 500);
+    </script>
+</body>
+</html>

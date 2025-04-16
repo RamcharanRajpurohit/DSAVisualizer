@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free online C code formatter and beautifier with customizable options. Format your C code with proper indentation and styling.">
+    <meta name="keywords" content="C code formatter, C beautifier, code formatting, C syntax, programming tools">
+    <title>C Code Formatter - Format and Beautify Your C Code</title>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #f1f3f4;
+            --text-color: #202124;
+            --border-color: #dadce0;
+            --error-color: #ea4335;
+            --success-color: #34a853;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            max-width: 700px;
+            margin: 0 auto 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .options-panel {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .options-title {
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .option-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        label {
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"], input[type="radio"] {
+            cursor: pointer;
+        }
+        
+        input[type="number"] {
+            width: 60px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #0d5bbd;
+        }
+        
+        .code-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        @media (min-width: 1024px) {
+            .code-container {
+                flex-wrap: nowrap;
+            }
+        }
+        
+        .code-panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .code-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .code-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .copy-btn, .clear-btn, .download-btn {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .clear-btn {
+            background-color: var(--error-color);
+        }
+        
+        .clear-btn:hover {
+            background-color: #d03027;
+        }
+        
+        textarea {
+            flex: 1;
+            min-height: 400px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+        
+        #output {
+            background-color: #f8f9fa;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .success {
+            background-color: var(--success-color);
+        }
+        
+        .error {
+            background-color: var(--error-color);
+        }
+        
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #5f6368;
+            font-size: 14px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .sample-btn {
+            background-color: #4caf50;
+            margin-right: 10px;
+        }
+        
+        .sample-btn:hover {
+            background-color: #3d8b40;
+        }
+        
+        h2 {
+            margin: 30px 0 15px;
+            color: var(--primary-color);
+        }
+        
+        .features-list, .how-to-list {
+            list-style-position: inside;
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>C Code Formatter</h1>
+        <p class="description">A free online tool to format and beautify your C source code with customizable options.</p>
+    </header>
+
+    <div class="container">
+        <div class="options-panel">
+            <div class="options-title">Formatting Options</div>
+            
+            <div class="option-group">
+                <div class="option">
+                    <label for="indentSize">Indent Size:</label>
+                    <input type="number" id="indentSize" min="1" max="8" value="4">
+                </div>
+                
+                <div class="option">
+                    <input type="checkbox" id="useTabs" checked>
+                    <label for="useTabs">Use Tabs</label>
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <div class="option">
+                    <label>Brace Style:</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="braceKR" name="braceStyle" value="kr" checked>
+                    <label for="braceKR">K&R Style</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="braceAllman" name="braceStyle" value="allman">
+                    <label for="braceAllman">Allman Style</label>
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <div class="option">
+                    <input type="checkbox" id="spaceAfterKeywords" checked>
+                    <label for="spaceAfterKeywords">Space After Keywords</label>
+                </div>
+                
+                <div class="option">
+                    <input type="checkbox" id="spaceAroundOperators" checked>
+                    <label for="spaceAroundOperators">Space Around Operators</label>
+                </div>
+                
+                <div class="option">
+                    <input type="checkbox" id="trimTrailingWhitespace" checked>
+                    <label for="trimTrailingWhitespace">Trim Trailing Whitespace</label>
+                </div>
+            </div>
+            
+            <button id="formatBtn">Format Code</button>
+            <button id="sampleBtn" class="sample-btn">Load Sample Code</button>
+        </div>
+        
+        <div class="code-container">
+            <div class="code-panel">
+                <div class="code-header">
+                    <div class="code-title">Input Code</div>
+                    <div class="code-buttons">
+                        <button class="clear-btn" id="clearInputBtn">Clear</button>
+                    </div>
+                </div>
+                <textarea id="input" placeholder="Paste your C code here..."></textarea>
+            </div>
+            
+            <div class="code-panel">
+                <div class="code-header">
+                    <div class="code-title">Formatted Code</div>
+                    <div class="code-buttons">
+                        <button class="copy-btn" id="copyBtn">Copy</button>
+                        <button class="download-btn" id="downloadBtn">Download</button>
+                    </div>
+                </div>
+                <textarea id="output" readonly></textarea>
+            </div>
+        </div>
+
+        <h2>Features</h2>
+        <ul class="features-list">
+            <li>Format C code with proper indentation</li>
+            <li>Choose between tabs or spaces for indentation</li>
+            <li>Select your preferred brace style (K&R or Allman)</li>
+            <li>Customize spacing around operators and keywords</li>
+            <li>Download your formatted code</li>
+            <li>Works offline - no server-side processing needed</li>
+        </ul>
+
+        <h2>How to Use</h2>
+        <ol class="how-to-list">
+            <li>Paste your C code in the Input Code area</li>
+            <li>Select your formatting preferences</li>
+            <li>Click "Format Code"</li>
+            <li>Copy or download the formatted result</li>
+        </ol>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <footer>
+        <p>© 2025 C Code Formatter - Format your C code with ease</p>
+        <p>This tool works entirely in your browser and does not send your code to any server.</p>
+    </footer>
+
+    <script>
+       class CFormatter {
+    constructor() {
+        this.options = {
+            indentSize: 4,
+            useTabs: true,
+            braceStyle: 'kr',
+            spaceAfterKeywords: true,
+            spaceAroundOperators: true,
+            trimTrailingWhitespace: true
+        };
+        
+        this.keywords = [
+            'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default',
+            'return', 'break', 'continue', 'goto', 'sizeof'
+        ];
+        
+        this.operators = [
+            '+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>=',
+            '==', '!=', '<=', '>=', '&&', '||', '<<', '>>', '++', '--',
+            '+', '-', '*', '/', '%', '=', '<', '>', '&', '|', '^', '!'
+        ];
+        
+        this.compoundTokens = ['++', '--', '==', '!=', '<=', '>=', '&&', '||'];
+        this.punctuators = [',', ';', ':'];
+    }
+
+    getIndent(level) {
+        if (this.options.useTabs) {
+            return '\t'.repeat(level);
+        } else {
+            return ' '.repeat(this.options.indentSize * level);
+        }
+    }
+
+    updateOptions(newOptions) {
+        this.options = { ...this.options, ...newOptions };
+    }
+
+    format(code) {
+        if (!code.trim()) return '';
+        
+        try {
+            code = code.replace(/\r\n?/g, '\n');
+            
+            if (this.options.trimTrailingWhitespace) {
+                code = code.split('\n').map(line => line.trimRight()).join('\n');
+            }
+            
+            code = code.replace(/#include\s*<\s*([a-zA-Z0-9_\.\/]+)\s*>/g, '#include <$1>');
+            code = this.preprocessCode(code);
+            let tokens = this.tokenize(code);
+            return this.formatTokens(tokens);
+        } catch (error) {
+            return "/* Error formatting code: " + error.message + " */\n" + code;
+        }
+    }
+    
+    preprocessCode(code) {
+        return code
+            .replace(/\+\s+\+/g, '++')
+            .replace(/\-\s+\-/g, '--')
+            .replace(/\=\s+\=/g, '==')
+            .replace(/\!\s+\=/g, '!=')
+            .replace(/\<\s+\=/g, '<=')
+            .replace(/\>\s+\=/g, '>=')
+            .replace(/\&\s+\&/g, '&&')
+            .replace(/\|\s+\|/g, '||');
+    }
+
+    tokenize(code) {
+        let tokens = [];
+        let current = '';
+        let inString = false;
+        let inChar = false;
+        let inComment = false;
+        let inMultilineComment = false;
+        let escaped = false;
+        let inPreprocessor = false;
+        
+        for (let i = 0; i < code.length; i++) {
+            let char = code[i];
+            let nextChar = code[i + 1] || '';
+            
+            if (!inString && !inChar && !inComment && !inMultilineComment && !inPreprocessor && 
+                (char === ',' || char === ';' || char === ':')) {
+                if (current.length > 0) {
+                    tokens.push({ type: 'code', value: current });
+                }
+                tokens.push({ type: char, value: char });
+                current = '';
+                continue;
+            }
+            
+            if (char === '#' && !inString && !inChar && !inComment && !inMultilineComment) {
+                if (current.trim()) tokens.push({ type: 'code', value: current });
+                current = '#';
+                inPreprocessor = true;
+                continue;
+            }
+            
+            if (char === '"' && !inChar && !inComment && !inMultilineComment) {
+                if (!inString || escaped) {
+                    current += char;
+                    escaped = false;
+                } else {
+                    current += char;
+                    tokens.push({ type: 'string', value: current });
+                    current = '';
+                }
+                if (!escaped) inString = !inString;
+                continue;
+            }
+            
+            if (char === "'" && !inString && !inComment && !inMultilineComment) {
+                if (!inChar || escaped) {
+                    current += char;
+                    escaped = false;
+                } else {
+                    current += char;
+                    tokens.push({ type: 'char', value: current });
+                    current = '';
+                }
+                if (!escaped) inChar = !inChar;
+                continue;
+            }
+            
+            if (char === '\\' && (inString || inChar) && !escaped) {
+                current += char;
+                escaped = true;
+                continue;
+            } else {
+                escaped = false;
+            }
+            
+            if (char === '/' && nextChar === '/' && !inString && !inChar && !inComment && !inMultilineComment) {
+                if (current.trim()) {
+                    tokens.push({ type: 'code', value: current });
+                    current = '';
+                }
+                current = '//';
+                inComment = true;
+                i++;
+                continue;
+            }
+            
+            if (char === '/' && nextChar === '*' && !inString && !inChar && !inComment && !inMultilineComment) {
+                if (current.trim()) {
+                    tokens.push({ type: 'code', value: current });
+                    current = '';
+                }
+                current = '/*';
+                inMultilineComment = true;
+                i++;
+                continue;
+            }
+            
+            if (char === '*' && nextChar === '/' && !inString && !inChar && !inComment && inMultilineComment) {
+                current += '*/';
+                tokens.push({ type: 'multicomment', value: current });
+                current = '';
+                inMultilineComment = false;
+                i++;
+                continue;
+            }
+            
+            if (char === '\n' && inComment) {
+                tokens.push({ type: 'comment', value: current });
+                current = '';
+                inComment = false;
+                tokens.push({ type: 'newline', value: '\n' });
+                inPreprocessor = false;
+                continue;
+            }
+            
+            if (char === '\n' && inPreprocessor) {
+                if (i > 0 && code[i-1] === '\\') {
+                    current += char;
+                } else {
+                    tokens.push({ type: 'preprocessor', value: current });
+                    current = '';
+                    tokens.push({ type: 'newline', value: '\n' });
+                    inPreprocessor = false;
+                }
+                continue;
+            }
+            
+            current += char;
+            
+            if (char === '\n' && !inString && !inChar && !inComment && !inMultilineComment && !inPreprocessor) {
+                if (current.length > 1) {
+                    tokens.push({ type: 'code', value: current.substring(0, current.length - 1) });
+                }
+                tokens.push({ type: 'newline', value: '\n' });
+                current = '';
+                continue;
+            }
+            
+            if (!inString && !inChar && !inComment && !inMultilineComment && !inPreprocessor) {
+                let foundCompound = false;
+                for (let compound of this.compoundTokens) {
+                    let possibleCompound = code.substr(i, compound.length);
+                    if (possibleCompound === compound) {
+                        if (current.length > compound.length) {
+                            tokens.push({ type: 'code', value: current.substring(0, current.length - 1) });
+                            tokens.push({ type: 'operator', value: compound });
+                            current = '';
+                            i += compound.length - 1;
+                            foundCompound = true;
+                            break;
+                        }
+                    }
+                }
+                if (foundCompound) continue;
+            }
+            
+            if (!inString && !inChar && !inComment && !inMultilineComment && !inPreprocessor && 
+                (char === '{' || char === '}' || char === '(' || char === ')' || char === '[' || char === ']')) {
+                if (current.length > 1) {
+                    tokens.push({ type: 'code', value: current.substring(0, current.length - 1) });
+                }
+                tokens.push({ type: char, value: char });
+                current = '';
+                continue;
+            }
+        }
+        
+        if (current) {
+            let type = 'code';
+            if (inComment) type = 'comment';
+            if (inMultilineComment) type = 'multicomment';
+            if (inString) type = 'string';
+            if (inChar) type = 'char';
+            if (inPreprocessor) type = 'preprocessor';
+            tokens.push({ type, value: current });
+        }
+        
+        return this.processOperators(this.processControlStructures(tokens));
+    }
+
+    processOperators(tokens) {
+        const processed = [];
+        
+        for (let token of tokens) {
+            if (token.type === 'code') {
+                // Split the token value by operators while preserving the operators
+                let code = token.value;
+                let result = '';
+                let currentWord = '';
+                
+                for (let i = 0; i < code.length; i++) {
+                    let char = code[i];
+                    let nextChar = code[i + 1] || '';
+                    let prevChar = code[i - 1] || '';
+                    
+                    // Check for operators
+                    let isOperator = this.operators.some(op => 
+                        op.length === 1 && op === char || 
+                        op.length === 2 && op === char + nextChar
+                    );
+                    
+                    if (isOperator) {
+                        if (currentWord) {
+                            processed.push({ type: 'code', value: currentWord.trim() });
+                            currentWord = '';
+                        }
+                        
+                        // Handle 2-character operators
+                        if (this.operators.includes(char + nextChar)) {
+                            processed.push({ type: 'operator', value: char + nextChar });
+                            i++; // Skip the next character
+                        } else {
+                            processed.push({ type: 'operator', value: char });
+                        }
+                    } else {
+                        currentWord += char;
+                    }
+                }
+                
+                if (currentWord) {
+                    processed.push({ type: 'code', value: currentWord.trim() });
+                }
+            } else {
+                processed.push(token);
+            }
+        }
+        
+        return processed;
+    }
+
+    processControlStructures(tokens) {
+        const processed = [];
+        const controlKeywords = ['for', 'while', 'if', 'switch', 'do'];
+        
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            
+            if (token.type === 'code') {
+                let isControlStructure = false;
+                
+                for (const keyword of controlKeywords) {
+                    if (token.value.trim() === keyword || 
+                        token.value.trim().startsWith(keyword + ' ') || 
+                        token.value.trim().startsWith(keyword + '(')) {
+                        isControlStructure = true;
+                        break;
+                    }
+                }
+                
+                if (isControlStructure) {
+                    let controlParts = [];
+                    let parenCount = 0;
+                    let foundOpenParen = false;
+                    let controlComplete = false;
+                    
+                    controlParts.push(token);
+                    
+                    for (let j = i + 1; j < tokens.length && !controlComplete; j++) {
+                        const nextToken = tokens[j];
+                        
+                        if (nextToken.type === '(') {
+                            foundOpenParen = true;
+                            parenCount++;
+                        } else if (nextToken.type === ')') {
+                            parenCount--;
+                            if (parenCount === 0 && foundOpenParen) {
+                                controlParts.push(nextToken);
+                                controlComplete = true;
+                                i = j;
+                            }
+                        }
+                        
+                        if (!controlComplete) {
+                            controlParts.push(nextToken);
+                        }
+                    }
+                    
+                    if (controlComplete) {
+                        let combinedValue = '';
+                        for (const part of controlParts) {
+                            combinedValue += part.type === 'newline' ? ' ' : part.value;
+                        }
+                        combinedValue = combinedValue.replace(/\s+/g, ' ').trim();
+                        processed.push({ type: 'control', value: combinedValue });
+                    } else {
+                        processed.push(token);
+                    }
+                } else {
+                    processed.push(token);
+                }
+            } else {
+                processed.push(token);
+            }
+        }
+        
+        return processed;
+    }
+
+    formatTokens(tokens) {
+        let result = '';
+        let indentLevel = 0;
+        let newLine = true;
+        let afterKeyword = false;
+        let ignoreNextNewline = false;
+        let insideForLoop = false;
+        let forLoopSemiCount = 0;
+        
+        for (let i = 0; i < tokens.length; i++) {
+            let token = tokens[i];
+            let prevToken = tokens[i - 1] || { type: '', value: '' };
+            let nextToken = tokens[i + 1] || { type: '', value: '' };
+            
+            switch (token.type) {
+                case 'control':
+                    if (newLine) {
+                        result += this.getIndent(indentLevel);
+                        newLine = false;
+                    }
+                    
+                    // Properly format control structures with correct spacing
+                    let formattedControl = token.value;
+                    
+                    // Check if it's a for loop
+                    if (formattedControl.startsWith('for')) {
+                        insideForLoop = true;
+                        forLoopSemiCount = 0;
+                    }
+                    
+                    // Add space after keywords
+                    formattedControl = formattedControl.replace(/for\s*\(/g, 'for (')
+                                                     .replace(/if\s*\(/g, 'if (')
+                                                     .replace(/while\s*\(/g, 'while (')
+                                                     .replace(/switch\s*\(/g, 'switch (');
+                    
+                    // Properly handle spaces inside parentheses for conditions
+                    formattedControl = this.formatParenthesesContent(formattedControl);
+                    
+                    result += formattedControl;
+                    insideForLoop = false;
+                    break;
+                    
+                case 'newline':
+                    if (!ignoreNextNewline) {
+                        result += '\n';
+                        newLine = true;
+                    }
+                    ignoreNextNewline = false;
+                    break;
+                    
+                case ',':
+                    result += ',';
+                    // Add a space after commas
+                    result += ' ';
+                    break;
+                    
+                case ';':
+                    result += ';';
+                    
+                    // Special handling for semicolons inside for loops
+                    if (insideForLoop) {
+                        forLoopSemiCount++;
+                        if (forLoopSemiCount < 2) {
+                            result += ' ';
+                        }
+                    } else if (nextToken.type !== 'newline' && nextToken.type !== '}') {
+                        result += '\n' + this.getIndent(indentLevel);
+                        newLine = false;
+                    }
+                    break;
+                    
+                case '{':
+                    if (this.options.braceStyle === 'kr') {
+                        if (prevToken.type !== 'newline') result += ' ';
+                        result += '{';
+                        indentLevel++;
+                        result += '\n' + this.getIndent(indentLevel);
+                    } else {
+                        if (prevToken.type !== 'newline') result += '\n';
+                        result += this.getIndent(indentLevel) + '{\n';
+                        indentLevel++;
+                        result += this.getIndent(indentLevel);
+                    }
+                    newLine = false;
+                    break;
+                    
+                case '}':
+                    indentLevel = Math.max(0, indentLevel - 1);
+                    if (!newLine) result += '\n';
+                    result += this.getIndent(indentLevel) + '}';
+                    if (nextToken.type === 'code' && (nextToken.value.trim() === 'else' || nextToken.value.trim() === 'while')) {
+                        if (this.options.braceStyle === 'kr') result += ' ';
+                        else result += '\n' + this.getIndent(indentLevel);
+                        ignoreNextNewline = true;
+                    } else {
+                        result += '\n';
+                    }
+                    newLine = true;
+                    break;
+                
+                case '(':
+                    // Handle spacing before opening parenthesis
+                    // No space needed if preceded by a function name
+                    result += '(';
+                    
+                    // Check if we're entering a for loop
+                    if (prevToken.type === 'code' && prevToken.value.trim() === 'for') {
+                        insideForLoop = true;
+                        forLoopSemiCount = 0;
+                    }
+                    break;
+                    
+                case ')':
+                    result += ')';
+                    if (insideForLoop) {
+                        insideForLoop = false;
+                    }
+                    break;
+                    
+                case 'code':
+                    if (newLine) {
+                        result += this.getIndent(indentLevel);
+                        newLine = false;
+                    }
+                    
+                    // Handle spacing for function calls and definitions
+                    let codeValue = token.value.trim();
+                    
+                    // Check if it's a function call or definition
+                    if (nextToken.type === '(') {
+                        result += codeValue; // No space before (
+                    } else {
+                        // Process code tokens to add spaces around operators
+                        codeValue = this.formatCodeValue(codeValue);
+                        result += codeValue;
+                    }
+                    break;
+                    
+                case 'operator':
+                    // Handle spacing around operators with special attention to negative numbers
+                    if (token.value === '-' && 
+                        (prevToken.type === '(' || prevToken.type === '=' || 
+                         this.operators.includes(prevToken.value) || 
+                         prevToken.type === ',')) {
+                        // This is likely a negative number, don't add space after
+                        result += '-';
+                    } else if (this.options.spaceAroundOperators) {
+                        // Don't add space after opening parenthesis or before closing parenthesis
+                        let needSpaceBefore = prevToken.type !== '(' && prevToken.type !== 'newline';
+                        let needSpaceAfter = nextToken.type !== ')' && nextToken.type !== ';';
+                        
+                        // Handle unary operators differently
+                        if (['-', '+', '!', '++', '--'].includes(token.value)) {
+                            // Check if it's a unary operator based on context
+                            if (prevToken.type === 'code' || prevToken.type === ')') {
+                                // Likely binary operator, add spaces
+                                if (needSpaceBefore) result += ' ';
+                                result += token.value;
+                                if (needSpaceAfter) result += ' ';
+                            } else {
+                                // Likely unary operator, don't add space before
+                                result += token.value;
+                                if (needSpaceAfter && token.value !== '++' && token.value !== '--') {
+                                    result += ' ';
+                                }
+                            }
+                        } else {
+                            // Normal operator
+                            if (needSpaceBefore) result += ' ';
+                            result += token.value;
+                            if (needSpaceAfter) result += ' ';
+                        }
+                    } else {
+                        result += token.value;
+                    }
+                    break;
+                    
+                default:
+                    if (newLine) {
+                        result += this.getIndent(indentLevel);
+                        newLine = false;
+                    }
+                    result += token.value;
+            }
+        }
+        
+        return result;
+    }
+    
+    formatCodeValue(codeValue) {
+        // Add spaces around = operators but not in a row
+        codeValue = codeValue.replace(/([^=!<>])=([^=])/g, '$1 = $2');
+        
+        // Add spaces around comparison operators
+        codeValue = codeValue.replace(/([^=!<>])<([^=])/g, '$1 < $2');
+        codeValue = codeValue.replace(/([^=!<>])>([^=])/g, '$1 > $2');
+        
+        // Add spaces around logical operators
+        codeValue = codeValue.replace(/([^&])&&([^&])/g, '$1 && $2');
+        codeValue = codeValue.replace(/([^|])\|\|([^|])/g, '$1 || $2');
+        
+        // Add spaces around arithmetic operators
+        codeValue = codeValue.replace(/([^+])\+([^+=])/g, '$1 + $2');
+        codeValue = codeValue.replace(/([^-])-([^-=])/g, '$1 - $2');
+        codeValue = codeValue.replace(/([^*])\*([^=])/g, '$1 * $2');
+        codeValue = codeValue.replace(/([^/])\/([^=])/g, '$1 / $2');
+        codeValue = codeValue.replace(/([^%])%([^=])/g, '$1 % $2');
+        
+        // Compound assignment operators
+        codeValue = codeValue.replace(/([^+])\+=/, '$1 += ');
+        codeValue = codeValue.replace(/([^-])-=/, '$1 -= ');
+        codeValue = codeValue.replace(/([^*])\*=/, '$1 *= ');
+        codeValue = codeValue.replace(/([^/])\/=/, '$1 /= ');
+        codeValue = codeValue.replace(/([^%])%=/, '$1 %= ');
+        
+        // Double equals, not equals
+        codeValue = codeValue.replace(/([^=])==([^=])/g, '$1 == $2');
+        codeValue = codeValue.replace(/([^!])!=([^=])/g, '$1 != $2');
+        codeValue = codeValue.replace(/([^<])<=([^=])/g, '$1 <= $2');
+        codeValue = codeValue.replace(/([^>])>=([^=])/g, '$1 >= $2');
+        
+        // Fix any double spaces created
+        codeValue = codeValue.replace(/\s+/g, ' ').trim();
+        
+        return codeValue;
+    }
+    
+    formatParenthesesContent(text) {
+        // This function adds proper spacing inside parentheses
+        let result = '';
+        let inParen = false;
+        let parenContent = '';
+        
+        for (let i = 0; i < text.length; i++) {
+            let char = text[i];
+            
+            if (char === '(') {
+                result += char;
+                inParen = true;
+                parenContent = '';
+            } else if (char === ')' && inParen) {
+                // Format the content inside parentheses
+                let formattedContent = this.formatParenContent(parenContent);
+                result += formattedContent + char;
+                inParen = false;
+            } else if (inParen) {
+                parenContent += char;
+            } else {
+                result += char;
+            }
+        }
+        
+        return result;
+    }
+    
+    formatParenContent(content) {
+        // Special formatting for for loop conditions
+        if (content.includes(';')) {
+            // Likely a for loop
+            let parts = content.split(';');
+            for (let i = 0; i < parts.length; i++) {
+                parts[i] = parts[i].trim();
+                // Format each part
+                parts[i] = this.formatCodeValue(parts[i]);
+            }
+            return parts.join('; ');
+        }
+        
+        // Regular condition or function parameters
+        content = content.trim();
+        
+        // Add spaces around operators inside parentheses
+        content = this.formatCodeValue(content);
+        
+        // Handle function parameters
+        if (content.includes(',')) {
+            let params = content.split(',');
+            for (let i = 0; i < params.length; i++) {
+                params[i] = params[i].trim();
+            }
+            return params.join(', ');
+        }
+        
+        return content;
+    }
+}
+        class UIController {
+            constructor(formatter) {
+                this.formatter = formatter;
+                this.input = document.getElementById('input');
+                this.output = document.getElementById('output');
+                this.formatBtn = document.getElementById('formatBtn');
+                this.copyBtn = document.getElementById('copyBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.clearInputBtn = document.getElementById('clearInputBtn');
+                this.sampleBtn = document.getElementById('sampleBtn');
+                this.notification = document.getElementById('notification');
+                
+                this.indentSize = document.getElementById('indentSize');
+                this.useTabs = document.getElementById('useTabs');
+                this.braceKR = document.getElementById('braceKR');
+                this.braceAllman = document.getElementById('braceAllman');
+                this.spaceAfterKeywords = document.getElementById('spaceAfterKeywords');
+                this.spaceAroundOperators = document.getElementById('spaceAroundOperators');
+                this.trimTrailingWhitespace = document.getElementById('trimTrailingWhitespace');
+                
+                this.bindEvents();
+            }
+            
+            bindEvents() {
+                this.formatBtn.addEventListener('click', () => this.formatCode());
+                this.copyBtn.addEventListener('click', () => this.copyToClipboard());
+                this.downloadBtn.addEventListener('click', () => this.downloadCode());
+                this.clearInputBtn.addEventListener('click', () => this.clearInput());
+                this.sampleBtn.addEventListener('click', () => this.loadSample());
+                
+                [this.indentSize, this.useTabs, this.braceKR, this.braceAllman,
+                 this.spaceAfterKeywords, this.spaceAroundOperators, 
+                 this.trimTrailingWhitespace].forEach(element => {
+                    element.addEventListener('change', () => this.formatCode());
+                });
+            }
+            
+            getFormattingOptions() {
+                return {
+                    indentSize: parseInt(this.indentSize.value, 10) || 4,
+                    useTabs: this.useTabs.checked,
+                    braceStyle: this.braceKR.checked ? 'kr' : 'allman',
+                    spaceAfterKeywords: this.spaceAfterKeywords.checked,
+                    spaceAroundOperators: this.spaceAroundOperators.checked,
+                    trimTrailingWhitespace: this.trimTrailingWhitespace.checked
+                };
+            }
+            
+            formatCode() {
+                const code = this.input.value;
+                if (!code.trim()) {
+                    this.showNotification('Please enter some code to format', 'error');
+                    return;
+                }
+                
+                this.formatter.updateOptions(this.getFormattingOptions());
+                
+                try {
+                    const formattedCode = this.formatter.format(code);
+                    this.output.value = formattedCode;
+                    this.showNotification('Code formatted successfully!', 'success');
+                } catch (error) {
+                    this.showNotification('Error formatting code: ' + error.message, 'error');
+                }
+            }
+            
+            copyToClipboard() {
+                this.output.select();
+                document.execCommand('copy');
+                this.showNotification('Copied to clipboard!', 'success');
+            }
+            
+            downloadCode() {
+                const formattedCode = this.output.value;
+                if (!formattedCode.trim()) {
+                    this.showNotification('No formatted code to download', 'error');
+                    return;
+                }
+                
+                const blob = new Blob([formattedCode], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'formatted_code.c';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.showNotification('Code downloaded!', 'success');
+            }
+            
+            clearInput() {
+                this.input.value = '';
+                this.output.value = '';
+                this.showNotification('Input cleared!', 'success');
+            }
+            
+            loadSample() {
+                this.input.value = `#include <stdio.h>
+#include<stdlib.h>
+#include <string.h>
+
+void bubble_sort(int arr[],int n){
+int i,j,temp;
+for(i=0;i<n-1;i++){
+  for(j=0;j<n-i-1;j++){
+    if(arr[j]>arr[j+1]){
+      temp=arr[j];
+      arr[j]=arr[j+1];
+      arr[j+1]=temp;
+    }
+  }
+}
+}
+
+int main(){
+  int arr[]={64,34,25,12,22,11,90};
+  int n=sizeof(arr)/sizeof(arr[0]);
+  printf("Original array: ");
+  for(int i=0;i<n;i++)
+    printf("%d ",arr[i]);
+  bubble_sort(arr,n);
+  printf("\\nSorted array: ");
+  for(int i=0;i<n;i++)
+    printf("%d ",arr[i]);
+  return 0;
+}`;
+                this.formatCode();
+                this.showNotification('Sample code loaded!', 'success');
+            }
+            
+            showNotification(message, type) {
+                this.notification.textContent = message;
+                this.notification.className = 'notification ' + type;
+                this.notification.style.opacity = '1';
+                setTimeout(() => this.notification.style.opacity = '0', 3000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const formatter = new CFormatter();
+            const ui = new UIController(formatter);
+            document.getElementById('input').addEventListener('paste', () => {
+                setTimeout(() => ui.formatCode(), 100);
+            });
+        });
+    </script>
+</body>
+</html>

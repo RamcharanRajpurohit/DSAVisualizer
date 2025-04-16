@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Visualizer - Sorting Algorithms</title>
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --black: #000000;
+            --dark-gray: #121212;
+            --medium-gray: #1e1e1e;
+            --light-gray: #2d2d2d;
+            --accent: #00f2ff;
+            --accent-alt: #8a2be2;
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --card-bg: rgba(30, 30, 30, 0.7);
+            --glass-effect: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            
+            /* Sorting colors */
+            --unsorted: #666666;
+            --comparing-i: #FFC107;
+            --comparing-j: #FF5733;
+            --pivot: #9C27B0;
+            --sorted: #4CAF50;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            background-color: var(--black);
+            color: var(--text);
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 20%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+        
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text);
+            padding: 1.2rem 2rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .logo span {
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .back-button {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            color: var(--text);
+        }
+
+        .back-button i {
+            margin-right: 0.5rem;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 6rem auto 3rem;
+            padding: 0 1.5rem;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Two-column layout */
+        .content-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 1.5rem;
+        }
+        
+        /* Left column - 75% */
+        .visualization-column {
+            flex: 3;
+        }
+        
+        /* Right column - 25% */
+        .controls-column {
+            flex: 1;
+        }
+        
+        .glass-panel {
+            background-color: rgba(18, 18, 18, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(0, 242, 255, 0.05), 
+                rgba(138, 43, 226, 0.05));
+            z-index: -1;
+        }
+        
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .control-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        button {
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            color: var(--black);
+            padding: 0.8rem 1.2rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--accent-alt), var(--accent));
+            border-radius: 30px;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        
+        button:hover::before {
+            opacity: 1;
+        }
+        
+        select, input {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+            width: 100%;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.2);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .color-box {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        
+        #container {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #algorithm-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #algorithm-description, #algorithm-complexity, #current-step {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        #current-step {
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+        
+        .stats-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-box {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text);
+        }
+        
+        footer {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .footer-text {
+            font-size: 0.9rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(20px);
+        }
+        
+        .glow-1 {
+            width: 150px;
+            height: 150px;
+            background-color: rgba(0, 242, 255, 0.1);
+            top: -75px;
+            left: -75px;
+        }
+        
+        .glow-2 {
+            width: 100px;
+            height: 100px;
+            background-color: rgba(138, 43, 226, 0.1);
+            bottom: -50px;
+            right: -50px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+            
+            .visualization-column,
+            .controls-column {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+            
+            #container {
+                height: 350px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .logo {
+                font-size: 1.5rem;
+            }
+            
+            .main-container {
+                padding: 0 1rem;
+                margin-top: 5rem;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            #container {
+                height: 300px;
+            }
+            
+            .stats-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .page-title {
+                font-size: 1.8rem;
+            }
+            
+            .glass-panel {
+                padding: 1rem;
+            }
+            
+            #container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="back-button"><i class="fas fa-arrow-left"></i> Back</a>
+        <div class="logo">DSA<span>Visualizer</span></div>
+    </nav>
+    
+    <div class="main-container">
+        <h1 class="page-title">Sorting Algorithms Visualizer</h1>
+        
+        <div class="content-wrapper">
+            <!-- Left Column - 75% - Visualization Area -->
+            <div class="visualization-column">
+                <div class="glass-panel">
+                    <div class="glow glow-1"></div>
+                    <div id="container"></div>
+                </div>
+                
+                <div class="glass-panel">
+                    
+                    <p id="current-step">Current Step: Initializing...</p>
+                    <h2 id="algorithm-title">Bubble Sort</h2>
+                    <p id="algorithm-description">Bubble Sort repeatedly steps through the list, compares adjacent elements, and swaps them if they are in the wrong order. The pass through the list is repeated until the list is sorted.</p>
+                    <p id="algorithm-complexity">Time Complexity: O(n²) | Space Complexity: O(1)</p>
+                    
+                    <div class="stats-panel">
+                        <div class="stat-box">
+                            <div class="stat-label">Comparisons</div>
+                            <div class="stat-value" id="comparison-count">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Swaps</div>
+                            <div class="stat-value" id="swap-count">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Time Elapsed</div>
+                            <div class="stat-value" id="time-elapsed">0.0s</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Array Accesses</div>
+                            <div class="stat-value" id="array-accesses">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - 25% - Controls -->
+            <div class="controls-column">
+                <div class="glass-panel">
+                    <div class="glow glow-2"></div>
+                    <h3 class="section-title">Algorithm Controls</h3>
+                    
+                    <div id="controls">
+                        <div class="control-group">
+                            <label class="control-label">Algorithm</label>
+                            <select id="algorithmSelect">
+                                <option value="bubble">Bubble Sort</option>
+                                <option value="selection">Selection Sort</option>
+                                <option value="insertion">Insertion Sort</option>
+                                <option value="merge">Merge Sort</option>
+                                <option value="quick">Quick Sort</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label">Array Size</label>
+                            <select id="arraySizeSelect">
+                                <option value="10">10 elements</option>
+                                <option value="20" selected>20 elements</option>
+                                <option value="50">50 elements</option>
+                                <option value="100">100 elements</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label">Animation Speed</label>
+                            <select id="speedSelect">
+                                <option value="100">Very Slow</option>
+                                <option value="50">Slow</option>
+                                <option value="25" selected>Medium</option>
+                                <option value="10">Fast</option>
+                                <option value="5">Very Fast</option>
+                            </select>
+                        </div>
+                        
+                        <button id="generateArrayBtn" class="control-group">
+                            <i class="fas fa-random"></i> Generate New Array
+                        </button>
+                        
+                        <button id="sortBtn" class="control-group">
+                            <i class="fas fa-play"></i> Start Sorting
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="glass-panel">
+                    <h3 class="section-title">Color Legend</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="color-box" style="background-color: var(--unsorted);"></div>
+                            <span>Unsorted</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box" style="background-color: var(--comparing-i);"></div>
+                            <span>Comparing (i)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box" style="background-color: var(--comparing-j);"></div>
+                            <span>Comparing (j)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box" style="background-color: var(--pivot);"></div>
+                            <span>Pivot/Min/Key</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="color-box" style="background-color: var(--sorted);"></div>
+                            <span>Sorted</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p class="footer-text">DSA Visualizer © 2025 | An interactive platform for learning Data Structures & Algorithms</p>
+    </footer>
+
+ 
+    <script>
+        // Initialize variables
+        let arraySize = 20;
+        let array = [];
+        let bars = [];
+        let animationSpeed = 25;
+        let sorting = false;
+        let stage, layer;
+        let width, height;
+        let currentAlgorithm = "bubble";
+        let iPointer = -1;
+        let jPointer = -1;
+        let pivotIndex = -1;
+        let auxiliaryArray = [];
+        
+        // Algorithm descriptions
+        const algorithmInfo = {
+            bubble: {
+                title: "Bubble Sort",
+                description: "Bubble Sort repeatedly steps through the list, compares adjacent elements, and swaps them if they are in the wrong order. The pass through the list is repeated until the list is sorted.",
+                complexity: "Time Complexity: O(n²) | Space Complexity: O(1)"
+            },
+            selection: {
+                title: "Selection Sort",
+                description: "Selection Sort divides the input list into two parts: a sorted sublist and an unsorted sublist. It repeatedly finds the minimum element from the unsorted sublist and moves it to the end of the sorted sublist.",
+                complexity: "Time Complexity: O(n²) | Space Complexity: O(1)"
+            },
+            insertion: {
+                title: "Insertion Sort",
+                description: "Insertion Sort builds the final sorted array one item at a time. It takes each element from the input data and inserts it into its correct position in the already-sorted part of the array.",
+                complexity: "Time Complexity: O(n²) | Space Complexity: O(1)"
+            },
+            merge: {
+                title: "Merge Sort",
+                description: "Merge Sort is a divide and conquer algorithm. It divides the input array into two halves, recursively sorts them, and then merges the sorted halves to produce a sorted output.",
+                complexity: "Time Complexity: O(n log n) | Space Complexity: O(n)"
+            },
+            quick: {
+                title: "Quick Sort",
+                description: "Quick Sort is a divide and conquer algorithm. It picks an element as a pivot and partitions the array around the pivot, placing smaller elements before it and larger elements after it.",
+                complexity: "Time Complexity: O(n log n) average, O(n²) worst case | Space Complexity: O(log n)"
+            }
+        };
+
+        // Set up the Konva stage
+        function setupStage() {
+            width = Math.min(window.innerWidth - 40, 1000);
+            height = 350;
+            
+            // Clear previous stage if it exists
+            if (stage) {
+                stage.destroy();
+            }
+            
+            stage = new Konva.Stage({
+                container: 'container',
+                width: width,
+                height: height,
+            });
+            
+            layer = new Konva.Layer();
+            stage.add(layer);
+            
+            // Add a background
+            const background = new Konva.Rect({
+                x: 0,
+                y: 0,
+                width: width,
+                height: height,
+                fill: 'rgba(18, 18, 18, 0.5)',
+            });
+            layer.add(background);
+        }
+
+        // Generate a random array
+        function generateArray() {
+            array = [];
+            for (let i = 0; i < arraySize; i++) {
+                array.push(Math.floor(Math.random() * 100) + 1);
+            }
+            auxiliaryArray = [...array];
+            visualizeArray();
+            updateCurrentStep("Array generated. Ready to sort.");
+        }
+
+        // Visualize the array as bars
+        function visualizeArray() {
+            // Clear previous bars
+            bars.forEach(bar => bar.destroy());
+            bars = [];
+            
+            const barWidth = Math.max((width - 40) / arraySize - 2, 3);
+            const spacing = Math.min(2, barWidth * 0.2);
+            const maxBarHeight = height - 100;
+            
+            for (let i = 0; i < array.length; i++) {
+                const barHeight = Math.max((array[i] / 100) * maxBarHeight, 5);
+                
+                const bar = new Konva.Group({
+                    x: 20 + i * (barWidth + spacing),
+                    y: height - 50 - barHeight,
+                });
+                
+                const rect = new Konva.Rect({
+                    width: barWidth,
+                    height: barHeight,
+                    fill: 'var(--unsorted)',
+                    stroke: '#0099CC',
+                    strokeWidth: 1,
+                    cornerRadius: 2,
+                });
+                
+                const text = new Konva.Text({
+                    text: array[i].toString(),
+                    fontSize: Math.min(14, barWidth - 4),
+                    fontFamily: 'Arial',
+                    fill: 'white',
+                    width: barWidth,
+                    align: 'center',
+                    y: barHeight + 5,
+                });
+                
+                // Add pointer indicators
+                const iMarker = new Konva.Text({
+                    text: "i",
+                    fontSize: 16,
+                    fontFamily: 'Arial',
+                    fill: '#FFC107',
+                    width: barWidth,
+                    align: 'center',
+                    y: -25,
+                    visible: false,
+                    fontStyle: 'bold'
+                });
+                
+                const jMarker = new Konva.Text({
+                    text: "j",
+                    fontSize: 16,
+                    fontFamily: 'Arial',
+                    fill: '#FF5733',
+                    width: barWidth,
+                    align: 'center',
+                    y: -25,
+                    visible: false,
+                    fontStyle: 'bold'
+                });
+                
+                const pivotMarker = new Konva.Text({
+                    text: "p",
+                    fontSize: 16,
+                    fontFamily: 'Arial',
+                    fill: '#9C27B0',
+                    width: barWidth,
+                    align: 'center',
+                    y: -25,
+                    visible: false,
+                    fontStyle: 'bold'
+                });
+                
+                bar.add(rect);
+                bar.add(text);
+                bar.add(iMarker);
+                bar.add(jMarker);
+                bar.add(pivotMarker);
+                
+                layer.add(bar);
+                bars.push(bar);
+            }
+            
+            layer.draw();
+        }
+
+        // Update pointers
+        function updatePointers() {
+            for (let i = 0; i < bars.length; i++) {
+                const bar = bars[i];
+                if (bar) { // Add this check
+                    const iMarker = bar.findOne('Text[text="i"]');
+                    const jMarker = bar.findOne('Text[text="j"]');
+                    const pivotMarker = bar.findOne('Text[text="p"]');
+                    
+                    if (iMarker) iMarker.visible(i === iPointer);
+                    if (jMarker) jMarker.visible(i === jPointer);
+                    if (pivotMarker) pivotMarker.visible(i === pivotIndex);
+                }
+            }
+            layer.draw();
+        }
+        // Update the current step display
+        function updateCurrentStep(step) {
+            document.getElementById('current-step').textContent = "Current Step: " + step;
+        }
+
+        // Update algorithm info
+        function updateAlgorithmInfo(algorithm) {
+            const info = algorithmInfo[algorithm];
+            document.getElementById('algorithm-title').textContent = info.title;
+            document.getElementById('algorithm-description').textContent = info.description;
+            document.getElementById('algorithm-complexity').textContent = info.complexity;
+        }
+
+        // Animate swapping two bars
+        async function animateSwap(i, j) {
+            return new Promise(resolve => {
+                const barI = bars[i];
+                const barJ = bars[j];
+                
+                const targetXI = barJ.x();
+                const targetXJ = barI.x();
+                
+                // Highlight the bars being compared
+                const rectI = barI.findOne('Rect');
+                const rectJ = barJ.findOne('Rect');
+                
+                if (rectI) rectI.fill('#FF5733');
+                if (rectJ) rectJ.fill('#FF5733');
+                layer.draw();
+                
+                // Animate the swap
+                const tween1 = new Konva.Tween({
+                    node: barI,
+                    duration: animationSpeed / 100,
+                    x: targetXI,
+                    onFinish: () => {
+                        // Check if the elements still exist
+                        if (barI && barI.findOne) {
+                            const rect = barI.findOne('Rect');
+                            if (rect) rect.fill('var(--unsorted)');
+                            layer.draw();
+                        }
+                    }
+                });
+                
+                const tween2 = new Konva.Tween({
+                    node: barJ,
+                    duration: animationSpeed / 100,
+                    x: targetXJ,
+                    onFinish: () => {
+                        // Check if the elements still exist
+                        if (barJ && barJ.findOne) {
+                            const rect = barJ.findOne('Rect');
+                            if (rect) rect.fill('var(--unsorted)');
+                            layer.draw();
+                        }
+                        
+                        // Only swap if both indices are valid
+                        if (i >= 0 && i < bars.length && j >= 0 && j < bars.length) {
+                            [bars[i], bars[j]] = [bars[j], bars[i]];
+                        }
+                        
+                        setTimeout(resolve, animationSpeed);
+                    }
+                });
+                
+                tween1.play();
+                tween2.play();
+            });
+        }
+        // Bubble Sort algorithm
+        async function bubbleSort() {
+            for (let i = 0; i < array.length; i++) {
+                for (let j = 0; j < array.length - i - 1; j++) {
+                    if (!sorting) return; // Stop sorting if the flag is false
+                    
+                    // Update pointers
+                    iPointer = j;
+                    jPointer = j + 1;
+                    updatePointers();
+                    
+                    // Highlight bars being compared
+                    bars[j].findOne('Rect').fill('#FFC107');
+                    bars[j + 1].findOne('Rect').fill('#FF5733');
+                    layer.draw();
+                    
+                    updateCurrentStep(`Comparing elements at positions ${j} (${array[j]}) and ${j+1} (${array[j+1]})`);
+                    await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                    
+                    if (array[j] > array[j + 1]) {
+                        updateCurrentStep(`Swapping elements ${array[j]} and ${array[j+1]}`);
+                        
+                        // Swap elements in the array
+                        [array[j], array[j + 1]] = [array[j + 1], array[j]];
+                        
+                        // Animate the swap
+                        await animateSwap(j, j + 1);
+                    } else {
+                        // Reset colors if no swap
+                        bars[j].findOne('Rect').fill('var(--unsorted)');
+                        bars[j + 1].findOne('Rect').fill('var(--unsorted)');
+                        layer.draw();
+                        
+                        updateCurrentStep(`No swap needed, ${array[j]} ≤ ${array[j+1]}`);
+                        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                    }
+                }
+                
+                // Mark the last element as sorted
+                bars[array.length - i - 1].findOne('Rect').fill('#4CAF50');
+                updateCurrentStep(`Element ${array[array.length - i - 1]} is now in its sorted position`);
+                layer.draw();
+            }
+            
+            // Reset pointers
+            iPointer = -1;
+            jPointer = -1;
+            updatePointers();
+            
+            // Mark all bars as sorted when done
+            bars.forEach(bar => {
+                bar.findOne('Rect').fill('#4CAF50');
+            });
+            layer.draw();
+            
+            updateCurrentStep("Sorting complete!");
+            sorting = false;
+            document.getElementById('sortBtn').textContent = 'Sort!';
+            document.getElementById('generateArrayBtn').disabled = false;
+        }
+
+        // Selection Sort algorithm
+        async function selectionSort() {
+            for (let i = 0; i < array.length - 1; i++) {
+                let minIndex = i;
+                iPointer = i;
+                pivotIndex = minIndex;
+                updatePointers();
+                
+                // Highlight current position
+                bars[i].findOne('Rect').fill('#FFC107');
+                layer.draw();
+                
+                updateCurrentStep(`Finding minimum element in the unsorted portion starting at position ${i}`);
+                await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                
+                for (let j = i + 1; j < array.length; j++) {
+                    if (!sorting) return; // Stop sorting if the flag is false
+                    
+                    jPointer = j;
+                    updatePointers();
+                    
+                    // Highlight bar being compared
+                    bars[j].findOne('Rect').fill('#FF5733');
+                    layer.draw();
+                    
+                    updateCurrentStep(`Comparing ${array[minIndex]} with ${array[j]}`);
+                    await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                    
+                    if (array[j] < array[minIndex]) {
+                        // Reset previous min
+                        if (minIndex !== i) {
+                            bars[minIndex].findOne('Rect').fill('var(--unsorted)');
+                        }
+                        
+                        minIndex = j;
+                        pivotIndex = minIndex;
+                        updatePointers();
+                        
+                        bars[minIndex].findOne('Rect').fill('#9C27B0'); // Mark new minimum
+                        updateCurrentStep(`New minimum found: ${array[minIndex]} at position ${minIndex}`);
+                    } else {
+                        // Reset if not minimum
+                        bars[j].findOne('Rect').fill('var(--unsorted)');
+                    }
+                    
+                    layer.draw();
+                    await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                }
+                
+                if (minIndex !== i) {
+                    updateCurrentStep(`Swapping ${array[i]} with the minimum value ${array[minIndex]}`);
+                    
+                    // Swap elements in the array
+                    [array[i], array[minIndex]] = [array[minIndex], array[i]];
+                    
+                    // Animate the swap
+                    await animateSwap(i, minIndex);
+                } else {
+                    updateCurrentStep(`Element ${array[i]} is already in its correct position`);
+                }
+                
+                // Mark as sorted
+                bars[i].findOne('Rect').fill('#4CAF50');
+                layer.draw();
+                
+                // Reset pointers except i
+                pivotIndex = -1;
+                jPointer = -1;
+                updatePointers();
+                
+             // Selection Sort function completion
+                await new Promise(resolve => setTimeout(resolve, animationSpeed));
+            }
+            
+            // Mark the last element as sorted
+            bars[array.length - 1].findOne('Rect').fill('#4CAF50');
+            layer.draw();
+            
+            // Reset pointers
+            iPointer = -1;
+            jPointer = -1;
+            pivotIndex = -1;
+            updatePointers();
+            
+            updateCurrentStep("Sorting complete!");
+            sorting = false;
+            document.getElementById('sortBtn').textContent = 'Sort!';
+            document.getElementById('generateArrayBtn').disabled = false;
+        }
+
+        // Insertion Sort algorithm
+       // Improved Insertion Sort algorithm with better animation
+async function insertionSort() {
+    // Mark first element as sorted
+    bars[0].findOne('Rect').fill('#4CAF50');
+    layer.draw();
+    
+    for (let i = 1; i < array.length; i++) {
+        if (!sorting) return; // Stop sorting if the flag is false
+        
+        let key = array[i];
+        let j = i - 1;
+        
+        iPointer = i;
+        pivotIndex = i;
+        updatePointers();
+        
+        // Highlight the current element being inserted
+        bars[i].findOne('Rect').fill('#9C27B0');
+        updateCurrentStep(`Current key element: ${key} at position ${i}`);
+        layer.draw();
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+        
+        // Find the position where the current element belongs
+        while (j >= 0 && array[j] > key) {
+            if (!sorting) return;
+            
+            jPointer = j;
+            updatePointers();
+            
+            // Highlight the element we're comparing with
+            bars[j].findOne('Rect').fill('#FF5733');
+            updateCurrentStep(`Comparing ${array[j]} > ${key}, shifting right`);
+            layer.draw();
+            await new Promise(resolve => setTimeout(resolve, animationSpeed));
+            
+            // Move data in the array
+            array[j + 1] = array[j];
+            
+            // Reset color after comparison
+            bars[j].findOne('Rect').fill('var(--unsorted)');
+            j--;
+        }
+        
+        // Place the key in its correct position
+        array[j + 1] = key;
+        
+        // Redraw all bars to match the current array state
+        // This creates a cleaner visual representation
+        await redrawArray();
+        
+        // Mark all sorted elements (0 to i)
+        for (let k = 0; k <= i; k++) {
+            bars[k].findOne('Rect').fill('#4CAF50');
+        }
+        
+        updateCurrentStep(`Inserted element ${key} at position ${j+1}`);
+        layer.draw();
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+    }
+    
+    // Reset pointers
+    iPointer = -1;
+    jPointer = -1;
+    pivotIndex = -1;
+    updatePointers();
+    
+    updateCurrentStep("Sorting complete!");
+    sorting = false;
+    document.getElementById('sortBtn').textContent = 'Sort!';
+    document.getElementById('generateArrayBtn').disabled = false;
+}
+
+// Helper function to redraw the array
+async function redrawArray() {
+    return new Promise(resolve => {
+        // Clear existing bars
+        bars.forEach(bar => bar.destroy());
+        
+        // Create new bars based on the current array state
+        const maxValue = Math.max(...array);
+        const barWidth = Math.max((width - 40) / arraySize - 2, 3); // Ensure minimum width
+        const spacing = Math.min(2, barWidth * 0.2);
+        const maxBarHeight = height - 60;
+        
+        bars = [];
+        
+        for (let i = 0; i < array.length; i++) {
+            const barHeight = Math.max((array[i] / maxValue) * maxBarHeight, 5);
+            
+            const bar = new Konva.Group({
+                x: 20 + i * (barWidth + spacing),
+                y: height - 40 - barHeight,
+            });
+            
+            const rect = new Konva.Rect({
+                width: barWidth,
+                height: barHeight,
+                fill: 'var(--unsorted)',
+                stroke: 'rgba(0, 210, 255, 0.5)',
+                strokeWidth: 1,
+                cornerRadius: 2,
+            });
+            
+            const fontSize = Math.min(12, barWidth - 2);
+            const text = new Konva.Text({
+                text: array[i].toString(),
+                fontSize: fontSize,
+                fontFamily: 'Arial',
+                fill: 'white',
+                width: barWidth,
+                align: 'center',
+                y: barHeight + 5,
+            });
+            
+            // Add pointer indicators
+            const iMarker = new Konva.Text({
+                text: "i",
+                fontSize: 14,
+                fontFamily: 'Arial',
+                fill: '#FFC107',
+                width: barWidth,
+                align: 'center',
+                y: -20,
+                visible: false,
+                fontStyle: 'bold'
+            });
+            
+            const jMarker = new Konva.Text({
+                text: "j",
+                fontSize: 14,
+                fontFamily: 'Arial',
+                fill: '#FF5733',
+                width: barWidth,
+                align: 'center',
+                y: -20,
+                visible: false,
+                fontStyle: 'bold'
+            });
+            
+            const pivotMarker = new Konva.Text({
+                text: "p",
+                fontSize: 14,
+                fontFamily: 'Arial',
+                fill: '#9C27B0',
+                width: barWidth,
+                align: 'center',
+                y: -20,
+                visible: false,
+                fontStyle: 'bold'
+            });
+            
+            bar.add(rect);
+            bar.add(text);
+            bar.add(iMarker);
+            bar.add(jMarker);
+            bar.add(pivotMarker);
+            
+            layer.add(bar);
+            bars.push(bar);
+        }
+        
+        layer.draw();
+        setTimeout(resolve, 10); // Short delay to ensure smooth animation
+    });
+}
+        // Merge Sort algorithm
+        async function mergeSort() {
+            // Create a copy of the original array for visualization
+            auxiliaryArray = [...array];
+            
+            // Call the recursive merge sort
+            await mergeSortHelper(0, array.length - 1);
+            
+            // Mark all bars as sorted when done
+            bars.forEach(bar => {
+                bar.findOne('Rect').fill('#4CAF50');
+            });
+            layer.draw();
+            
+            // Reset pointers
+            iPointer = -1;
+            jPointer = -1;
+            pivotIndex = -1;
+            updatePointers();
+            
+            updateCurrentStep("Sorting complete!");
+            sorting = false;
+            document.getElementById('sortBtn').textContent = 'Sort!';
+            document.getElementById('generateArrayBtn').disabled = false;
+        }
+
+        // Merge Sort helper function
+        async function mergeSortHelper(start, end) {
+            if (start >= end) return;
+            if (!sorting) return; // Stop sorting if the flag is false
+            
+            const mid = Math.floor((start + end) / 2);
+            
+            updateCurrentStep(`Dividing array from index ${start} to ${end} with midpoint ${mid}`);
+            await new Promise(resolve => setTimeout(resolve, animationSpeed));
+            
+            // Recursively sort the left half
+            await mergeSortHelper(start, mid);
+            if (!sorting) return;
+            
+            // Recursively sort the right half
+            await mergeSortHelper(mid + 1, end);
+            if (!sorting) return;
+            
+            // Merge the sorted halves
+            await merge(start, mid, end);
+        }
+
+        // Merge function for Merge Sort
+        // Merge function for Merge Sort - Fixed version
+async function merge(start, mid, end) {
+    updateCurrentStep(`Merging subarrays from ${start} to ${mid} and from ${mid+1} to ${end}`);
+    
+    const leftSize = mid - start + 1;
+    const rightSize = end - mid;
+    
+    // Create temporary arrays
+    const leftArray = [];
+    const rightArray = [];
+    
+    // Copy data to temporary arrays
+    for (let i = 0; i < leftSize; i++) {
+        leftArray[i] = array[start + i];
+    }
+    for (let j = 0; j < rightSize; j++) {
+        rightArray[j] = array[mid + 1 + j];
+    }
+    
+    // Merge the temporary arrays back
+    let i = 0, j = 0, k = start;
+    
+    while (i < leftSize && j < rightSize) {
+        if (!sorting) return; // Stop sorting if the flag is false
+        
+        // Set pointers for visualization
+        iPointer = start + i < array.length ? start + i : -1;
+        jPointer = mid + 1 + j < array.length ? mid + 1 + j : -1;
+        updatePointers();
+        
+        // Check if the bars exist before manipulating them
+        if (iPointer >= 0 && iPointer < bars.length) {
+            const rect = bars[iPointer].findOne('Rect');
+            if (rect) rect.fill('#FFC107');
+        }
+        
+        if (jPointer >= 0 && jPointer < bars.length) {
+            const rect = bars[jPointer].findOne('Rect');
+            if (rect) rect.fill('#FF5733');
+        }
+        
+        layer.draw();
+        
+        updateCurrentStep(`Comparing ${leftArray[i]} with ${rightArray[j]}`);
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+        
+        if (leftArray[i] <= rightArray[j]) {
+            updateCurrentStep(`Selecting ${leftArray[i]} from left subarray`);
+            array[k] = leftArray[i];
+            auxiliaryArray[k] = leftArray[i];
+            
+            // Update the bar height and value - with safety checks
+            if (k >= 0 && k < bars.length) {
+                const barHeight = (array[k] / 100) * (height - 100);
+                const bar = bars[k];
+                const rect = bar.findOne('Rect');
+                
+                // Find the text element safely
+                const textElements = bar.find('Text');
+                let valueText = null;
+                
+               
+                for (let t = 0; t < textElements.length; t++) {
+                    const text = textElements[t];
+                    if (text.text() !== "i" && text.text() !== "j" && text.text() !== "p") {
+                        valueText = text;
+                        break;
+                    }
+                }
+                
+                if (rect && valueText) {
+                    rect.height(barHeight);
+                    rect.y(0);
+                    bar.y(height - 50 - barHeight);
+                    valueText.text(array[k].toString());
+                    rect.fill('#4CAF50'); // Mark as being merged
+                }
+            }
+            
+            layer.draw();
+            i++;
+        } else {
+            updateCurrentStep(`Selecting ${rightArray[j]} from right subarray`);
+            array[k] = rightArray[j];
+            auxiliaryArray[k] = rightArray[j];
+            
+            // Update the bar height and value - with safety checks
+            if (k >= 0 && k < bars.length) {
+                const barHeight = (array[k] / 100) * (height - 100);
+                const bar = bars[k];
+                const rect = bar.findOne('Rect');
+                
+                // Find the text element safely
+                const textElements = bar.find('Text');
+                let valueText = null;
+                
+                
+                for (let t = 0; t < textElements.length; t++) {
+                    const text = textElements[t];
+                    if (text.text() !== "i" && text.text() !== "j" && text.text() !== "p") {
+                        valueText = text;
+                        break;
+                    }
+                }
+                
+                if (rect && valueText) {
+                    rect.height(barHeight);
+                    rect.y(0);
+                    bar.y(height - 50 - barHeight);
+                    valueText.text(array[k].toString());
+                    rect.fill('#4CAF50'); // Mark as being merged
+                }
+            }
+            
+            layer.draw();
+            j++;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+        k++;
+    }
+    
+    // Copy remaining elements from left array if any
+    while (i < leftSize) {
+        if (!sorting) return;
+        
+        iPointer = start + i < array.length ? start + i : -1;
+        jPointer = -1;
+        updatePointers();
+        
+        if (iPointer >= 0 && iPointer < bars.length) {
+            const rect = bars[iPointer].findOne('Rect');
+            if (rect) rect.fill('#FFC107');
+            layer.draw();
+        }
+        
+        updateCurrentStep(`Adding remaining element ${leftArray[i]} from left subarray`);
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+        
+        array[k] = leftArray[i];
+        auxiliaryArray[k] = leftArray[i];
+        
+        // Update the bar height and value - with safety checks
+        if (k >= 0 && k < bars.length) {
+            const barHeight = (array[k] / 100) * (height - 100);
+            const bar = bars[k];
+            const rect = bar.findOne('Rect');
+            
+            // Find the text element safely
+            const textElements = bar.find('Text');
+            let valueText = null;
+            
+            for (let t = 0; t < textElements.length; t++) {
+                const text = textElements[t];
+                if (text.text() !== "i" && text.text() !== "j" && text.text() !== "p") {
+                    valueText = text;
+                    break;
+                }
+            }
+            
+            if (rect && valueText) {
+                rect.height(barHeight);
+                rect.y(0);
+                bar.y(height - 50 - barHeight);
+                valueText.text(array[k].toString());
+                rect.fill('#4CAF50');
+            }
+        }
+        
+        layer.draw();
+        i++;
+        k++;
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+    }
+    
+    // Copy remaining elements from right array if any
+    while (j < rightSize) {
+        if (!sorting) return;
+        
+        iPointer = -1;
+        jPointer = mid + 1 + j < array.length ? mid + 1 + j : -1;
+        updatePointers();
+        
+        if (jPointer >= 0 && jPointer < bars.length) {
+            const rect = bars[jPointer].findOne('Rect');
+            if (rect) rect.fill('#FF5733');
+            layer.draw();
+        }
+        
+        updateCurrentStep(`Adding remaining element ${rightArray[j]} from right subarray`);
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+        
+        array[k] = rightArray[j];
+        auxiliaryArray[k] = rightArray[j];
+        
+        // Update the bar height and value - with safety checks
+        if (k >= 0 && k < bars.length) {
+            const barHeight = (array[k] / 100) * (height - 100);
+            const bar = bars[k];
+            const rect = bar.findOne('Rect');
+            
+            // Find the text element safely
+            const textElements = bar.find('Text');
+            let valueText = null;
+            
+            for (let t = 0; t < textElements.length; t++) {
+                const text = textElements[t];
+                if (text.text() !== "i" && text.text() !== "j" && text.text() !== "p") {
+                    valueText = text;
+                    break;
+                }
+            }
+            
+            if (rect && valueText) {
+                rect.height(barHeight);
+                rect.y(0);
+                bar.y(height - 50 - barHeight);
+                valueText.text(array[k].toString());
+                rect.fill('#4CAF50');
+            }
+        }
+        
+        layer.draw();
+        j++;
+        k++;
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+    }
+    
+    // Reset pointers
+    iPointer = -1;
+    jPointer = -1;
+    updatePointers();
+}
+   
+
+        // Quick Sort algorithm
+        async function quickSort() {
+            await quickSortHelper(0, array.length - 1);
+            
+            // Mark all bars as sorted when done
+            bars.forEach(bar => {
+                bar.findOne('Rect').fill('#4CAF50');
+            });
+            layer.draw();
+            
+            // Reset pointers
+            iPointer = -1;
+            jPointer = -1;
+            pivotIndex = -1;
+            updatePointers();
+            
+            updateCurrentStep("Sorting complete!");
+            sorting = false;
+            document.getElementById('sortBtn').textContent = 'Sort!';
+            document.getElementById('generateArrayBtn').disabled = false;
+        }
+
+        // Quick Sort helper function
+        async function quickSortHelper(low, high) {
+            if (low < high && sorting) {
+                // Partition the array
+                const pivotIndex = await partition(low, high);
+                if (!sorting) return;
+                
+                // Recursively sort elements before and after the pivot
+                await quickSortHelper(low, pivotIndex - 1);
+                if (!sorting) return;
+                
+                await quickSortHelper(pivotIndex + 1, high);
+            }
+        }
+
+        // Partition function for Quick Sort
+        async function partition(low, high) {
+            // Choose the rightmost element as pivot
+            const pivot = array[high];
+            pivotIndex = high;
+            updatePointers();
+            
+            bars[high].findOne('Rect').fill('#9C27B0'); // Highlight pivot
+            updateCurrentStep(`Chosen pivot: ${pivot} at position ${high}`);
+            layer.draw();
+            await new Promise(resolve => setTimeout(resolve, animationSpeed));
+            
+            let i = low - 1; // Index of smaller element
+            
+            for (let j = low; j < high; j++) {
+                if (!sorting) return low;
+                
+                jPointer = j;
+                updatePointers();
+                
+                bars[j].findOne('Rect').fill('#FF5733'); // Highlight current element
+                updateCurrentStep(`Comparing ${array[j]} with pivot ${pivot}`);
+                layer.draw();
+                await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                
+                if (array[j] < pivot) {
+                    i++;
+                    iPointer = i;
+                    updatePointers();
+                    
+                    bars[i].findOne('Rect').fill('#FFC107'); // Highlight element to swap with
+                    updateCurrentStep(`${array[j]} < ${pivot}, swapping elements at positions ${i} and ${j}`);
+                    layer.draw();
+                    await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                    
+                    // Swap array[i] and array[j]
+                    [array[i], array[j]] = [array[j], array[i]];
+                    
+                    // Animate the swap
+                    await animateSwap(i, j);
+                } else {
+                    updateCurrentStep(`${array[j]} >= ${pivot}, no swap needed`);
+                    bars[j].findOne('Rect').fill('var(--unsorted)'); // Reset color
+                    layer.draw();
+                    await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                }
+            }
+            
+            // Swap array[i+1] and array[high] (the pivot)
+            i++;
+            iPointer = i;
+            updatePointers();
+            
+            bars[i].findOne('Rect').fill('#FFC107'); // Highlight element to swap with pivot
+            updateCurrentStep(`Placing pivot ${pivot} at its correct position ${i}`);
+            layer.draw();
+            await new Promise(resolve => setTimeout(resolve, animationSpeed));
+            
+            [array[i], array[high]] = [array[high], array[i]];
+            
+            // Animate the swap
+            await animateSwap(i, high);
+            
+            // Mark the pivot as in its final position
+            bars[i].findOne('Rect').fill('#4CAF50');
+            layer.draw();
+            
+            pivotIndex = -1; // Reset pivot pointer
+            return i;
+        }
+
+        // Initialize the stage and set up event listeners
+        function init() {
+            setupStage();
+            generateArray();
+            
+            // Set up event listeners
+            document.getElementById('generateArrayBtn').addEventListener('click', () => {
+                if (!sorting) {
+                    generateArray();
+                }
+            });
+            
+            document.getElementById('arraySizeSelect').addEventListener('change', (e) => {
+                if (!sorting) {
+                    arraySize = parseInt(e.target.value);
+                    generateArray();
+                }
+            });
+            
+            document.getElementById('algorithmSelect').addEventListener('change', (e) => {
+                currentAlgorithm = e.target.value;
+                updateAlgorithmInfo(currentAlgorithm);
+            });
+            
+            document.getElementById('speedSelect').addEventListener('change', (e) => {
+                animationSpeed = parseInt(e.target.value);
+            });
+            
+            document.getElementById('sortBtn').addEventListener('click', () => {
+                if (!sorting) {
+                    // Begin sorting
+                    sorting = true;
+                    document.getElementById('sortBtn').textContent = 'Stop';
+                    document.getElementById('generateArrayBtn').disabled = true;
+                    
+                    // Reset array colors
+                    bars.forEach(bar => {
+                        bar.findOne('Rect').fill('var(--unsorted)');
+                    });
+                    layer.draw();
+                    
+                    // Run the selected algorithm
+                    switch (currentAlgorithm) {
+                        case 'bubble':
+                            bubbleSort();
+                            break;
+                        case 'selection':
+                            selectionSort();
+                            break;
+                        case 'insertion':
+                            insertionSort();
+                            break;
+                        case 'merge':
+                            mergeSort();
+                            break;
+                        case 'quick':
+                            quickSort();
+                            break;
+                    }
+                } else {
+                    // Stop sorting
+                    sorting = false;
+                    document.getElementById('sortBtn').textContent = 'Sort!';
+                    document.getElementById('generateArrayBtn').disabled = false;
+                    updateCurrentStep("Sorting stopped.");
+                }
+            });
+            
+            // Update algorithm info with default selection
+            updateAlgorithmInfo(currentAlgorithm);
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                setupStage();
+                visualizeArray();
+            });
+        }
+        
+        // Initialize everything when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Search Tree Visualization with Traversals</title>
+    <script src="https://unpkg.com/konva@8.4.2/konva.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            background-color: #f5f5f5;
+            font-family: 'Arial', sans-serif;
+        }
+        #container {
+            width: 100%;
+            height: 70vh;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 15px;
+            width: 120px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            border-left: 5px solid #4CAF50;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2e7d32;
+            margin-bottom: 25px;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f1f8e9;
+            border-radius: 4px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        .array-view {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e0f2f1;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .array-element {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            margin-right: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        .traversal-view {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .traversal-title {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #1565c0;
+        }
+        .traversal-step {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            margin-right: 5px;
+            background-color: #2196F3;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .traversal-step-number {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            background-color: #ff9800;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Binary Search Tree Visualization</h1>
+
+    <div class="controls">
+        <input type="number" id="valueInput" placeholder="Enter value">
+        <button id="insertBtn">Insert</button>
+        <button id="deleteBtn">Delete</button>
+        <button id="searchBtn">Search</button>
+        <button id="buildBSTBtn">Build Random BST</button>
+        <button id="clearBtn">Clear BST</button>
+    </div>
+    
+    <div class="controls">
+        <button id="inorderBtn" style="background-color: #673AB7;">Inorder Traversal</button>
+        <button id="preorderBtn" style="background-color: #2196F3;">Preorder Traversal</button>
+        <button id="postorderBtn" style="background-color: #FF5722;">Postorder Traversal</button>
+        <button id="levelorderBtn" style="background-color: #009688;">Level Order Traversal</button>
+    </div>
+    
+    <div id="container"></div>
+    
+    <div class="status" id="statusText"></div>
+    
+    <div class="traversal-view" id="traversalView"></div>
+    
+    <div class="info">
+        <h3>Binary Search Tree Properties:</h3>
+        <p>• Values in the left subtree are less than the node's value</p>
+        <p>• Values in the right subtree are greater than the node's value</p>
+        <p>• Each node has at most two children</p>
+        <p>• Allows for efficient searching, insertion, and deletion operations (O(log n) on average)</p>
+        
+        <h3>Traversal Methods:</h3>
+        <p>• <strong>Inorder:</strong> Left subtree → Root → Right subtree (yields sorted values)</p>
+        <p>• <strong>Preorder:</strong> Root → Left subtree → Right subtree (useful for copying the tree)</p>
+        <p>• <strong>Postorder:</strong> Left subtree → Right subtree → Root (useful for deleting the tree)</p>
+        <p>• <strong>Level Order:</strong> Visits nodes level by level from top to bottom (breadth-first search)</p>
+    </div>
+
+    <script>
+        // Optimize for high DPI displays
+        Konva.pixelRatio = 1;
+
+        // Initialize Konva Stage
+        const width = window.innerWidth - 40;
+        const height = window.innerHeight * 0.7;
+        
+        const stage = new Konva.Stage({
+            container: 'container',
+            width: width,
+            height: height
+        });
+        
+        const layer = new Konva.Layer();
+        stage.add(layer);
+        
+        // Status text update function
+        function updateStatus(text) {
+            document.getElementById('statusText').textContent = text;
+        }
+        
+        // Update traversal view
+        function updateTraversalView(nodes, traversalType) {
+            const traversalView = document.getElementById('traversalView');
+            traversalView.innerHTML = '';
+            
+            // Add title
+            const title = document.createElement('div');
+            title.className = 'traversal-title';
+            title.textContent = `${traversalType} Traversal:`;
+            traversalView.appendChild(title);
+            
+            // Add traversal steps
+            nodes.forEach((node, index) => {
+                const step = document.createElement('div');
+                step.className = 'traversal-step';
+                step.textContent = node.value;
+                
+                // Add step number
+                const stepNumber = document.createElement('div');
+                stepNumber.className = 'traversal-step-number';
+                stepNumber.textContent = index + 1;
+                step.appendChild(stepNumber);
+                
+                traversalView.appendChild(step);
+            });
+        }
+        
+        // Binary Search Tree Node class
+        class TreeNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.x = 0;
+                this.y = 0;
+                this.visual = null;
+            }
+        }
+        
+        // Binary Search Tree class with visualization
+        class BinarySearchTree {
+            constructor() {
+                this.root = null;
+                this.nodeGroups = {}; // Store references to node groups
+                this.edgeLines = {}; // Store references to edge lines
+                this.nodeRadius = 30;
+                this.levelHeight = 100;
+            }
+            
+            // Calculate node positions based on tree structure
+            calculateNodePositions() {
+                // Reset positions
+                const traverse = (node, level, position, leftBound, rightBound) => {
+                    if (!node) return;
+                    
+                    // Calculate x position (centered in available space)
+                    const x = leftBound + (rightBound - leftBound) / 2;
+                    const y = 60 + level * this.levelHeight;
+                    
+                    // Store position in node
+                    node.x = x;
+                    node.y = y;
+                    
+                    // Calculate bounds for children
+                    const leftWidth = (rightBound - leftBound) / 2;
+                    const rightWidth = (rightBound - leftBound) / 2;
+                    
+                    // Traverse children
+                    traverse(node.left, level + 1, 2 * position, leftBound, x);
+                    traverse(node.right, level + 1, 2 * position + 1, x, rightBound);
+                };
+                
+                // Start traversal from root
+                traverse(this.root, 0, 0, 0, width);
+            }
+            
+            // Create a node with animation
+            createNode(node, skipAnimation = false) {
+                const group = new Konva.Group({
+                    x: node.x,
+                    y: node.y,
+                    opacity: skipAnimation ? 1 : 0
+                });
+                
+                const circle = new Konva.Circle({
+                    radius: this.nodeRadius,
+                    fill: '#4CAF50',
+                    stroke: '#333',
+                    strokeWidth: 2
+                });
+                
+                const text = new Konva.Text({
+                    text: node.value.toString(),
+                    fontSize: 18,
+                    fontFamily: 'Arial',
+                    fontStyle: 'bold',
+                    fill: 'white',
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    x: -this.nodeRadius,
+                    y: -9,
+                    width: this.nodeRadius * 2
+                });
+                
+                group.add(circle);
+                group.add(text);
+                layer.add(group);
+                
+                // Store reference to the visual group in the node
+                node.visual = group;
+                
+                // Store reference in nodeGroups using value as key
+                this.nodeGroups[node.value] = group;
+                
+                if (!skipAnimation) {
+                    return new Promise(resolve => {
+                        const nodeAnim = new Konva.Tween({
+                            node: group,
+                            duration: 0.5,
+                            opacity: 1,
+                            easing: Konva.Easings.ElasticEaseOut,
+                            onFinish: resolve
+                        });
+                        
+                        nodeAnim.play();
+                    });
+                }
+                
+                return Promise.resolve();
+            }
+            
+            // Create an edge between parent and child
+            createEdge(parent, child, skipAnimation = false) {
+                const edgeKey = `${parent.value}-${child.value}`;
+                
+                if (this.edgeLines[edgeKey]) {
+                    return Promise.resolve(); // Edge already exists
+                }
+                
+                // Create the edge
+                const edge = new Konva.Line({
+                    points: [parent.x, parent.y, child.x, child.y],
+                    stroke: '#666',
+                    strokeWidth: 2,
+                    opacity: skipAnimation ? 1 : 0
+                });
+                
+                layer.add(edge);
+                
+                // Make sure edges are behind nodes
+                edge.moveToBottom();
+                
+                // Store reference to the edge
+                this.edgeLines[edgeKey] = edge;
+                
+                if (!skipAnimation) {
+                    return new Promise(resolve => {
+                        const edgeAnim = new Konva.Tween({
+                            node: edge,
+                            duration: 0.3,
+                            opacity: 1,
+                            easing: Konva.Easings.EaseInOut,
+                            onFinish: resolve
+                        });
+                        
+                        edgeAnim.play();
+                    });
+                }
+                
+                return Promise.resolve();
+            }
+            
+            // Highlight a node temporarily
+            highlightNode(node, color, duration = 1) {
+                if (!node || !node.visual) return Promise.resolve();
+                
+                const circle = node.visual.findOne('Circle');
+                const originalFill = circle.fill();
+                
+                circle.fill(color);
+                layer.batchDraw();
+                
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        // Create a fade back to original color
+                        const fadeTween = new Konva.Tween({
+                            node: circle,
+                            duration: 0.4,
+                            fill: originalFill,
+                            easing: Konva.Easings.EaseOut,
+                            onFinish: resolve
+                        });
+                        
+                        fadeTween.play();
+                    }, duration * 1000);
+                });
+            }
+            
+            // Insert a value into the BST
+            async insert(value) {
+                updateStatus(`Inserting ${value} into the BST`);
+                
+                // Create a new node
+                const newNode = new TreeNode(value);
+                
+                // If tree is empty, set as root
+                if (!this.root) {
+                    this.root = newNode;
+                    this.calculateNodePositions();
+                    await this.createNode(newNode);
+                    await this.highlightNode(newNode, '#e91e63', 1);
+                    updateStatus(`Value ${value} inserted as root`);
+                    return;
+                }
+                
+                // Find the correct position and insert
+                let current = this.root;
+                let parent = null;
+                let isLeft = false;
+                
+                while (current) {
+                    await this.highlightNode(current, '#ffeb3b', 0.8);
+                    
+                    parent = current;
+                    
+                    if (value < current.value) {
+                        updateStatus(`${value} < ${current.value}, moving to left subtree`);
+                        current = current.left;
+                        isLeft = true;
+                    } else if (value > current.value) {
+                        updateStatus(`${value} > ${current.value}, moving to right subtree`);
+                        current = current.right;
+                        isLeft = false;
+                    } else {
+                        // Value already exists
+                        updateStatus(`Value ${value} already exists in the tree`);
+                        return;
+                    }
+                }
+                
+                // Insert at the found position
+                if (isLeft) {
+                    parent.left = newNode;
+                } else {
+                    parent.right = newNode;
+                }
+                
+                // Calculate new positions
+                this.calculateNodePositions();
+                
+                // Create the new node
+                await this.createNode(newNode);
+                
+                // Create edge from parent to new node
+                await this.createEdge(parent, newNode);
+                
+                // Highlight the newly inserted node
+                await this.highlightNode(newNode, '#e91e63', 1);
+                
+                updateStatus(`Value ${value} inserted successfully`);
+            }
+            
+            // Search for a value in the BST
+            async search(value) {
+                updateStatus(`Searching for ${value} in the BST`);
+                
+                let current = this.root;
+                
+                while (current) {
+                    await this.highlightNode(current, '#ffeb3b', 0.8);
+                    
+                    if (value === current.value) {
+                        updateStatus(`Found ${value}!`);
+                        await this.highlightNode(current, '#4CAF50', 1.5);
+                        return current;
+                    } else if (value < current.value) {
+                        updateStatus(`${value} < ${current.value}, moving to left subtree`);
+                        current = current.left;
+                    } else {
+                        updateStatus(`${value} > ${current.value}, moving to right subtree`);
+                        current = current.right;
+                    }
+                }
+                
+                updateStatus(`Value ${value} not found in the tree`);
+                return null;
+            }
+            
+            // Delete a node from the BST
+            async delete(value) {
+                if (!this.root) {
+                    updateStatus("Tree is empty, nothing to delete");
+                    return;
+                }
+                
+                updateStatus(`Deleting ${value} from the BST`);
+                
+                const findMin = async (node) => {
+                    let current = node;
+                    
+                    while (current.left) {
+                        await this.highlightNode(current, '#673AB7', 0.8);
+                        current = current.left;
+                    }
+                    
+                    return current;
+                };
+                
+                const removeNode = async (node, value) => {
+                    if (!node) return null;
+                    
+                    await this.highlightNode(node, '#ffeb3b', 0.8);
+                    
+                    if (value < node.value) {
+                        updateStatus(`${value} < ${node.value}, moving to left subtree`);
+                        node.left = await removeNode(node.left, value);
+                        return node;
+                    } else if (value > node.value) {
+                        updateStatus(`${value} > ${node.value}, moving to right subtree`);
+                        node.right = await removeNode(node.right, value);
+                        return node;
+                    } else {
+                        // Node found, now delete it
+                        updateStatus(`Found ${value}, removing node`);
+                        await this.highlightNode(node, '#f44336', 1);
+                        
+                        // Case 1: No children
+                        if (!node.left && !node.right) {
+                            updateStatus(`Node ${value} has no children, simply removing it`);
+                            await this.removeVisualNode(node);
+                            return null;
+                        }
+                        
+                        // Case 2: One child
+                        if (!node.left) {
+                            updateStatus(`Node ${value} has only right child, replacing with right subtree`);
+                            const temp = node.right;
+                            await this.removeVisualNode(node, temp);
+                            return temp;
+                        }
+                        
+                        if (!node.right) {
+                            updateStatus(`Node ${value} has only left child, replacing with left subtree`);
+                            const temp = node.left;
+                            await this.removeVisualNode(node, temp);
+                            return temp;
+                        }
+                        
+                        // Case 3: Two children
+                        updateStatus(`Node ${value} has two children, finding successor`);
+                        const successor = await findMin(node.right);
+                        await this.highlightNode(successor, '#673AB7', 1);
+                        updateStatus(`Successor is ${successor.value}`);
+                        
+                        // Copy successor value
+                        node.value = successor.value;
+                        
+                        // Update visual node text
+                        const textNode = node.visual.findOne('Text');
+                        textNode.text(node.value.toString());
+                        layer.batchDraw();
+                        
+                        // Remove duplicate successor
+                        node.right = await removeNode(node.right, successor.value);
+                        return node;
+                    }
+                };
+                
+                this.root = await removeNode(this.root, value);
+                
+                // Recalculate positions and redraw
+                if (this.root) {
+                    this.calculateNodePositions();
+                    await this.redrawTree();
+                }
+                
+                updateStatus(`Delete operation complete`);
+            }
+            
+            // Remove a visual node
+            async removeVisualNode(node, replacementNode = null) {
+                if (!node || !node.visual) return Promise.resolve();
+                
+                // Remove all edges connected to this node
+                await this.removeNodeEdges(node);
+                
+                // Remove the visual node with animation
+                return new Promise(resolve => {
+                    const fadeOut = new Konva.Tween({
+                        node: node.visual,
+                        duration: 0.5,
+                        opacity: 0,
+                        easing: Konva.Easings.EaseOut,
+                        onFinish: () => {
+                            node.visual.destroy();
+                            delete this.nodeGroups[node.value];
+                            
+                            // Update parent-child relationships visually if there's a replacement
+                            if (replacementNode) {
+                                // Implementation depends on your tree structure
+                                this.calculateNodePositions();
+                            }
+                            
+                            layer.batchDraw();
+                            resolve();
+                        }
+                    });
+                    
+                    fadeOut.play();
+                });
+            }
+            
+            // Remove all edges connected to a node
+            async removeNodeEdges(node) {
+                if (!node) return;
+                
+                // Check for parent-node edges (would need parent reference)
+                
+                // Check for node-children edges
+                if (node.left) {
+                    const leftEdgeKey = `${node.value}-${node.left.value}`;
+                    if (this.edgeLines[leftEdgeKey]) {
+                        this.edgeLines[leftEdgeKey].destroy();
+                        delete this.edgeLines[leftEdgeKey];
+                    }
+                }
+                
+                if (node.right) {
+                    const rightEdgeKey = `${node.value}-${node.right.value}`;
+                    if (this.edgeLines[rightEdgeKey]) {
+                        this.edgeLines[rightEdgeKey].destroy();
+                        delete this.edgeLines[rightEdgeKey];
+                    }
+                }
+            }
+            
+            // Redraw the entire tree (for rebalancing visualization)
+            async redrawTree() {
+                // Clear existing edges
+                for (const key in this.edgeLines) {
+                    this.edgeLines[key].destroy();
+                }
+                this.edgeLines = {};
+                
+                // Create all edges first
+                const createEdges = async (node) => {
+                    if (!node) return;
+                    
+                    if (node.left) {
+                        await this.createEdge(node, node.left, false);
+                        await createEdges(node.left);
+                    }
+                    
+                    if (node.right) {
+                        await this.createEdge(node, node.right, false);
+                        await createEdges(node.right);
+                    }
+                };
+                
+                // Update node positions
+                const updateNodePositions = async (node) => {
+                    if (!node || !node.visual) return;
+                    
+                    // Update node position with animation
+                    await new Promise(resolve => {
+                        const moveTween = new Konva.Tween({
+                            node: node.visual,
+                            duration: 0.8,
+                            x: node.x,
+                            y: node.y,
+                            easing: Konva.Easings.EaseInOut,
+                            onFinish: resolve
+                        });
+                        
+                        moveTween.play();
+                    });
+                    
+                    // Update children positions
+                    if (node.left) await updateNodePositions(node.left);
+                    if (node.right) await updateNodePositions(node.right);
+                };
+                
+                // First create all edges
+                await createEdges(this.root);
+                
+                // Then update node positions
+                await updateNodePositions(this.root);
+            }
+            
+            // Build a random BST
+            async buildRandomBST(size = 7) {
+                // Clear existing tree
+                await this.clear();
+                
+                // Generate random unique values
+                const values = [];
+                while (values.length < size) {
+                    const value = Math.floor(Math.random() * 100);
+                    if (!values.includes(value)) {
+                        values.push(value);
+                    }
+                }
+                
+                updateStatus(`Building BST with values: [${values.join(', ')}]`);
+                
+                // Insert values one by one
+                for (const value of values) {
+                    await this.insert(value);
+                }
+                
+                updateStatus("Random BST built successfully");
+            }
+            
+            // Clear the tree
+            async clear() {
+                // Clear data
+                this.root = null;
+                
+                // Fade out and clear visualization
+                if (layer.children.length > 0) {
+                    await new Promise(resolve => {
+                        const fadeTween = new Konva.Tween({
+                            node: layer,
+                            duration: 0.5,
+                            opacity: 0,
+                            easing: Konva.Easings.EaseOut,
+                            onFinish: () => {
+                                layer.destroyChildren();
+                                this.nodeGroups = {};
+                                this.edgeLines = {};
+                                layer.opacity(1);
+                                layer.batchDraw();
+                                resolve();
+                            }
+                        });
+                        
+                        fadeTween.play();
+                    });
+                } else {
+                    layer.destroyChildren();
+                    this.nodeGroups = {};
+                    this.edgeLines = {};
+                    layer.batchDraw();
+                }
+                
+                // Clear traversal view
+                document.getElementById('traversalView').innerHTML = '';
+                
+                updateStatus("Tree cleared");
+            }
+            
+            // Traversal methods
+            
+            // Inorder traversal (left, root, right)
+            async inorderTraversal() {
+                const result = [];
+                const visitedNodes = [];
+                
+                updateStatus("Performing inorder traversal (left, root, right)");
+                
+                const traverse = async (node) => {
+                    if (!node) return;
+                    
+                    // Left
+                    await traverse(node.left);
+                    
+                    // Root
+                    await this.highlightNode(node, '#673AB7', 1);
+                    result.push(node.value);
+                    visitedNodes.push(node);
+                    
+                    // Right
+                    await traverse(node.right);
+                };
+                
+                await traverse(this.root);
+                
+                updateStatus(`Inorder traversal result: [${result.join(', ')}]`);
+                updateTraversalView(visitedNodes, "Inorder");
+                
+                return result;
+            }
+            
+            // Preorder traversal (root, left, right)
+            async preorderTraversal() {
+                const result = [];
+                const visitedNodes = [];
+                
+                updateStatus("Performing preorder traversal (root, left, right)");
+                
+                const traverse = async (node) => {
+                    if (!node) return;
+                    
+                    // Root
+                    await this.highlightNode(node, '#2196F3', 1);
+                    result.push(node.value);
+                    visitedNodes.push(node);
+                    
+                    // Left
+                    await traverse(node.left);
+                    
+                    // Right
+                    await traverse(node.right);
+                };
+                
+                await traverse(this.root);
+                
+                updateStatus(`Preorder traversal result: [${result.join(', ')}]`);
+                updateTraversalView(visitedNodes, "Preorder");
+                
+                return result;
+            }
+            
+            // Postorder traversal (left, right, root)
+            async postorderTraversal() {
+                const result = [];
+                const visitedNodes = [];
+                
+                updateStatus("Performing postorder traversal (left, right, root)");
+                
+                const traverse = async (node) => {
+                    if (!node) return;
+                    
+                    // Left
+                    await traverse(node.left);
+                    
+                    // Right
+                    await traverse(node.right);
+                    
+                    // Root
+                    await this.highlightNode(node, '#FF5722', 1);
+                    result.push(node.value);
+                    visitedNodes.push(node);
+                };
+                
+                await traverse(this.root);
+                
+                updateStatus(`Postorder traversal result: [${result.join(', ')}]`);
+                updateTraversalView(visitedNodes, "Postorder");
+                
+                return result;
+            }
+            
+            // Level-order traversal (breadth-first)
+            async levelOrderTraversal() {
+                if (!this.root) {
+                    updateStatus("Tree is empty");
+                    return [];
+                }
+                
+                const result = [];
+                const visitedNodes = [];
+                const queue = [this.root];
+                
+                updateStatus("Performing level order traversal (breadth-first)");
+                
+                while (queue.length > 0) {
+                    const node = queue.shift();
+                    
+                    await this.highlightNode(node, '#009688', 1);
+                    result.push(node.value);
+                    visitedNodes.push(node);
+                    
+                    if (node.left) queue.push(node.left);
+                    if (node.right) queue.push(node.right);
+                }
+                
+                updateStatus(`Level order traversal result: [${result.join(', ')}]`);
+                updateTraversalView(visitedNodes, "Level Order");
+                
+                return result;
+            }
+        }
+        
+        // Initialize BST
+        const bst = new BinarySearchTree();
+        
+        // Event listeners
+        document.getElementById('insertBtn').addEventListener('click', async () => {
+            const valueInput = document.getElementById('valueInput');
+            const value = parseInt(valueInput.value);
+            
+            if (!isNaN(value)) {
+                await bst.insert(value);
+                valueInput.value = '';
+            } else {
+                updateStatus("Please enter a valid number");
+            }
+        });
+        
+        document.getElementById('deleteBtn').addEventListener('click', async () => {
+            const valueInput = document.getElementById('valueInput');
+            const value = parseInt(valueInput.value);
+            
+            if (!isNaN(value)) {
+                await bst.delete(value);
+                valueInput.value = '';
+            } else {
+                updateStatus("Please enter a valid number");
+            }
+        });
+        
+        document.getElementById('searchBtn').addEventListener('click', async () => {
+            const valueInput = document.getElementById('valueInput');
+            const value = parseInt(valueInput.value);
+            
+            if (!isNaN(value)) {
+                await bst.search(value);
+                valueInput.value = '';
+            } else {
+                updateStatus("Please enter a valid number");
+            }
+        });
+        
+        document.getElementById('buildBSTBtn').addEventListener('click', async () => {
+            await bst.buildRandomBST(7);
+        });document.getElementById('clearBtn').addEventListener('click', async () => {
+    await bst.clear();
+});
+
+document.getElementById('inorderBtn').addEventListener('click', async () => {
+    await bst.inorderTraversal();
+});
+
+document.getElementById('preorderBtn').addEventListener('click', async () => {
+    await bst.preorderTraversal();
+});
+
+document.getElementById('postorderBtn').addEventListener('click', async () => {
+    await bst.postorderTraversal();
+});
+
+document.getElementById('levelorderBtn').addEventListener('click', async () => {
+    await bst.levelOrderTraversal();
+});</script>
+</body>
+</html>
+
+// Optional: Initialize with a small random BST
+// bst.buildRandomBST(5);

@@ -1,0 +1,2 @@
+module LinkListHelper
+end

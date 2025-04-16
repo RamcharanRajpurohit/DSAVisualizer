@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>B-Tree Visualization</title>
+      <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+      <style>
+         :root {
+         --black: #000000;
+         --dark-gray: #121212;
+         --medium-gray: #1e1e1e;
+         --light-gray: #2d2d2d;
+         --accent: #00f2ff;
+         --accent-alt: #8a2be2;
+         --text: #ffffff;
+         --text-secondary: rgba(255, 255, 255, 0.7);
+         --card-bg: rgba(30, 30, 30, 0.7);
+         --glass-effect: rgba(255, 255, 255, 0.05);
+         --glass-border: rgba(255, 255, 255, 0.1);
+         --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+         }
+         * {
+         margin: 0;
+         padding: 0;
+         box-sizing: border-box;
+         }
+         body {
+         font-family: 'Roboto', 'Segoe UI', sans-serif;
+         background-color: var(--black);
+         color: var(--text);
+         line-height: 1.6;
+         background-image: 
+         radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.1) 0%, transparent 20%),
+         radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 20%);
+         background-attachment: fixed;
+         overflow: hidden;
+         }
+         .navbar {
+         background-color: rgba(0, 0, 0, 0.8);
+         backdrop-filter: blur(10px);
+         -webkit-backdrop-filter: blur(10px);
+         color: var(--text);
+         padding: 1.2rem 2rem;
+         position: fixed;
+         width: 100%;
+         top: 0;
+         z-index: 100;
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         border-bottom: 1px solid var(--glass-border);
+         }
+         .logo {
+         font-size: 1.8rem;
+         font-weight: 700;
+         letter-spacing: 1px;
+         }
+         .logo span {
+         background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+         -webkit-background-clip: text;
+         -webkit-text-fill-color: transparent;
+         background-clip: text;
+         }
+         .back-button {
+         color: var(--text-secondary);
+         font-size: 1rem;
+         text-decoration: none;
+         display: flex;
+         align-items: center;
+         transition: all 0.3s ease;
+         }
+         .back-button:hover {
+         color: var(--text);
+         }
+         .back-button i {
+         margin-right: 0.5rem;
+         }
+         #container {
+         width: 100vw;
+         height: 100vh;
+         display: flex;
+         flex-direction: column;
+         margin-top: 4.5rem;
+         }
+         #canvas-container {
+         flex: 1;
+         position: relative;
+         }
+         #controls {
+         padding: 1rem 2rem;
+         background-color: rgba(0, 0, 0, 0.8);
+         backdrop-filter: blur(10px);
+         -webkit-backdrop-filter: blur(10px);
+         border-bottom: 1px solid var(--glass-border);
+         }
+         button, input, select {
+         background-color: rgba(0, 0, 0, 0.7);
+         color: var(--text);
+         border: 1px solid var(--glass-border);
+         padding: 0.6rem 1.2rem;
+         margin: 0.5rem;
+         border-radius: 5px;
+         font-weight: 500;
+         transition: all 0.3s ease;
+         }
+         button {
+         position: relative;
+         overflow: hidden;
+         }
+         button::before {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: -100%;
+         width: 100%;
+         height: 100%;
+         background: linear-gradient(90deg, 
+         transparent, 
+         rgba(255, 255, 255, 0.1), 
+         transparent);
+         transition: all 0.5s ease;
+         }
+         button:hover::before {
+         left: 100%;
+         }
+         button:hover {
+         background-color: rgba(0, 0, 0, 0.9);
+         border-color: rgba(255, 255, 255, 0.3);
+         transform: translateY(-2px);
+         }
+         #create-btn, #auto-insert-btn {
+         background: linear-gradient(45deg, var(--accent), var(--accent-alt));
+         color: var(--black);
+         border: none;
+         font-weight: 600;
+         }
+         #create-btn:hover, #auto-insert-btn:hover {
+         transform: translateY(-3px);
+         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+         }
+         #info-panel {
+         position: absolute;
+         top: 1rem;
+         right: 1rem;
+         padding: 1rem;
+         background-color: var(--card-bg);
+         backdrop-filter: blur(10px);
+         -webkit-backdrop-filter: blur(10px);
+         border: 1px solid var(--glass-border);
+         border-radius: 8px;
+         max-width: 300px;
+         box-shadow: var(--shadow);
+         }
+         #explanation {
+         padding: 1rem;
+         background-color: rgba(0, 0, 0, 0.8);
+         backdrop-filter: blur(10px);
+         -webkit-backdrop-filter: blur(10px);
+         border-top: 1px solid var(--glass-border);
+         max-height: 200px;
+         overflow-y: auto;
+         }
+         .explanation-content {
+         padding: 1rem;
+         }
+         h2, h3 {
+         margin-top: 0.8rem;
+         margin-bottom: 0.5rem;
+         color: var(--text);
+         }
+         h3 {
+         color: var(--accent);
+         font-size: 1.2rem;
+         }
+         .hidden {
+         display: none;
+         }
+         ul {
+         padding-left: 1.5rem;
+         color: var(--text-secondary);
+         }
+         li {
+         margin-bottom: 0.5rem;
+         }
+         li strong {
+         color: var(--text);
+         }
+      </style>
+   </head>
+   <body>
+      <nav class="navbar">
+         <a href="/" class="back-button"><i class="fas fa-arrow-left"></i> Back</a>
+         <div class="logo">DSA<span>Visualizer</span></div>
+      </nav>
+      <div id="container">
+         <div id="controls">
+            <div>
+               <span>B-Tree Order (min 3): </span>
+               <input type="number" id="order-input" min="3" value="3">
+               <button id="create-btn">Create New B-Tree</button>
+            </div>
+            <div>
+               <span>Operations: </span>
+               <input type="number" id="value-input" placeholder="Enter value">
+               <button id="insert-btn">Insert</button>
+               <button id="search-btn">Search</button>
+               <button id="delete-btn">Delete</button>
+            </div>
+            <div>
+               <button id="auto-insert-btn">Auto Insert 10 Random Values</button>
+               <button id="clear-btn">Clear</button>
+               <select id="animation-speed">
+                  <option value="fast">Fast</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="slow">Slow</option>
+               </select>
+            </div>
+         </div>
+         <div id="canvas-container">
+            <div id="info-panel">
+               <h3>Current Operation:</h3>
+               <div id="operation-details">None</div>
+            </div>
+         </div>
+         <div id="explanation">
+            <div class="explanation-content">
+               <h2>B-Tree Concepts</h2>
+               <p>A B-Tree is a self-balancing tree data structure that maintains sorted data and allows searches, insertions, and deletions in logarithmic time.</p>
+               <h3>Key Properties:</h3>
+               <ul>
+                  <li><strong>Order:</strong> The maximum number of children a node can have.</li>
+                  <li><strong>Minimum Degree:</strong> Each node (except root) must have at least ⌈m/2⌉-1 keys.</li>
+                  <li><strong>Height Balance:</strong> All leaf nodes are at the same depth.</li>
+               </ul>
+               <h3>Operations:</h3>
+               <ul>
+                  <li><strong>Search:</strong> Similar to binary search tree but follows multiple paths.</li>
+                  <li><strong>Insert:</strong> Adds a key, may split nodes to maintain balance.</li>
+                  <li><strong>Delete:</strong> Removes a key, may merge nodes to maintain balance.</li>
+               </ul>
+               <h3>Split and Merge:</h3>
+               <p>When a node becomes full during insertion, it splits. When a node has too few keys after deletion, it either borrows from siblings or merges.</p>
+               <h3>Applications:</h3>
+               <ul>
+                  <li>Database indexing</li>
+                  <li>File systems</li>
+                  <li>External memory algorithms</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      <script>
+         class BTreeNode {
+         
+                 constructor(isLeaf = true, order = 3) 
+                 {
+                     this.isLeaf = isLeaf;
+                     this.keys = [];
+                     this.children = [];
+                     this.order = order;
+                     this.t = Math.ceil(order / 2); // Minimum degree
+                     this.minKeys = this.t - 1;
+                 }
+                 
+                 isFull()
+                 {
+                     return this.keys.length === this.order - 1;
+                 }
+                 
+                 hasMinKeys() 
+                 {
+                     return this.keys.length >= this.minKeys;
+                 }
+         }
+         
+         class BTree {
+         
+                 constructor(order = 3) 
+                 {
+                     this.root = new BTreeNode(true, order);
+                     this.order = order;
+                     this.t = Math.ceil(order / 2); // Minimum degree
+                     this.animationQueue = [];
+                     this.animationSpeed = {
+                         fast: 300,
+                         medium: 800,
+                         slow: 1500
+                     };
+                     this.currentSpeed = this.animationSpeed.medium;
+                 }
+             
+           
+         search(node, key, path = [], callback = null) {
+                   let i = 0;
+                   
+                   // Find index where key should be
+                   while (i < node.keys.length && key > node.keys[i]) {
+                       i++;
+                   }
+                   
+                   // Check if key found at current node
+                   if (i < node.keys.length && key === node.keys[i]) {
+                       if (callback) {
+                           callback(node, i);
+                       }
+                       path.push({ node, index: i });
+                       return { found: true, node, index: i, path };
+                   }
+                   
+                   // If leaf node and key not found, search fails
+                   if (node.isLeaf) {
+                       return { found: false, path };
+                   }
+                   
+                   // Recursively search appropriate child
+                   path.push({ node, childIndex: i });
+                   return this.search(node.children[i], key, path, callback);
+         }
+         
+         insert(key) {
+                 const animationSteps = [];
+                 
+                 animationSteps.push({
+                     type: 'start-operation',
+                     message: `Starting insertion of key ${key}`
+                 });
+                 
+                 if (this.root.isFull()) {
+                    console.log("Root is full. Creating new root and splitting old root.");
+
+                     let oldRoot = this.root;
+                     console.log("Old root: ", oldRoot);
+                     this.root = new BTreeNode(false, this.order);
+                     console.log("New root: ", this.root);
+                     this.root.children.push(oldRoot);
+                     
+                     animationSteps.push({
+                         type: 'split-root',
+                         oldRoot: oldRoot,
+                         newRoot: this.root,
+                         message: `Root is full. Creating new root and splitting old root.`
+                     });
+                     
+                     this._splitChild(this.root, 0, animationSteps);
+                 }
+                 
+                 this._insertNonFull(this.root, key, animationSteps);
+                 
+                 animationSteps.push({
+                     type: 'end-operation',
+                     message: `Completed insertion of key ${key}`
+                 });
+                 
+                 return animationSteps;
+             }
+             
+             _insertNonFull(node, key, animationSteps) {
+                 let i = node.keys.length - 1;
+                 
+                 animationSteps.push({
+                     type: 'highlight-node',
+                     node: node,
+                     message: `Inserting ${key} into node with keys [${node.keys.join(', ')}]`
+                 });
+                 
+                 if (node.isLeaf) {
+                     while (i >= 0 && key < node.keys[i]) {
+                         i--;
+                     }
+                     
+                     i++;
+                     node.keys.splice(i, 0, key);
+                     
+                     animationSteps.push({
+                         type: 'insert-key',
+                         node: node,
+                         keyIndex: i,
+                         message: `Inserted ${key} at position ${i} in leaf node`
+                     });
+                 } else {
+                     while (i >= 0 && key < node.keys[i]) {
+                         i--;
+                     }
+                     
+                     i++;
+                     if (i < 0) i = 0;
+                     
+                     if (i >= node.children.length) {
+                         node.children[i] = new BTreeNode(true, node.order);
+                     }
+                     
+                     animationSteps.push({
+                         type: 'traverse-child',
+                         fromNode: node,
+                         toChild: i,
+                         message: `Moving to child ${i} to insert ${key}`
+                     });
+                     
+                     if (node.children[i].isFull()) {
+                         animationSteps.push({
+                             type: 'child-full',
+                             node: node,
+                             childIndex: i,
+                             message: `Child ${i} is full. Splitting before insertion.`
+                         });
+                         
+                         this._splitChild(node, i, animationSteps);
+                         
+                         if (key > node.keys[i]) {
+                             i++;
+                             animationSteps.push({
+                                 type: 'choose-path',
+                                 node: node,
+                                 newPath: i,
+                                 message: `After split, key ${key} is greater than median ${node.keys[i-1]}, moving to child ${i}`
+                             });
+                         }
+                     }
+                     
+                     this._insertNonFull(node.children[i], key, animationSteps);
+                 }
+             }
+             
+             _splitChild(parentNode, childIndex, animationSteps) {
+                 const childNode = parentNode.children[childIndex];
+                 const newNode = new BTreeNode(childNode.isLeaf, this.order);
+                 const midIndex = this.t - 1; // Split at minimum degree
+                 const midKey = childNode.keys[midIndex];
+                 
+                 animationSteps.push({
+                     type: 'begin-split',
+                     parentNode: parentNode,
+                     childNode: childNode,
+                     childIndex: childIndex,
+                     message: `Splitting child ${childIndex} with keys [${childNode.keys.join(', ')}]`
+                 });
+                 
+                 // Right node takes keys after midIndex
+                 newNode.keys = childNode.keys.slice(midIndex + 1);
+                 childNode.keys = childNode.keys.slice(0, midIndex);
+                 
+                 // Move children if not leaf
+                 if (!childNode.isLeaf) {
+                     newNode.children = childNode.children.slice(midIndex + 1);
+                     childNode.children = childNode.children.slice(0, midIndex + 1);
+                 }
+                 
+                 // Insert new node and promote midKey to parent
+                 parentNode.children.splice(childIndex + 1, 0, newNode);
+                 parentNode.keys.splice(childIndex, 0, midKey);
+                 
+                 animationSteps.push({
+                     type: 'complete-split',
+                     parentNode: parentNode,
+                     leftChild: childNode,
+                     rightChild: newNode,
+                     middleKey: midKey,
+                     childIndex: childIndex,
+                     message: `Split complete. Middle key ${midKey} moved to parent. Left child [${childNode.keys.join(', ')}], Right child [${newNode.keys.join(', ')}]`
+                 });
+             }
+
+                 delete(key) {
+                     if (!this.root) return [];
+                     
+                     const animationSteps = [];
+                     animationSteps.push({
+                         type: 'start-operation',
+                         message: `Starting deletion of key ${key}`
+                     });
+                     
+                     this._delete(this.root, key, animationSteps);
+                     
+                     // If root has no keys and has a child, make the child the new root
+                     if (this.root.keys.length === 0 && !this.root.isLeaf) {
+                         const oldRoot = this.root;
+                         this.root = this.root.children[0];
+                         
+                         animationSteps.push({
+                             type: 'change-root',
+                             oldRoot: oldRoot,
+                             newRoot: this.root,
+                             message: `Root has no keys. Child becomes new root.`
+                         });
+                     }
+                     
+                     animationSteps.push({
+                         type: 'end-operation',
+                         message: `Completed deletion of key ${key}`
+                     });
+                     
+                     return animationSteps;
+                 }
+                 
+                 _delete(node, key, animationSteps) {
+                     let keyIndex = this._findKeyIndex(node, key);
+                     
+                     animationSteps.push({
+                         type: 'highlight-node',
+                         node: node,
+                         message: `Checking node with keys [${node.keys.join(', ')}] for key ${key}`
+                     });
+                     
+                     // Case 1: Key found in this node
+                     if (keyIndex < node.keys.length && node.keys[keyIndex] === key) {
+                         animationSteps.push({
+                             type: 'key-found',
+                             node: node,
+                             keyIndex: keyIndex,
+                             message: `Found key ${key} at index ${keyIndex}`
+                         });
+                         
+                         // Case 1a: If node is a leaf, simply remove the key
+                         if (node.isLeaf) {
+                             node.keys.splice(keyIndex, 1);
+                             animationSteps.push({
+                                 type: 'remove-key',
+                                 node: node,
+                                 message: `Removed key ${key} from leaf node`
+                             });
+                             return;
+                         }
+                         // Case 1b: If node is internal
+                         else {
+                             // Case 2: If the child that precedes key has at least t keys
+                             if (node.children[keyIndex].keys.length >= this.order / 2) {
+                                 // Find predecessor
+                                 const predecessorNode = this._findPredecessor(node, keyIndex, animationSteps);
+                                 const predecessor = predecessorNode.keys[predecessorNode.keys.length - 1];
+                                 
+                                 // Replace key with predecessor
+                                 animationSteps.push({
+                                     type: 'replace-with-predecessor',
+                                     node: node,
+                                     keyIndex: keyIndex,
+                                     predecessor: predecessor,
+                                     message: `Replacing ${key} with predecessor ${predecessor}`
+                                 });
+                                 
+                                 node.keys[keyIndex] = predecessor;
+                                 
+                                 // Recursively delete predecessor from the subtree
+                                 this._delete(node.children[keyIndex], predecessor, animationSteps);
+                             }
+                             // Case 3: If the child that follows key has at least t keys
+                             else if (node.children[keyIndex + 1].keys.length >= this.order / 2) {
+                                 // Find successor
+                                 const successorNode = this._findSuccessor(node, keyIndex, animationSteps);
+                                 const successor = successorNode.keys[0];
+                                 
+                                 // Replace key with successor
+                                 animationSteps.push({
+                                     type: 'replace-with-successor',
+                                     node: node,
+                                     keyIndex: keyIndex,
+                                     successor: successor,
+                                     message: `Replacing ${key} with successor ${successor}`
+                                 });
+                                 
+                                 node.keys[keyIndex] = successor;
+                                 
+                                 // Recursively delete successor from the subtree
+                                 this._delete(node.children[keyIndex + 1], successor, animationSteps);
+                             }
+                             // Case 4: Both children have minimum keys
+                             else {
+                                 this._mergeChildren(node, keyIndex, animationSteps);
+                                 this._delete(node.children[keyIndex], key, animationSteps);
+                             }
+                         }
+                     }
+                     // Case 2: Key not found in this node
+                     else {
+                         // If leaf, key is not in tree
+                         if (node.isLeaf) {
+                             animationSteps.push({
+                                 type: 'not-found',
+                                 message: `Key ${key} not found in the tree`
+                             });
+                             return;
+                         }
+                         
+                         // Determine the child to go to
+                         const childIndex = (keyIndex === node.keys.length) ? keyIndex : keyIndex;
+                         
+                         animationSteps.push({
+                             type: 'traverse-child',
+                             fromNode: node,
+                             toChild: childIndex,
+                             message: `Moving to child ${childIndex} to search for ${key}`
+                         });
+                         
+                         // If child has minimum keys, we need to make sure it has more than minimum
+                         if (node.children[childIndex].keys.length <= node.children[childIndex].minKeys) {
+                             this._ensureMinKeys(node, childIndex, animationSteps);
+                         }
+                         
+                         this._delete(node.children[childIndex], key, animationSteps);
+                     }
+                 }
+                 
+                 _findKeyIndex(node, key) {
+                     let index = 0;
+                     while (index < node.keys.length && node.keys[index] < key) {
+                         index++;
+                     }
+                     return index;
+                 }
+                 
+                 _findPredecessor(node, keyIndex, animationSteps) {
+                     let current = node.children[keyIndex];
+                     
+                     animationSteps.push({
+                         type: 'find-predecessor',
+                         startNode: node,
+                         keyIndex: keyIndex,
+                         message: `Finding predecessor for key ${node.keys[keyIndex]}`
+                     });
+                     
+                     while (!current.isLeaf) {
+                         animationSteps.push({
+                             type: 'traverse-rightmost-child',
+                             node: current,
+                             message: `Moving to rightmost child to find predecessor`
+                         });
+                         
+                         current = current.children[current.children.length - 1];
+                     }
+                     
+                     animationSteps.push({
+                         type: 'found-predecessor',
+                         node: current,
+                         key: current.keys[current.keys.length - 1],
+                         message: `Found predecessor: ${current.keys[current.keys.length - 1]}`
+                     });
+                     
+                     return current;
+                 }
+                 
+                 _findSuccessor(node, keyIndex, animationSteps) {
+                     let current = node.children[keyIndex + 1];
+                     
+                     animationSteps.push({
+                         type: 'find-successor',
+                         startNode: node,
+                         keyIndex: keyIndex,
+                         message: `Finding successor for key ${node.keys[keyIndex]}`
+                     });
+                     
+                     while (!current.isLeaf) {
+                         animationSteps.push({
+                             type: 'traverse-leftmost-child',
+                             node: current,
+                             message: `Moving to leftmost child to find successor`
+                         });
+                         
+                         current = current.children[0];
+                     }
+                     
+                     animationSteps.push({
+                         type: 'found-successor',
+                         node: current,
+                         key: current.keys[0],
+                         message: `Found successor: ${current.keys[0]}`
+                     });
+                     
+                     return current;
+                 }
+                 
+                 _mergeChildren(node, keyIndex, animationSteps) {
+                     const leftChild = node.children[keyIndex];
+                     const rightChild = node.children[keyIndex + 1];
+                     
+                     animationSteps.push({
+                         type: 'begin-merge',
+                         parentNode: node,
+                         leftChildIndex: keyIndex,
+                         rightChildIndex: keyIndex + 1,
+                         message: `Merging child ${keyIndex} and ${keyIndex + 1}`
+                     });
+                     
+                     // Move key down from node to left child
+                     leftChild.keys.push(node.keys[keyIndex]);
+                     
+                     // Move keys from right child to left child
+                     for (let i = 0; i < rightChild.keys.length; i++) {
+                         leftChild.keys.push(rightChild.keys[i]);
+                     }
+                     
+                     // If not leaf, move children too
+                     if (!leftChild.isLeaf) {
+                         for (let i = 0; i < rightChild.children.length; i++) {
+                             leftChild.children.push(rightChild.children[i]);
+                         }
+                     }
+                     
+                     // Remove key from node
+                     node.keys.splice(keyIndex, 1);
+                     
+                     // Remove right child from node
+                     node.children.splice(keyIndex + 1, 1);
+                     
+                     animationSteps.push({
+                         type: 'complete-merge',
+                         parentNode: node,
+                         mergedChild: leftChild,
+                         message: `Merge complete. Parent: [${node.keys.join(', ')}], Merged child: [${leftChild.keys.join(', ')}]`
+                     });
+                 }
+                 
+                 _ensureMinKeys(node, childIndex, animationSteps) {
+                     const child = node.children[childIndex];
+                     
+                     // Case 1: Borrow from left sibling
+                     if (childIndex > 0 && node.children[childIndex - 1].keys.length > node.children[childIndex - 1].minKeys) {
+                         const leftSibling = node.children[childIndex - 1];
+                         
+                         animationSteps.push({
+                             type: 'borrow-from-left',
+                             parentNode: node,
+                             childIndex: childIndex,
+                             leftSiblingIndex: childIndex - 1,
+                             message: `Borrowing from left sibling for child ${childIndex}`
+                         });
+                         
+                         // Move key from parent to child
+                         child.keys.unshift(node.keys[childIndex - 1]);
+                         
+                         // Move key from left sibling to parent
+                         node.keys[childIndex - 1] = leftSibling.keys[leftSibling.keys.length - 1];
+                         leftSibling.keys.pop();
+                         
+                         // If not leaf, move a child from left sibling to child
+                         if (!child.isLeaf) {
+                             child.children.unshift(leftSibling.children[leftSibling.children.length - 1]);
+                             leftSibling.children.pop();
+                         }
+                         
+                         animationSteps.push({
+                             type: 'borrow-complete',
+                             parentNode: node,
+                             child: child,
+                             leftSibling: leftSibling,
+                             message: `Borrow complete. Parent: [${node.keys.join(', ')}], Child: [${child.keys.join(', ')}], Left sibling: [${leftSibling.keys.join(', ')}]`
+                         });
+                     }
+                     // Case 2: Borrow from right sibling
+                     else if (childIndex < node.children.length - 1 && node.children[childIndex + 1].keys.length > node.children[childIndex + 1].minKeys) {
+                         const rightSibling = node.children[childIndex + 1];
+                         
+                         animationSteps.push({
+                             type: 'borrow-from-right',
+                             parentNode: node,
+                             childIndex: childIndex,
+                             rightSiblingIndex: childIndex + 1,
+                             message: `Borrowing from right sibling for child ${childIndex}`
+                         });
+                         
+                         // Move key from parent to child
+                         child.keys.push(node.keys[childIndex]);
+                         
+                         // Move key from right sibling to parent
+                         node.keys[childIndex] = rightSibling.keys[0];
+                         rightSibling.keys.shift();
+                         
+                         // If not leaf, move a child from right sibling to child
+                         if (!child.isLeaf) {
+                             child.children.push(rightSibling.children[0]);
+                             rightSibling.children.shift();
+                         }
+                         
+                         animationSteps.push({
+                             type: 'borrow-complete',
+                             parentNode: node,
+                             child: child,
+                             rightSibling: rightSibling,
+                             message: `Borrow complete. Parent: [${node.keys.join(', ')}], Child: [${child.keys.join(', ')}], Right sibling: [${rightSibling.keys.join(', ')}]`
+                         });
+                     }
+                     // Case 3: Merge with a sibling
+                     else {
+                         if (childIndex > 0) {
+                             // Merge with left sibling
+                             this._mergeChildren(node, childIndex - 1, animationSteps);
+                         } else {
+                             // Merge with right sibling
+                             this._mergeChildren(node, childIndex, animationSteps);
+                         }
+                     }
+                 }
+             }
+         
+             class BTreeVisualizer {
+                 constructor(bTree) {
+                     this.bTree = bTree;
+                     this.stage = null;
+                     this.layer = null;
+                     this.nodeShape = null;
+                     this.animation = null;
+                     this.isAnimating = false;
+                     this.highlighted = {};
+                     
+                     this.config = {
+                         nodeWidth: 100,
+                         nodeHeight: 40,
+                         horizontalSpacing: 20,
+                         verticalSpacing: 60,
+                         keyRadius: 15,
+                         backgroundColor: '#121212',
+                         nodeColor: 'rgba(40, 40, 40, 0.8)',
+                         keyColor: 'rgba(60, 60, 60, 0.8)',
+                         textColor: '#e0e0e0',
+                         lineColor: '#666',
+                         highlightColor: 'rgba(0, 150, 255, 0.5)',
+                         highlightStroke: '#0096ff',
+                         searchHighlight: 'rgba(0, 255, 0, 0.5)',
+                         searchStroke: '#00ff00',
+                         errorHighlight: 'rgba(255, 0, 0, 0.5)',
+                         errorStroke: '#ff0000'
+                     };
+                     
+                     this.initVisualizer();
+                 }
+                 
+                 initVisualizer() {
+                     // Create Konva stage
+                     const container = document.getElementById('canvas-container');
+                     const width = container.offsetWidth;
+                     const height = container.offsetHeight;
+                     
+                     this.stage = new Konva.Stage({
+                         container: 'canvas-container',
+                         width: width,
+                         height: height
+                     });
+                     
+                     // Create layer
+                     this.layer = new Konva.Layer();
+                     this.stage.add(this.layer);
+                     
+                     // Add resize handler
+                     window.addEventListener('resize', () => {
+                         this.stage.width(container.offsetWidth);
+                         this.stage.height(container.offsetHeight);
+                         this.drawTree();
+                     });
+                     
+                     // Initial drawing
+                     this.drawTree();
+                 }
+                 
+                 drawTree() {
+                     this.layer.destroyChildren();
+                     this.highlighted = {};
+                     
+                     // Calculate tree layout
+                     const layout = this.calculateLayout();
+                     
+                     // Draw connections first (so they're behind nodes)
+                     this.drawConnections(layout);
+                     
+                     // Draw nodes
+                     for (const nodeLayout of layout) {
+                         this.drawNode(nodeLayout.node, nodeLayout.x, nodeLayout.y);
+                     }
+                     
+                     this.layer.draw();
+                 }
+                 
+                 calculateLayout() {
+                     const layout = [];
+                     const levelWidth = {};
+                     const levelNodes = {};
+                     
+                     // First pass: count nodes per level
+                     // First pass: count nodes per level
+         const countNodesPerLevel = (node, level = 0) => {
+         if (!node) return; // Add this check to handle undefined nodes
+         
+         if (!levelWidth[level]) {
+             levelWidth[level] = 0;
+             levelNodes[level] = [];
+         }
+         
+         levelWidth[level]++;
+         levelNodes[level].push(node);
+         
+         if (!node.isLeaf) {
+             for (const child of node.children) {
+                 // Add a check to ensure child exists before recursing
+                 if (child) {
+                     countNodesPerLevel(child, level + 1);
+                 }
+             }
+         }
+         };
+         
+                     
+                     countNodesPerLevel(this.bTree.root);
+                     
+                     // Second pass: calculate positions
+                     const stageWidth = this.stage.width();
+                     const stageHeight = this.stage.height();
+                     const levelCount = Object.keys(levelWidth).length;
+                     
+                     Object.keys(levelNodes).forEach(level => {
+                         const nodes = levelNodes[level];
+                         const totalWidth = nodes.length * this.config.nodeWidth + (nodes.length - 1) * this.config.horizontalSpacing;
+                         let startX = (stageWidth - totalWidth) / 2;
+                         
+                         const y = 50 + parseInt(level) * (this.config.nodeHeight + this.config.verticalSpacing);
+                         
+                         nodes.forEach(node => {
+                             // Calculate node width based on number of keys
+                             const nodeWidth = Math.max(this.config.nodeWidth, (node.keys.length * 30) + 20);
+                             
+                             layout.push({
+                                 node: node,
+                                 x: startX + (nodeWidth / 2),
+                                 y: y,
+                                 width: nodeWidth,
+                                 height: this.config.nodeHeight
+                             });
+                             
+                             startX += nodeWidth + this.config.horizontalSpacing;
+                         });
+                     });
+                     
+                     return layout;
+                 }
+                 
+                findNodeInLayout(node, layout) {
+                     return layout.find(item => item.node === node);
+                 }// Add this search method to your BTree class
+         
+         search(node, key, path = [], callback = null) {
+         let i = 0;
+         
+         // Find index where key should be
+         while (i < node.keys.length && key > node.keys[i]) {
+             i++;
+         }
+         
+         // Check if key found at current node
+         if (i < node.keys.length && key === node.keys[i]) {
+             if (callback) {
+                 callback(node, i);
+             }
+             path.push({ node, index: i });
+             return { found: true, node, index: i, path };
+         }
+         
+         // If leaf node and key not found, search fails
+         if (node.isLeaf) {
+             return { found: false, path };
+         }
+         
+         // Recursively search appropriate child
+         path.push({ node, childIndex: i });
+         return this.search(node.children[i], key, path, callback);
+         }
+                 
+                 drawNode(node, x, y) {
+                     const nodeWidth = Math.max(this.config.nodeWidth, (node.keys.length * 30) + 20);
+                     
+                     // Draw node rectangle
+                     const rect = new Konva.Rect({
+                         x: x - nodeWidth / 2,
+                         y: y - this.config.nodeHeight / 2,
+                         width: nodeWidth,
+                         height: this.config.nodeHeight,
+                         fill: this.config.nodeColor,
+                         stroke: this.config.lineColor,
+                         strokeWidth: 1,
+                         cornerRadius: 5,
+                         shadowColor: 'black',
+                         shadowBlur: 5,
+                         shadowOffset: { x: 2, y: 2 },
+                         shadowOpacity: 0.3
+                     });
+                     
+                     this.layer.add(rect);
+                     
+                     // Store the shape for highlighting
+                     if (!this.highlighted[node]) {
+                         this.highlighted[node] = {
+                             shape: rect,
+                             keys: []
+                         };
+                     } else {
+                         this.highlighted[node].shape = rect;
+                     }
+                     
+                     // Draw keys
+                     const keySpacing = nodeWidth / (node.keys.length + 1);
+                     
+                     node.keys.forEach((key, index) => {
+                         const keyX = (x - nodeWidth / 2) + keySpacing * (index + 1);
+                         
+                         // Key circle
+                         const circle = new Konva.Circle({
+                             x: keyX,
+                             y: y,
+                             radius: this.config.keyRadius,
+                             fill: this.config.keyColor,
+                             stroke: this.config.lineColor,
+                             strokeWidth: 1,
+                         });
+                         
+                         // Key text
+                         const text = new Konva.Text({
+                             x: keyX - 15,
+                             y: y - 7,
+                            text: key !== undefined ? key.toString() : "undefined",
+                             fontSize: 14,
+                             fontFamily: 'Arial',
+                             fill: this.config.textColor,
+                             width: 30,
+                             align: 'center'
+                         });
+                         
+                         this.layer.add(circle);
+                         this.layer.add(text);
+                         
+                         // Store shapes for highlighting
+                         if (this.highlighted[node]) {
+                             this.highlighted[node].keys[index] = {
+                                 shape: circle,
+                                 text: text
+                             };
+                         }
+                     });
+                 }
+                 
+                 drawConnections(layout) {
+                     // Draw connections between nodes
+                     for (const nodeLayout of layout) {
+                         const node = nodeLayout.node;
+                         
+                         if (!node.isLeaf) {
+                             for (const child of node.children) {
+                                 const childLayout = this.findNodeInLayout(child, layout);
+                                 
+                                 if (childLayout) {
+                                     const line = new Konva.Line({
+                                         points: [
+                                             nodeLayout.x, 
+                                             nodeLayout.y + this.config.nodeHeight / 2,
+                                             childLayout.x, 
+                                             childLayout.y - this.config.nodeHeight / 2
+                                         ],
+                                         stroke: this.config.lineColor,
+                                         strokeWidth: 1
+                                     });
+                                     
+                                     this.layer.add(line);
+                                 }
+                             }
+                         }
+                     }
+                 }
+                 
+                 highlightNode(node, color = this.config.highlightColor, stroke = this.config.highlightStroke) {
+                     if (this.highlighted[node] && this.highlighted[node].shape) {
+                         this.highlighted[node].shape.fill(color);
+                         this.highlighted[node].shape.stroke(stroke);
+                         this.highlighted[node].shape.strokeWidth(2);
+                         this.layer.draw();
+                     }
+                 }
+                 
+                 highlightKey(node, keyIndex, color = this.config.searchHighlight, stroke = this.config.searchStroke) {
+                     if (this.highlighted[node] && 
+                         this.highlighted[node].keys && 
+                         this.highlighted[node].keys[keyIndex]) {
+                         
+                         this.highlighted[node].keys[keyIndex].shape.fill(color);
+                         this.highlighted[node].keys[keyIndex].shape.stroke(stroke);
+                         this.highlighted[node].keys[keyIndex].shape.strokeWidth(2);
+                         this.layer.draw();
+                     }
+                 }
+                 
+                 resetHighlights() {
+                     Object.keys(this.highlighted).forEach(key => {
+                         const node = this.highlighted[key];
+                         
+                         if (node.shape) {
+                             node.shape.fill(this.config.nodeColor);
+                             node.shape.stroke(this.config.lineColor);
+                             node.shape.strokeWidth(1);
+                         }
+                         
+                         if (node.keys) {
+                             node.keys.forEach(keyObj => {
+                                 if (keyObj && keyObj.shape) {
+                                     keyObj.shape.fill(this.config.keyColor);
+                                     keyObj.shape.stroke(this.config.lineColor);
+                                     keyObj.shape.strokeWidth(1);
+                                 }
+                             });
+                         }
+                     });
+                     
+                     this.layer.draw();
+                 }
+                 
+                async animateOperation(steps) {
+         if (this.isAnimating) return;
+         this.isAnimating = true;
+         
+         const infoPanel = document.getElementById('operation-details');
+         
+         for (const step of steps) {
+             // Check if infoPanel exists before updating
+             if (infoPanel) {
+                 infoPanel.textContent = step.message || 'Performing operation...';
+             }
+                         // Process animation step
+                         switch (step.type) {
+                             case 'start-operation':
+                             case 'end-operation':
+                                 // Just update message
+                                 break;
+                                 
+                             case 'highlight-node':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 break;
+                                 
+                             case 'highlight-key':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 this.highlightKey(step.node, step.keyIndex);
+                                 break;
+                                 
+                             case 'not-found':
+                                 // Just update message
+                                 break;
+                                 
+                             case 'traverse-child':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.fromNode);
+                                 await new Promise(resolve => setTimeout(resolve, this.bTree.currentSpeed / 2));
+                                 this.resetHighlights();
+                                 this.highlightNode(step.fromNode.children[step.toChild]);
+                                 break;
+                                 
+                             case 'insert-key':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 this.highlightKey(step.node, step.keyIndex, this.config.searchHighlight, this.config.searchStroke);
+                                 break;
+                                 
+                             case 'split-root':
+                             case 'begin-split':
+                             case 'complete-split':
+                                 this.drawTree(); // Redraw the whole tree
+                                 break;
+                                 
+                             case 'child-full':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node.children[step.childIndex], this.config.errorHighlight, this.config.errorStroke);
+                                 break;
+                                 
+                             case 'choose-path':
+                                 // Just update message
+                                 break;
+                                 
+                             case 'key-found':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 this.highlightKey(step.node, step.keyIndex, this.config.searchHighlight, this.config.searchStroke);
+                                 break;
+                                 
+                             case 'remove-key':
+                                 this.drawTree(); // Redraw the tree
+                                 break;
+                                 
+                             case 'replace-with-predecessor':
+                             case 'replace-with-successor':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 this.highlightKey(step.node, step.keyIndex, this.config.highlightColor, this.config.highlightStroke);
+                                 break;
+                                 
+                             case 'find-predecessor':
+                             case 'find-successor':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.startNode);
+                                 this.highlightKey(step.startNode, step.keyIndex, this.config.highlightColor, this.config.highlightStroke);
+                                 break;
+                                 
+                             case 'traverse-rightmost-child':
+                             case 'traverse-leftmost-child':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 break;
+                                 
+                             case 'found-predecessor':
+                             case 'found-successor':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.node);
+                                 break;
+                                 
+                             case 'begin-merge':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.parentNode);
+                                 this.highlightNode(step.parentNode.children[step.leftChildIndex], this.config.searchHighlight, this.config.searchStroke);
+                                 this.highlightNode(step.parentNode.children[step.rightChildIndex], this.config.searchHighlight, this.config.searchStroke);
+                                 break;
+                                 
+                             case 'complete-merge':
+                             case 'change-root':
+                                 this.drawTree(); // Redraw the tree
+                                 break;
+                                 
+                             case 'borrow-from-left':
+                             case 'borrow-from-right':
+                                 this.resetHighlights();
+                                 this.highlightNode(step.parentNode);
+                                 this.highlightNode(step.parentNode.children[step.childIndex], this.config.searchHighlight, this.config.searchStroke);
+                                 
+                                 if (step.leftSiblingIndex !== undefined) {
+                                     this.highlightNode(step.parentNode.children[step.leftSiblingIndex], this.config.searchHighlight, this.config.searchStroke);
+                                 }
+                                 
+                                 if (step.rightSiblingIndex !== undefined) {
+                                     this.highlightNode(step.parentNode.children[step.rightSiblingIndex], this.config.searchHighlight, this.config.searchStroke);
+                                 }
+                                 break;
+                                 
+                             case 'borrow-complete':
+                                 this.drawTree(); // Redraw the tree
+                                 break;
+                                 
+                             default:
+                                 console.log('Unknown animation step:', step.type);
+                         }
+                         
+                         // Delay before next step
+                         await new Promise(resolve => setTimeout(resolve, this.bTree.currentSpeed));
+                     }
+                     
+                     this.resetHighlights();
+                     this.isAnimating = false;
+                 }
+             }
+         
+             // Main application logic
+             document.addEventListener('DOMContentLoaded', () => {
+                 const bTree = new BTree(3);
+                 const visualizer = new BTreeVisualizer(bTree);
+                 
+                 const createBtn = document.getElementById('create-btn');
+                 const insertBtn = document.getElementById('insert-btn');
+                 const searchBtn = document.getElementById('search-btn');
+                 const deleteBtn = document.getElementById('delete-btn');
+                 const autoInsertBtn = document.getElementById('auto-insert-btn');
+                 const clearBtn = document.getElementById('clear-btn');
+                 const valueInput = document.getElementById('value-input');
+                 const orderInput = document.getElementById('order-input');
+                 const animationSpeed = document.getElementById('animation-speed');
+                 
+                 // Create new B-Tree with specified order
+                 createBtn.addEventListener('click', () => {
+                     const order = parseInt(orderInput.value);
+                     if (order < 3) {
+                         alert('Order must be at least 3');
+                         return;
+                     }
+                     
+                     bTree.root = new BTreeNode(true, order);
+                     bTree.order = order;
+                     visualizer.drawTree();
+                 });
+                 
+                 // Insert value
+                 insertBtn.addEventListener('click', async () => {
+                     const value = parseInt(valueInput.value);
+                     if (isNaN(value)) {
+                         alert('Please enter a valid number');
+                         return;
+                     }
+                     
+                     const steps = bTree.insert(value);
+                     await visualizer.animateOperation(steps);
+                     visualizer.drawTree();
+                     valueInput.value = '';
+                 });
+                 
+                 // Search value
+                 searchBtn.addEventListener('click', async () => {
+                     const value = parseInt(valueInput.value);
+                     if (isNaN(value)) {
+                         alert('Please enter a valid number');
+                         return;
+                     }
+                     
+                     const animationSteps = [];
+                     bTree.search(bTree.root, value, animationSteps);
+                     await visualizer.animateOperation(animationSteps);
+                 });
+                 
+                 // Delete value
+                 deleteBtn.addEventListener('click', async () => {
+                     const value = parseInt(valueInput.value);
+                     if (isNaN(value)) {
+                         alert('Please enter a valid number');
+                         return;
+                     }
+                     
+                     const steps = bTree.delete(value);
+                     await visualizer.animateOperation(steps);
+                     visualizer.drawTree();
+                     valueInput.value = '';
+                 });
+                 
+                 // Auto insert random values
+                 autoInsertBtn.addEventListener('click', async () => {
+                     for (let i = 0; i < 10; i++) {
+                         const value = Math.floor(Math.random() * 100);
+                         const steps = bTree.insert(value);
+                         await visualizer.animateOperation(steps);
+                     }
+                     visualizer.drawTree();
+                 });
+                 
+                 // Clear tree
+                 clearBtn.addEventListener('click', () => {
+                     bTree.root = new BTreeNode(true, bTree.order);
+                     document.getElementById('operation-details').textContent = 'None';
+                     visualizer.drawTree();
+                 });
+                 
+                 // Change animation speed
+                 animationSpeed.addEventListener('change', () => {
+                     const speed = animationSpeed.value;
+                     bTree.currentSpeed = bTree.animationSpeed[speed];
+                 });
+                 
+                 // Handle keyboard events
+                 valueInput.addEventListener('keydown', (e) => {
+                     if (e.key === 'Enter') {
+                         insertBtn.click();
+                     }
+                 });
+             });
+      </script>
+   </body>
+</html>

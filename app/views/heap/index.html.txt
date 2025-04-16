@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Max Heap Visualization with Konva.js</title>
+    <script src="https://unpkg.com/konva@8.4.2/konva.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            width: 100%;
+            height: 70vh;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100px;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .status {
+            margin-top: 10px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Max Heap Visualization</h1>
+    
+    <div class="controls">
+        <input type="number" id="valueInput" placeholder="Enter value" min="1" max="99">
+        <button id="insertBtn">Insert</button>
+        <button id="extractMaxBtn">Extract Max</button>
+        <button id="buildHeapBtn">Build Random Heap</button>
+        <button id="clearBtn">Clear Heap</button>
+    </div>
+    
+    <div class="status" id="status"></div>
+    
+    <div id="container"></div>
+    
+    <div class="info">
+        <h3>Max Heap Properties:</h3>
+        <p>In a max heap, the key at root must be maximum among all keys in the heap. The same property must be recursively true for all nodes in the tree. A binary heap is implemented as a complete binary tree, which is filled at all levels except possibly the last level, which is filled from left to right.</p>
+    </div>
+
+    <script>
+        // Set pixel ratio to 1 for better performance on retina displays
+        Konva.pixelRatio = 1;
+        
+        // Initialize Konva Stage
+        const width = window.innerWidth - 40;
+        const height = window.innerHeight * 0.7;
+        
+        const stage = new Konva.Stage({
+            container: 'container',
+            width: width,
+            height: height
+        });
+        
+        const layer = new Konva.Layer();
+        stage.add(layer);
+        
+        const statusEl = document.getElementById('status');
+        
+        // Heap implementation
+        class MaxHeap {
+            constructor() {
+                this.heap = [];
+                this.nodeMap = new Map(); // Maps heap indices to visual nodes
+                this.animationQueue = [];
+                this.isAnimating = false;
+                this.nodeRadius = 25;
+                this.levelHeight = 80;
+                this.positions = [];
+            }
+            
+            getParentIndex(i) {
+                return Math.floor((i - 1) / 2);
+            }
+            
+            getLeftChildIndex(i) {
+                return 2 * i + 1;
+            }
+            
+            getRightChildIndex(i) {
+                return 2 * i + 2;
+            }
+            
+            hasLeftChild(i) {
+                return this.getLeftChildIndex(i) < this.heap.length;
+            }
+            
+            hasRightChild(i) {
+                return this.getRightChildIndex(i) < this.heap.length;
+            }
+            
+            hasParent(i) {
+                return this.getParentIndex(i) >= 0;
+            }
+            
+            leftChild(i) {
+                return this.heap[this.getLeftChildIndex(i)];
+            }
+            
+            rightChild(i) {
+                return this.heap[this.getRightChildIndex(i)];
+            }
+            
+            parent(i) {
+                return this.heap[this.getParentIndex(i)];
+            }
+            
+            swap(i, j) {
+                // Queue animation for swapping
+                this.animationQueue.push({
+                    type: 'swap',
+                    indices: [i, j],
+                    values: [this.heap[i], this.heap[j]]
+                });
+                
+                // Actual swap in the array
+                [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+            }
+            
+            // Returns the position for a node at index i
+            getPosition(i) {
+                if (i >= this.positions.length) {
+                    this.calculatePositions();
+                }
+                return this.positions[i];
+            }
+            
+            // Calculate positions for all nodes
+            calculatePositions() {
+                this.positions = [];
+                const startX = width / 2;
+                const startY = 50;
+                
+                for (let i = 0; i < this.heap.length; i++) {
+                    const level = Math.floor(Math.log2(i + 1));
+                    const nodesInLevel = Math.pow(2, level);
+                    const levelWidth = Math.min(width * 0.9, nodesInLevel * 100);
+                    const nodeSpacing = levelWidth / nodesInLevel;
+                    const levelStartX = startX - (levelWidth / 2) + (nodeSpacing / 2);
+                    
+                    const positionInLevel = i - Math.pow(2, level) + 1;
+                    const x = levelStartX + positionInLevel * nodeSpacing;
+                    const y = startY + level * this.levelHeight;
+                    
+                    this.positions.push({ x, y });
+                }
+            }
+            
+            getMax() {
+                if (this.heap.length === 0) {
+                    return null;
+                }
+                return this.heap[0];
+            }
+            
+            insert(value) {
+                if (isNaN(value) || value < 1 || value > 99) {
+                    statusEl.textContent = 'Please enter a value between 1 and 99';
+                    return;
+                }
+                
+                statusEl.textContent = `Inserting ${value} into the heap...`;
+                
+                // Add to the end of the heap
+                this.heap.push(value);
+                
+                // Queue animation for insertion
+                this.animationQueue.push({
+                    type: 'insert',
+                    index: this.heap.length - 1,
+                    value: value
+                });
+                
+                // Restore heap property by shifting up
+                this.heapifyUp();
+                
+                // Start animation if not already running
+                if (!this.isAnimating) {
+                    this.processAnimationQueue();
+                }
+            }
+            
+            heapifyUp() {
+                let index = this.heap.length - 1;
+                
+                while (this.hasParent(index) && this.parent(index) < this.heap[index]) {
+                    const parentIndex = this.getParentIndex(index);
+                    this.swap(parentIndex, index);
+                    index = parentIndex;
+                }
+            }
+            
+            extractMax() {
+                if (this.heap.length === 0) {
+                    statusEl.textContent = 'Heap is empty';
+                    return null;
+                }
+                
+                statusEl.textContent = `Extracting max value ${this.heap[0]} from the heap...`;
+                
+                const max = this.heap[0];
+                
+                // Queue animation for extraction start
+                this.animationQueue.push({
+                    type: 'extractStart',
+                    value: max
+                });
+                
+                // Replace with the last element
+                const last = this.heap.pop();
+                
+                if (this.heap.length > 0) {
+                    this.heap[0] = last;
+                    
+                    // Queue animation for moving last to root
+                    this.animationQueue.push({
+                        type: 'moveLastToRoot',
+                        value: last
+                    });
+                    
+                    // Restore heap property by shifting down
+                    this.heapifyDown();
+                }
+                
+                // Start animation if not already running
+                if (!this.isAnimating) {
+                    this.processAnimationQueue();
+                }
+                
+                return max;
+            }
+            
+            heapifyDown() {
+                let index = 0;
+                
+                while (this.hasLeftChild(index)) {
+                    // Find the larger child
+                    let largerChildIndex = this.getLeftChildIndex(index);
+                    
+                    if (this.hasRightChild(index) && this.rightChild(index) > this.leftChild(index)) {
+                        largerChildIndex = this.getRightChildIndex(index);
+                    }
+                    
+                    // If heap property is satisfied, break
+                    if (this.heap[index] >= this.heap[largerChildIndex]) {
+                        break;
+                    }
+                    
+                    // Swap with the larger child
+                    this.swap(index, largerChildIndex);
+                    index = largerChildIndex;
+                }
+            }
+            
+            buildHeap(array) {
+                // Clear current heap and animations
+                this.clear();
+                
+                this.heap = [...array];
+                
+                // Queue animation for initial heap
+                this.animationQueue.push({
+                    type: 'build',
+                    heap: [...this.heap]
+                });
+                
+                // Heapify from the last non-leaf node
+                for (let i = Math.floor(this.heap.length / 2) - 1; i >= 0; i--) {
+                    this.heapifyDownAt(i);
+                }
+                
+                // Start animation
+                if (!this.isAnimating) {
+                    this.processAnimationQueue();
+                }
+            }
+            
+            heapifyDownAt(index) {
+                let current = index;
+                
+                while (this.hasLeftChild(current)) {
+                    let largerChildIndex = this.getLeftChildIndex(current);
+                    
+                    if (this.hasRightChild(current) && this.rightChild(current) > this.leftChild(current)) {
+                        largerChildIndex = this.getRightChildIndex(current);
+                    }
+                    
+                    if (this.heap[current] >= this.heap[largerChildIndex]) {
+                        break;
+                    }
+                    
+                    this.swap(current, largerChildIndex);
+                    current = largerChildIndex;
+                }
+            }
+            
+            clear() {
+                this.heap = [];
+                this.nodeMap.clear();
+                this.animationQueue = [];
+                this.isAnimating = false;
+                layer.destroyChildren();
+                layer.draw();
+                statusEl.textContent = 'Heap cleared';
+            }
+            
+            // Process animation queue
+            processAnimationQueue() {
+                if (this.animationQueue.length === 0) {
+                    this.isAnimating = false;
+                    this.drawHeap();
+                    return;
+                }
+                
+                this.isAnimating = true;
+                const animation = this.animationQueue.shift();
+                
+                switch (animation.type) {
+                    case 'build':
+                        this.animateBuild();
+                        break;
+                    
+                    case 'insert':
+                        this.animateInsert(animation.index, animation.value);
+                        break;
+                    
+                    case 'swap':
+                        this.animateSwap(animation.indices[0], animation.indices[1]);
+                        break;
+                    
+                    case 'extractStart':
+                        this.animateExtractStart(animation.value);
+                        break;
+                    
+                    case 'moveLastToRoot':
+                        this.animateMoveLastToRoot();
+                        break;
+                }
+            }
+            
+            drawHeap() {
+                layer.destroyChildren();
+                this.nodeMap.clear();
+                this.calculatePositions();
+                
+                // Draw edges first
+                this.drawEdges();
+                
+                // Then draw nodes
+                for (let i = 0; i < this.heap.length; i++) {
+                    this.createNode(i, this.heap[i], this.positions[i]);
+                }
+                
+                layer.draw();
+            }
+            
+            drawEdges() {
+                for (let i = 0; i < this.heap.length; i++) {
+                    if (this.hasLeftChild(i)) {
+                        const leftChildIndex = this.getLeftChildIndex(i);
+                        const edge = new Konva.Line({
+                            points: [
+                                this.positions[i].x, this.positions[i].y,
+                                this.positions[leftChildIndex].x, this.positions[leftChildIndex].y
+                            ],
+                            stroke: '#666',
+                            strokeWidth: 2
+                        });
+                        layer.add(edge);
+                    }
+                    
+                    if (this.hasRightChild(i)) {
+                        const rightChildIndex = this.getRightChildIndex(i);
+                        const edge = new Konva.Line({
+                            points: [
+                                this.positions[i].x, this.positions[i].y,
+                                this.positions[rightChildIndex].x, this.positions[rightChildIndex].y
+                            ],
+                            stroke: '#666',
+                            strokeWidth: 2
+                        });
+                        layer.add(edge);
+                    }
+                }
+            }
+            
+            createNode(index, value, position) {
+                const group = new Konva.Group({
+                    x: position.x,
+                    y: position.y,
+                    id: `node-${index}`
+                });
+                
+                const circle = new Konva.Circle({
+                    radius: this.nodeRadius,
+                    fill: index === 0 ? '#ff9800' : '#4CAF50',
+                    stroke: '#333',
+                    strokeWidth: 2
+                });
+                
+                const text = new Konva.Text({
+                    text: value.toString(),
+                    fontSize: 16,
+                    fontFamily: 'Arial',
+                    fill: 'white',
+                    align: 'center',
+                    x: -this.nodeRadius,
+                    y: -8,
+                    width: this.nodeRadius * 2
+                });
+                
+                group.add(circle);
+                group.add(text);
+                layer.add(group);
+                this.nodeMap.set(index, group);
+                
+                return group;
+            }
+            
+            animateBuild() {
+                this.drawHeap();
+                
+                // Highlight nodes in sequence
+                const sequence = [];
+                for (let i = 0; i < this.heap.length; i++) {
+                    sequence.push(i);
+                }
+                
+                this.highlightNodesInSequence(sequence, () => {
+                    statusEl.textContent = 'Heap built successfully';
+                    this.processAnimationQueue();
+                });
+            }
+            
+            animateInsert(index, value) {
+                // Redraw heap to include the new node
+                this.drawHeap();
+                
+                // Get the node that was just inserted
+                const node = this.nodeMap.get(index);
+                
+                if (!node) {
+                    this.processAnimationQueue();
+                    return;
+                }
+                
+                // Save original position
+                const originalPos = { x: node.x(), y: node.y() };
+                
+                // Move node off-screen to start
+                node.position({
+                    x: width + 50,
+                    y: originalPos.y
+                });
+                
+                // Highlight to show it's new
+                const circle = node.findOne('Circle');
+                circle.fill('#f44336');
+                
+                // Animate moving to its position in the heap
+                const insertTween = new Konva.Tween({
+                    node: node,
+                    duration: 0.8,
+                    x: originalPos.x,
+                    y: originalPos.y,
+                    easing: Konva.Easings.EaseInOut,
+                    onFinish: () => {
+                        statusEl.textContent = `Inserted ${value}, now performing sift-up to maintain heap property`;
+                        
+                        setTimeout(() => {
+                            // Reset color
+                            circle.fill('#4CAF50');
+                            layer.draw();
+                            this.processAnimationQueue();
+                        }, 500);
+                    }
+                });
+                
+                layer.draw();
+                insertTween.play();
+            }
+            
+            animateSwap(index1, index2) {
+                const node1 = this.nodeMap.get(index1);
+                const node2 = this.nodeMap.get(index2);
+                
+                if (!node1 || !node2) {
+                    this.processAnimationQueue();
+                    return;
+                }
+                
+                // Get positions
+                const pos1 = { x: node1.x(), y: node1.y() };
+                const pos2 = { x: node2.x(), y: node2.y() };
+                
+                // Highlight nodes being swapped
+                node1.findOne('Circle').fill('#f44336');
+                node2.findOne('Circle').fill('#f44336');
+                layer.draw();
+                
+                // Update node map for the new indices
+                this.nodeMap.set(index1, node2);
+                this.nodeMap.set(index2, node1);
+                
+                // Animate the swap
+                const tween1 = new Konva.Tween({
+                    node: node1,
+                    duration: 0.7,
+                    x: pos2.x,
+                    y: pos2.y,
+                    easing: Konva.Easings.EaseInOut
+                });
+                
+                const tween2 = new Konva.Tween({
+                    node: node2,
+                    duration: 0.7,
+                    x: pos1.x,
+                    y: pos1.y,
+                    easing: Konva.Easings.EaseInOut,
+                    onFinish: () => {
+                        // Reset colors
+                        node1.findOne('Circle').fill(index2 === 0 ? '#ff9800' : '#4CAF50');
+                        node2.findOne('Circle').fill(index1 === 0 ? '#ff9800' : '#4CAF50');
+                        layer.draw();
+                        
+                        setTimeout(() => {
+                            this.processAnimationQueue();
+                        }, 300);
+                    }
+                });
+                
+                tween1.play();
+                tween2.play();
+            }
+            
+            animateExtractStart(value) {
+                if (this.heap.length === 0) {
+                    this.processAnimationQueue();
+                    return;
+                }
+                
+                const rootNode = this.nodeMap.get(0);
+                if (!rootNode) {
+                    this.processAnimationQueue();
+                    return;
+                }
+                
+                // Highlight the root node
+                const circle = rootNode.findOne('Circle');
+                circle.fill('#f44336');
+                layer.draw();
+                
+                // Animate the extraction
+                const extractTween = new Konva.Tween({
+                    node: rootNode,
+                    duration: 0.8,
+                    y: -100,
+                    opacity: 0,
+                    easing: Konva.Easings.EaseInOut,
+                    onFinish: () => {
+                        rootNode.destroy();
+                        this.processAnimationQueue();
+                    }
+                });
+                
+                setTimeout(() => {
+                    extractTween.play();
+                }, 500);
+            }
+            
+            animateMoveLastToRoot() {
+                // If heap is empty after extraction, just process next animation
+                if (this.heap.length === 0) {
+                    this.processAnimationQueue();
+                    return;
+                }
+                
+                this.drawHeap();
+                
+                // Get the root node
+                const rootNode = this.nodeMap.get(0);
+                if (!rootNode) {
+                    this.processAnimationQueue();
+                    return;
+                }
+                
+                // Highlight it
+                rootNode.findOne('Circle').fill('#f44336');
+                layer.draw();
+                
+                statusEl.textContent = 'Moving last element to root, then performing sift-down';
+                
+                setTimeout(() => {
+                    rootNode.findOne('Circle').fill('#ff9800');
+                    layer.draw();
+                    this.processAnimationQueue();
+                }, 1000);
+            }
+            
+            highlightNodesInSequence(indices, callback) {
+                if (indices.length === 0) {
+                    if (callback) callback();
+                    return;
+                }
+                
+                const index = indices.shift();
+                const node = this.nodeMap.get(index);
+                
+                if (node) {
+                    const circle = node.findOne('Circle');
+                    const originalFill = circle.fill();
+                    
+                    // Highlight
+                    circle.fill('#f44336');
+                    layer.draw();
+                    
+                    // Reset and move to next
+                    setTimeout(() => {
+                        circle.fill(originalFill);
+                        layer.draw();
+                        this.highlightNodesInSequence(indices, callback);
+                    }, 300);
+                } else {
+                    this.highlightNodesInSequence(indices, callback);
+                }
+            }
+        }
+        
+        // Initialize heap
+        const heap = new MaxHeap();
+        
+        // Event listeners
+        document.getElementById('insertBtn').addEventListener('click', () => {
+            const valueInput = document.getElementById('valueInput');
+            const value = parseInt(valueInput.value);
+            
+            if (!isNaN(value)) {
+                heap.insert(value);
+                valueInput.value = '';
+            } else {
+                statusEl.textContent = 'Please enter a valid number';
+            }
+        });
+        
+        document.getElementById('valueInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('insertBtn').click();
+            }
+        });
+        
+        document.getElementById('extractMaxBtn').addEventListener('click', () => {
+            heap.extractMax();
+        });
+        
+        document.getElementById('buildHeapBtn').addEventListener('click', () => {
+            const randomArray = Array.from({ length: 7 }, () => Math.floor(Math.random() * 99) + 1);
+            statusEl.textContent = `Building heap with values: ${randomArray.join(', ')}`;
+            heap.buildHeap(randomArray);
+        });
+        
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            heap.clear();
+        });
+        
+        // Build initial heap
+        const initialArray = [65, 42, 53, 19, 31, 27, 18];
+        statusEl.textContent = `Building initial heap with values: ${initialArray.join(', ')}`;
+        heap.buildHeap(initialArray);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth - 40;
+            const newHeight = window.innerHeight * 0.7;
+            
+            stage.width(newWidth);
+            stage.height(newHeight);
+            
+            // Redraw the heap with new dimensions
+            heap.drawHeap();
+        });
+    </script>
+</body>
+</html>
