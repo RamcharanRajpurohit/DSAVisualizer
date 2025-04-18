@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   get "heap/index"
   get "avl_tree/index"
   get "bst/index"
+  get "bst/graph2"
   root "pages#home"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
