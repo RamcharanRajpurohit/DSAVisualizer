@@ -36,8 +36,8 @@ DSA Visualizer is a web-based application designed to help users visualize and i
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
-   cd <repository-folder>
+  git clone https://github.com/RamcharanRajpurohit/DSAVisualizer.git
+  cd DSAVisualizer
    ```
 
 2. Install dependencies:
