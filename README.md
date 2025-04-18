@@ -21,9 +21,7 @@ DSA Visualizer is a web-based application designed to help users visualize and i
   - Max heap visualization with insert and delete operations.
   - Auto-insert random values for testing.
 
-- **Code Formatter:**
-  - Format C code with customizable options (indentation, brace style, etc.).
-  - Copy or download formatted code.
+
 
 ## Getting Started
 
