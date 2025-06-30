@@ -20,7 +20,10 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
 
     <%= javascript_importmap_tags %>
-    <%= stylesheet_link_tag "#{params[:controller]}", media: "all", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag 'common', media: 'all', "data-turbo-track": "reload" %>
+<%= stylesheet_link_tag "#{params[:controller]}", media: "all", "data-turbo-track": "reload" %>
+
+
 
   </head>
 
