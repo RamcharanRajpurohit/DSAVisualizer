@@ -6,7 +6,6 @@
     <title>BST Visualizer - Black Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/konva@8.3.5/konva.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-   
 </head>
 <body>
     <nav class="navbar">
@@ -18,25 +17,37 @@
         <section>
             <h2 class="section-title">Binary Search Tree Visualization</h2>
             
-            <!-- New split layout with operations on the left (1/4) and visualization on the right (3/4) -->
             <div class="split-container">
-                <!-- Operations Panel (1/4 width) -->
+             <div class="visualization-container">
+                    <div class="glow glow-1"></div>
+                    <div class="glow glow-2"></div>
+                    <div id="container"></div>
+                </div>
                 <div class="operations-panel">
                     <div class="operation-group">
                         <h4>Insert Operations</h4>
-                        <input id="arrayInput" type="text" placeholder="Insert an array (e.g. 10,5,15,3)" />
+                        <input id="arrayInput" type="text" placeholder="Insert array (e.g. 10,5,15,3)" />
                         <div style="height: 10px"></div>
-                        <input id="nodeInput" type="number" placeholder="Insert a number" />
+                        <input id="nodeInput" type="number" placeholder="Insert number" />
+                        <button class="run-btn" id="insertNodeBtn">
+                            <i class="fas fa-play"></i> Run
+                        </button>
                     </div>
                     
                     <div class="operation-group">
                         <h4>Delete Operation</h4>
-                        <input id="deleteInput" type="number" placeholder="Delete a number" />
+                        <input id="deleteInput" type="number" placeholder="Delete number" />
+                        <button class="run-btn" id="deleteNodeBtn">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
                     </div>
                     
                     <div class="operation-group">
                         <h4>Search Operation</h4>
-                        <input id="findInput" type="number" placeholder="Find a number" />
+                        <input id="findInput" type="number" placeholder="Find number" />
+                        <button class="run-btn" id="findNodeBtn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
                     </div>
                     
                     <div class="operation-group">
@@ -48,37 +59,32 @@
                     </div>
                 </div>
                 
-                <!-- Tree Visualization Container (3/4 width) -->
-                <div class="visualization-container">
-                    <div class="glow glow-1"></div>
-                    <div class="glow glow-2"></div>
-                    <div id="container"></div>
-                </div>
+               
             </div>
             
             <div class="info-panel">
                 <h3>About Binary Search Trees</h3>
-                <p>A Binary Search Tree (BST) is a node-based binary tree data structure which has the following properties:</p>
-                <p>• The left subtree of a node contains only nodes with keys lesser than the node's key.</p>
-                <p>• The right subtree of a node contains only nodes with keys greater than the node's key.</p>
-                <p>• The left and right subtree each must also be a binary search tree.</p>
+                <p>A Binary Search Tree (BST) is a node-based binary tree data structure with specific ordering properties.</p>
+                <p>• Left subtree contains nodes with keys lesser than parent</p>
+                <p>• Right subtree contains nodes with keys greater than parent</p>
+                <p>• Both subtrees must also be binary search trees</p>
                 
                 <h3 style="margin-top: 1.5rem;">Time Complexity</h3>
                 <p>Search: O(log n) average, O(n) worst case</p>
                 <p>Insert: O(log n) average, O(n) worst case</p>
                 <p>Delete: O(log n) average, O(n) worst case</p>
                 
-                <h3 style="margin-top: 1.5rem;">How to Use This Visualizer</h3>
-                <p>• Insert values using the "Insert a number" field or multiple values with comma-separated numbers in the array field</p>
-                <p>• Delete nodes by entering the value in the "Delete a number" field</p>
-                <p>• Search for nodes using the "Find a number" field</p>
-                <p>• Zoom in and out to better view large trees</p>
+                <h3 style="margin-top: 1.5rem;">How to Use</h3>
+                <p>• Insert values using number field or comma-separated array</p>
+                <p>• Delete nodes by entering value in delete field</p>
+                <p>• Search for nodes using find field</p>
+                <p>• Use zoom controls for better tree viewing</p>
             </div>
         </section>
     </div>
     
     <footer>
-        <p class="footer-text">DSA Visualizer © 2025 | An interactive platform for learning Data Structures & Algorithms</p>
+        <p class="footer-text">DSA Visualizer © 2025 | Interactive Data Structures & Algorithms</p>
     </footer>
 
     <%= javascript_import_module_tag "bst" %>
