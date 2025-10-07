@@ -239,38 +239,66 @@
             color: var(--text);
         }
         
-        
-        
-        
-        /* Responsive Design */
-        @media (max-width: 992px) {
-            .content-wrapper {
-                flex-direction: column;
-            }
-            
-            .visualization-column,
-            .controls-column {
-                flex: 1 1 100%;
-                width: 100%;
-            }
-            
-            #container {
-                height: 350px;
-            }
-        }
-        
-        
-        
-        @media (max-width: 480px) {
-            .page-title {
-                font-size: 1.8rem;
-            }
-            
-            .glass-panel {
-                padding: 1rem;
-            }
-            
-            #container {
-                height: 250px;
-            }
-        }
+/* Just replace these existing rules with these updated ones */
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 1.8rem;
+    }
+    
+    .glass-panel {
+        padding: 1rem;
+    }
+    
+    #container {
+        height: 280px; /* Changed from 250px to 280px to show bar values */
+    }
+    
+    /* Add these new rules to fix flickering */
+    .control-label, .section-title, #algorithm-title {
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    
+    #algorithm-description, #algorithm-complexity, #current-step {
+        min-height: 2.5rem;
+    }
+    
+    .stat-box {
+        min-height: 3rem;
+    }
+    
+    button {
+        white-space: nowrap;
+    }
+}
+
+/* Add this new rule for mobile button layout */
+@media (max-width: 992px) {
+    .content-wrapper {
+        flex-direction: column;
+    }
+    
+    .visualization-column,
+    .controls-column {
+        flex: 1 1 100%;
+        width: 100%;
+        padding:auto;
+    }
+    
+    #container {
+        height: 350px;
+
+    }
+    
+    /* Add mobile button row layout */
+    #controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .control-group:nth-last-child(-n+2) {
+        grid-column: span 1;
+    }
+}
