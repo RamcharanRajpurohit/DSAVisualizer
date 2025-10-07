@@ -1,94 +1,95 @@
-import { stage,layer } from "konva_setup";
-import  {redrawTree} from "draw_avl";
-import {insertNode,findNode,deleteNode} from "avl_operations";
+import { stage, layer } from "konva_setup";
+import { redrawTree } from "draw_avl";
+import { insertNode, findNode, deleteNode } from "avl_operations";
 import { updateZoom } from "avl_zoom";
 
+// 🌳 Input Elements
+const nodeInput = document.getElementById("nodeInput");
+const arrayInput = document.getElementById("arrayInput");
+const deleteInput = document.getElementById("deleteInput");
+const findInput = document.getElementById("findInput");
 
+// helper: process array input
+async function processArray(values) {
+  for (const value of values) {
+    const num = parseInt(value);
+    if (!isNaN(num)) await insertNode(num);
+  }
+}
 
+// 🌟 Merged Insert Functionality
+async function handleInsert() {
+  const singleVal = nodeInput.value.trim();
+  const arrayVal = arrayInput.value.trim();
 
-  
-    
-   
+  if (arrayVal) {
+    const values = arrayVal.split(/[\s,]+/).filter(v => v !== "");
+    await processArray(values);
+    arrayInput.value = "";
+  } else if (singleVal) {
+    await insertNode(parseInt(singleVal));
+    nodeInput.value = "";
+  }
+}
 
-    // ------------------ Input and Zoom Button Event Listeners ------------------
-    document.getElementById("nodeInput").addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        const value = event.target.value.trim();
-        if (value) {
-          insertNode(parseInt(value));
-          event.target.value = '';
-        }
-      }
-    });
-
-    document.getElementById("deleteInput").addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        const value = event.target.value.trim();
-        if (value) {
-          deleteNode(parseInt(value));
-          event.target.value = '';
-        }
-      }
-    });
-
-    document.getElementById("findInput").addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        const value = event.target.value.trim();
-        if (value) {
-          findNode(parseInt(value));
-          event.target.value = '';
-        }
-      }
-    });
-    
-    const inputField = document.getElementById("arrayInput");
-
-    async function processValues() {
-      // Split the input value on spaces or commas, trim and filter out empty strings
-      const valuesArray = inputField.value
-        .split(/[\s,]+/)
-        .map(item => item.trim())
-        .filter(item => item !== '');
-      for (const value of valuesArray) {
-        // Wait for insertNode to complete before processing the next value
-        await insertNode(parseInt(value));
-      }
+// ✅ Event listeners for insert
+[nodeInput, arrayInput].forEach(input => {
+  input.addEventListener("keypress", async e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await handleInsert();
     }
+  });
+});
 
-    inputField.addEventListener('keypress', async function(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();  // Prevent default form submission behavior
-        await processValues();
-        event.target.value = '';
-      }
-    }
-    );
+document.getElementById("insertNodeBtn").addEventListener("click", handleInsert);
+document.getElementById("insertArrayBtn").addEventListener("click", handleInsert);
 
-    document.getElementById("zoomIn").addEventListener('click', () => {
-      let currentScale = stage.scaleX();
-      let newScale = currentScale * 1.1; // increase by 10%
-      stage.scale({ x: newScale, y: newScale });
-      stage.draw();
-    });
+// 🗑️ Delete Functionality
+function handleDelete() {
+  const value = parseInt(deleteInput.value.trim());
+  if (!isNaN(value)) deleteNode(value);
+  deleteInput.value = "";
+}
 
-    document.getElementById("zoomOut").addEventListener('click', () => {
-      let currentScale = stage.scaleX();
-      let newScale = currentScale / 1.1; // decrease by 10%
-      stage.scale({ x: newScale, y: newScale });
-      stage.draw();
-    });
+deleteInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") handleDelete();
+});
+document.getElementById("deleteNodeBtn").addEventListener("click", handleDelete);
 
-    // ------------------ AVL Tree Insertion with Animation ------------------
-   
-    // Recalculate positions and redraw on window resize so that the root remains centered.
-    window.addEventListener('resize', () => {
-      stage.width(window.innerWidth);
-      stage.height(window.innerHeight - 50);
-      if (root) {
-        updateTreePositions(root, 0, stage.width() / 2, 80, stage.width() / 4);
-        layer.destroyChildren();
-        redrawTree(root);
-      }
-      updateZoom();
-    });
- 
+// 🔍 Find Functionality
+function handleFind() {
+  const value = parseInt(findInput.value.trim());
+  if (!isNaN(value)) findNode(value);
+  findInput.value = "";
+}
+
+findInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") handleFind();
+});
+document.getElementById("findNodeBtn").addEventListener("click", handleFind);
+
+// 🔎 Zoom Controls
+document.getElementById("zoomIn").addEventListener("click", () => {
+  const scale = stage.scaleX() * 1.1;
+  stage.scale({ x: scale, y: scale });
+  stage.draw();
+});
+
+document.getElementById("zoomOut").addEventListener("click", () => {
+  const scale = stage.scaleX() / 1.1;
+  stage.scale({ x: scale, y: scale });
+  stage.draw();
+});
+
+// 🪄 Resize Handler
+window.addEventListener("resize", () => {
+  stage.width(window.innerWidth);
+  stage.height(window.innerHeight - 50);
+  if (root) {
+    updateTreePositions(root, 0, stage.width() / 2, 80, stage.width() / 4);
+    layer.destroyChildren();
+    redrawTree(root);
+  }
+  updateZoom();
+});
