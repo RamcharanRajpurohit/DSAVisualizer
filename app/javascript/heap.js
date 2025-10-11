@@ -1,448 +1,235 @@
-    
-        // Optimize for high DPI displays
-        Konva.pixelRatio = 1;
+Konva.pixelRatio = 1;
+const container = document.getElementById('container');
+const width = container.clientWidth;
+const height = container.clientHeight;
+const stage = new Konva.Stage({ container: 'container', width, height });
+const layer = new Konva.Layer();
+stage.add(layer);
 
-        // Initialize Konva Stage
-        
-        const container = document.getElementById('container');
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        
-        const stage = new Konva.Stage({
-            container: 'container',
-            width: width,
-            height: height
-        });
-        const layer = new Konva.Layer();
-        stage.add(layer);
-        
-        // Status text update function
-        function updateStatus(text) {
-            document.getElementById('statusText').textContent = text;
-        }
-        
-        // Array view update function
-        function updateArrayView(array) {
-            const arrayView = document.getElementById('arrayView');
-            arrayView.innerHTML = '';
-            
-            array.forEach((value, index) => {
-                const element = document.createElement('div');
-                element.className = 'array-element';
-                element.textContent = value;
-                if (index === 0) element.style.backgroundColor = '#ff9800'; // Highlight root
-                arrayView.appendChild(element);
-            });
-        }
-        
-       // Replace the OptimizedMaxHeap class with this OptimizedHeap class
-// which can work as both MaxHeap and MinHeap
+function updateStatus(text) { document.getElementById('statusText').textContent = text; }
+
+function updateArrayView(array) {
+    const arrayView = document.getElementById('arrayView');
+    arrayView.innerHTML = '';
+    array.forEach((value, index) => {
+        const el = document.createElement('div');
+        el.className = 'array-element';
+        el.textContent = value;
+        if (index === 0) el.style.backgroundColor = '#ff9800';
+        arrayView.appendChild(el);
+    });
+}
 
 class OptimizedHeap {
     constructor(isMinHeap = false) {
         this.heap = [];
-        this.nodeGroups = {}; // Store references to node groups by heap index
-        this.edgeLines = {}; // Store references to edge lines
-        this.positions = []; // Store calculated positions for each potential index
+        this.nodeGroups = {};
+        this.edgeLines = {};
+        this.positions = [];
         this.nodeRadius = 30;
-        this.levelHeight = 100;
-        this.isMinHeap = isMinHeap; // Flag to determine if this is a min heap
-    }
-    
-    getParentIndex(i) {
-        return Math.floor((i - 1) / 2);
-    }
-    
-    getLeftChildIndex(i) {
-        return 2 * i + 1;
-    }
-    
-    getRightChildIndex(i) {
-        return 2 * i + 2;
-    }
-    
-    swap(i, j) {
-        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+        this.isMinHeap = isMinHeap;
+        this.isBuild = false;
     }
 
-    // Compare two values according to heap type
-    compareValues(a, b) {
-        return this.isMinHeap ? a < b : a > b;
+    getParentIndex(i) { return Math.floor((i - 1) / 2); }
+    getLeftChildIndex(i) { return 2 * i + 1; }
+    getRightChildIndex(i) { return 2 * i + 2; }
+    swap(i, j) { [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]]; }
+    compareValues(a, b) { return this.isMinHeap ? a < b : a > b; }
+
+    calculateNodePositions(maxCapacity = 31) {
+        const positions = [], startY = 80, startX = width / 2;
+        const maxDepth = Math.floor(Math.log2(maxCapacity));
+        const nodesInDeepestLevel = Math.pow(2, maxDepth);
+        const minNodeSpacing = Math.max(this.nodeRadius * 2.5, width * 0.2);
+        const totalWidthNeeded = nodesInDeepestLevel * minNodeSpacing;
+
+        for (let i = 0; i < maxCapacity; i++) {
+            const level = Math.floor(Math.log2(i + 1));
+            const nodesInLevel = Math.pow(2, level);
+            const levelWidth = Math.min(width * 0.9, totalWidthNeeded / Math.pow(2, maxDepth - level));
+            const nodeSpacing = levelWidth / nodesInLevel;
+            const levelStartX = startX - (levelWidth / 2) + (nodeSpacing / 2);
+            const positionInLevel = i - Math.pow(2, level) + 1;
+            const x = levelStartX + positionInLevel * nodeSpacing;
+            const y = startY + level * height * 0.2;
+            positions.push({ x, y });
+        }
+        return positions;
     }
-    
-    // Calculate positions for a complete binary tree with max capacity
-    // Replace the existing calculateNodePositions method with this improved version
-calculateNodePositions(maxCapacity = 31) { // Support a tree of depth 4 (31 nodes)
-    const positions = [];
-    const containerWidth = width;
-    const containerHeight = height;
-    
-    // Start with more space at the top
-    const startY = 80;
-    
-    // Calculate the maximum width needed for the deepest level
-    const maxDepth = Math.floor(Math.log2(maxCapacity));
-    const nodesInDeepestLevel = Math.pow(2, maxDepth);
-    
-    // Calculate horizontal spacing between nodes on the deepest level
-    // Use a percentage of the container width to ensure it scales well
-    const minNodeSpacing = Math.max(this.nodeRadius * 2.5, containerWidth * 0.2);
-    const totalWidthNeeded = nodesInDeepestLevel * minNodeSpacing;
-    
-    // Center the entire structure
-    const startX = containerWidth / 2;
-    
-    for (let i = 0; i < maxCapacity; i++) {
-        const level = Math.floor(Math.log2(i + 1));
-        const nodesInLevel = Math.pow(2, level);
-        
-        // Calculate width for this level - should be proportional to container width
-        // but not exceed the container width
-        const levelWidth = Math.min(containerWidth * 0.9, totalWidthNeeded / Math.pow(2, maxDepth - level));
-        
-        // Calculate horizontal spacing for this level
-        const nodeSpacing = levelWidth / nodesInLevel;
-        
-        // Calculate starting X position for this level to center it
-        const levelStartX = startX - (levelWidth / 2) + (nodeSpacing / 2);
-        
-        // Calculate position within the level
-        const positionInLevel = i - Math.pow(2, level) + 1;
-        const x = levelStartX + positionInLevel * nodeSpacing;
-        
-        // Adjust vertical spacing to be proportional to the height
-        const levelHeight = containerHeight * 0.2; // 20% of container height
-        const y = startY + level * levelHeight;
-        
-        positions.push({ x, y });
-    }
-    
-    return positions;
-}
-    
-    // Create a node with animation
+
     createNode(index, position, skipAnimation = false) {
-        const group = new Konva.Group({
-            x: position.x,
-            y: position.y,
-            opacity: skipAnimation ? 1 : 0
-        });
-        
-        // Use different colors for min and max heap
-        const rootColor = this.isMinHeap ? '#2196F3' : '#ff9800'; // Blue for min heap, Orange for max heap
-        const nodeColor = this.isMinHeap ? '#03A9F4' : '#4CAF50'; // Light blue for min heap, Green for max heap
-        
-        const circle = new Konva.Circle({
-            radius: this.nodeRadius,
-            fill: index === 0 ? rootColor : nodeColor,
-            stroke: '#333',
-            strokeWidth: 2
-        });
-        
-        const text = new Konva.Text({
-            text: this.heap[index].toString(),
-            fontSize: 18,
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            fill: 'white',
-            align: 'center',
-            verticalAlign: 'middle',
-            x: -this.nodeRadius,
-            y: -9,
-            width: this.nodeRadius * 2
-        });
-        
-        // Add index label below node
-        const indexText = new Konva.Text({
-            text: `[${index}]`,
-            fontSize: 14,
-            fontFamily: 'Arial',
-            fill: '#333',
-            align: 'center',
-            x: -this.nodeRadius,
-            y: this.nodeRadius + 5,
-            width: this.nodeRadius * 2
-        });
-        
-        group.add(circle);
-        group.add(text);
-        group.add(indexText);
+        const group = new Konva.Group({ x: position.x, y: position.y, opacity: skipAnimation ? 1 : 0 });
+        const rootColor = this.isMinHeap ? '#2196F3' : '#ff9800';
+        const nodeColor = this.isMinHeap ? '#03A9F4' : '#4CAF50';
+
+        group.add(new Konva.Circle({ radius: this.nodeRadius, fill: index === 0 ? rootColor : nodeColor, stroke: '#333', strokeWidth: 2 }));
+        group.add(new Konva.Text({ text: this.heap[index].toString(), fontSize: 18, fontFamily: 'Arial', fontStyle: 'bold', fill: 'white', align: 'center', verticalAlign: 'middle', x: -this.nodeRadius, y: -9, width: this.nodeRadius * 2 }));
+        group.add(new Konva.Text({ text: `[${index}]`, fontSize: 14, fontFamily: 'Arial', fill: '#333', align: 'center', x: -this.nodeRadius, y: this.nodeRadius + 5, width: this.nodeRadius * 2 }));
+
         layer.add(group);
-        
-        // Store reference to the node
         this.nodeGroups[index] = group;
-        
+
         if (!skipAnimation) {
             return new Promise(resolve => {
-                // Only animate opacity, not scale
-                const nodeAnim = new Konva.Tween({
-                    node: group,
-                    duration: 0.5,
-                    opacity: 1,
-                    easing: Konva.Easings.ElasticEaseOut,
-                    onFinish: resolve
-                });
-                
-                nodeAnim.play();
+                new Konva.Tween({ node: group, duration: 0.5, opacity: 1, easing: Konva.Easings.ElasticEaseOut, onFinish: resolve }).play();
             });
         }
-        
         return Promise.resolve();
     }
-    
-    // Create an edge between parent and child
+
     createEdge(parentIndex, childIndex, skipAnimation = false) {
         const edgeKey = `${parentIndex}-${childIndex}`;
-        
-        if (this.edgeLines[edgeKey]) {
-            return Promise.resolve(); // Edge already exists
-        }
-        
+        if (this.edgeLines[edgeKey]) return Promise.resolve();
+
         const parentPos = this.positions[parentIndex];
         const childPos = this.positions[childIndex];
-        
-        // Create the edge
-        const edge = new Konva.Line({
-            points: [parentPos.x, parentPos.y, childPos.x, childPos.y],
-            stroke: '#666',
-            strokeWidth: 2,
-            opacity: skipAnimation ? 1 : 0
-        });
-        
+        const edge = new Konva.Line({ points: [parentPos.x, parentPos.y, childPos.x, childPos.y], stroke: '#666', strokeWidth: 2, opacity: skipAnimation ? 1 : 0 });
+
         layer.add(edge);
-        
-        // Make sure edges are behind nodes
         edge.moveToBottom();
-        
-        // Store reference to the edge
         this.edgeLines[edgeKey] = edge;
-        
+
         if (!skipAnimation) {
             return new Promise(resolve => {
-                const edgeAnim = new Konva.Tween({
-                    node: edge,
-                    duration: 0.3,
-                    opacity: 1,
-                    easing: Konva.Easings.EaseInOut,
-                    onFinish: resolve
-                });
-                
-                edgeAnim.play();
+                new Konva.Tween({ node: edge, duration: 0.3, opacity: 1, easing: Konva.Easings.EaseInOut, onFinish: resolve }).play();
             });
         }
-        
         return Promise.resolve();
     }
-    
-    // Remove a node with animation
-    removeNode(index) {
+
+    async removeNode(index) {
         const node = this.nodeGroups[index];
         if (!node) return Promise.resolve();
-        
-        return new Promise(resolve => {
-            const tween = new Konva.Tween({
-                node: node,
-                duration: 0.7,
-                y: -50,
-                opacity: 0,
-                easing: Konva.Easings.EaseIn,
-                onFinish: () => {
-                    // Remove all edges connected to this node
-                    this.removeNodeEdges(index);
-                    
-                    // Destroy the node
-                    node.destroy();
-                    delete this.nodeGroups[index];
-                    
-                    layer.batchDraw();
-                    resolve();
-                }
-            });
-            
-            tween.play();
-        });
-    }
-    
-    // Remove all edges connected to a node
-    removeNodeEdges(index) {
-        // Check for parent edge
-        if (index > 0) {
-            const parentIndex = this.getParentIndex(index);
-            const parentEdgeKey = `${parentIndex}-${index}`;
-            
-            if (this.edgeLines[parentEdgeKey]) {
-                this.edgeLines[parentEdgeKey].destroy();
-                delete this.edgeLines[parentEdgeKey];
-            }
-        }
-        
-        // Check for child edges
-        const leftChildIndex = this.getLeftChildIndex(index);
-        const rightChildIndex = this.getRightChildIndex(index);
-        
-        const leftEdgeKey = `${index}-${leftChildIndex}`;
-        const rightEdgeKey = `${index}-${rightChildIndex}`;
-        
-        if (this.edgeLines[leftEdgeKey]) {
-            this.edgeLines[leftEdgeKey].destroy();
-            delete this.edgeLines[leftEdgeKey];
-        }
-        
-        if (this.edgeLines[rightEdgeKey]) {
-            this.edgeLines[rightEdgeKey].destroy();
-            delete this.edgeLines[rightEdgeKey];
-        }
-    }
-    
-    // Update node text (value and index)
-    updateNodeText(index) {
-        const node = this.nodeGroups[index];
-        if (!node) return;
-        
-        const textNode = node.findOne('Text');
-        if (textNode) {
-            textNode.text(this.heap[index].toString());
-        }
-        
-        const indexTextNode = node.findOne('Text:nth-child(3)');
-        if (indexTextNode) {
-            indexTextNode.text(`[${index}]`);
-        }
-    }
-    
-    // Update node fill color
-    updateNodeColor(index, isRoot = false) {
-        const node = this.nodeGroups[index];
-        if (!node) return;
-        
-        const circle = node.findOne('Circle');
-        if (circle) {
-            // Use different colors for min and max heap
-            const rootColor = this.isMinHeap ? '#2196F3' : '#ff9800'; // Blue for min heap, Orange for max heap
-            const nodeColor = this.isMinHeap ? '#03A9F4' : '#4CAF50'; // Light blue for min heap, Green for max heap
-            
-            circle.fill(isRoot ? rootColor : nodeColor);
-        }
-    }
-    
-    // Move node to a new position with animation
-    moveNode(index, newPosition) {
-        const node = this.nodeGroups[index];
-        if (!node) return Promise.resolve();
-        
-        return new Promise(resolve => {
-            const tween = new Konva.Tween({
-                node: node,
-                duration: 0.8,
-                x: newPosition.x,
-                y: newPosition.y,
-                easing: Konva.Easings.EaseInOut,
-                onFinish: resolve
-            });
-            
-            tween.play();
-        });
-    }
-    
-    // Swap two nodes visually
-    async swapNodes(index1, index2) {
-        const node1 = this.nodeGroups[index1];
-        const node2 = this.nodeGroups[index2];
-        
-        if (!node1 || !node2) return;
-        
-        // Get current positions
-        const pos1 = { x: node1.x(), y: node1.y() };
-        const pos2 = { x: node2.x(), y: node2.y() };
-        
-        // Highlight nodes being swapped
-        node1.findOne('Circle').fill('#ff5722');
-        node2.findOne('Circle').fill('#ff5722');
-        layer.batchDraw();
-        
-        // Animate the swap
-        return new Promise(resolve => {
-            const tween1 = new Konva.Tween({
-                node: node1,
-                duration: 0.8,
-                x: pos2.x,
-                y: pos2.y,
-                easing: Konva.Easings.EaseInOut
-            });
-            
-            const tween2 = new Konva.Tween({
-                node: node2,
-                duration: 0.8,
-                x: pos1.x,
-                y: pos1.y,
-                easing: Konva.Easings.EaseInOut,
-                onFinish: () => {
-                    // Update node references
-                    [this.nodeGroups[index1], this.nodeGroups[index2]] = 
-                        [this.nodeGroups[index2], this.nodeGroups[index1]];
-                    
-                    // Update node colors based on position
-                    this.updateNodeColor(index1, index1 === 0);
-                    this.updateNodeColor(index2, index2 === 0);
-                    
-                    // Update node texts to reflect the new indices
-                    this.updateNodeText(index1);
-                    this.updateNodeText(index2);
-                    
-                    layer.batchDraw();
-                    setTimeout(resolve, 200);
-                }
-            });
-            
-            tween1.play();
-            tween2.play();
-        });
-    }
-    
-    // Highlight a node temporarily
-    highlightNode(index, color, duration = 1) {
-        const node = this.nodeGroups[index];
-        if (!node) return Promise.resolve();
-        
+
+        const edges = [
+            index > 0 ? `${this.getParentIndex(index)}-${index}` : null,
+            `${index}-${this.getLeftChildIndex(index)}`,
+            `${index}-${this.getRightChildIndex(index)}`
+        ];
+        const edgeObjects = edges.filter(key => key && this.edgeLines[key]).map(key => this.edgeLines[key]);
+
         const circle = node.findOne('Circle');
         const originalFill = circle.fill();
-        
-        circle.fill(color);
-        layer.batchDraw();
-        
+
+        for (let i = 0; i < 3; i++) {
+            await new Promise(resolve => {
+                circle.fill('#ff1744');
+                edgeObjects.forEach(edge => edge.stroke('#ff1744'));
+                layer.batchDraw();
+                setTimeout(() => {
+                    circle.fill(originalFill);
+                    edgeObjects.forEach(edge => edge.stroke('#666'));
+                    layer.batchDraw();
+                    setTimeout(resolve, 150);
+                }, 150);
+            });
+        }
+
         return new Promise(resolve => {
+            const duration = 0.6;
+            new Konva.Tween({ node: node, duration: duration, scaleX: 0.3, scaleY: 0.3, opacity: 0, easing: Konva.Easings.EaseIn }).play();
+            edgeObjects.forEach(edge => {
+                new Konva.Tween({ node: edge, duration: duration, opacity: 0, strokeWidth: 0, easing: Konva.Easings.EaseIn }).play();
+            });
+
             setTimeout(() => {
-                // Create a fade back to original color
-                const fadeTween = new Konva.Tween({
-                    node: circle,
-                    duration: 0.4,
-                    fill: originalFill,
-                    easing: Konva.Easings.EaseOut,
-                    onFinish: resolve
+                edges.forEach(key => {
+                    if (key && this.edgeLines[key]) {
+                        this.edgeLines[key].destroy();
+                        delete this.edgeLines[key];
+                    }
                 });
-                
-                fadeTween.play();
+                node.destroy();
+                delete this.nodeGroups[index];
+                layer.batchDraw();
+                resolve();
             }, duration * 1000);
         });
     }
-    
-    // Compare two nodes visually
+
+    updateNodeText(index) {
+        const node = this.nodeGroups[index];
+        if (!node) return;
+        node.findOne('Text').text(this.heap[index].toString());
+        node.children[2].text(`[${index}]`);
+    }
+
+    updateNodeColor(index, isRoot = false) {
+        const node = this.nodeGroups[index];
+        if (!node) return;
+        const rootColor = this.isMinHeap ? '#2196F3' : '#ff9800';
+        const nodeColor = this.isMinHeap ? '#03A9F4' : '#4CAF50';
+        node.findOne('Circle').fill(isRoot ? rootColor : nodeColor);
+    }
+
+    async heapBuild() {
+        for (let i = Math.floor(this.heap.length / 2) - 1; i >= 0; i--) {
+            if (animationPaused) break;
+            updateStatus(`Heapifying down from index ${i}`);
+            await this.heapifyDown(i);
+        }
+    }
+
+    async swapNodes(index1, index2) {
+        const node1 = this.nodeGroups[index1];
+        const node2 = this.nodeGroups[index2];
+        if (!node1 || !node2) return;
+
+        const pos1 = { x: node1.x(), y: node1.y() };
+        const pos2 = { x: node2.x(), y: node2.y() };
+
+        node1.findOne('Circle').fill('#ff5722');
+        node2.findOne('Circle').fill('#ff5722');
+        layer.batchDraw();
+
+        return new Promise(resolve => {
+            new Konva.Tween({ node: node1, duration: 0.8, x: pos2.x, y: pos2.y, easing: Konva.Easings.EaseInOut }).play();
+            new Konva.Tween({
+                node: node2, duration: 0.8, x: pos1.x, y: pos1.y, easing: Konva.Easings.EaseInOut,
+                onFinish: () => {
+                    [this.nodeGroups[index1], this.nodeGroups[index2]] = [this.nodeGroups[index2], this.nodeGroups[index1]];
+                    this.updateNodeColor(index1, index1 === 0);
+                    this.updateNodeColor(index2, index2 === 0);
+                    this.updateNodeText(index1);
+                    this.updateNodeText(index2);
+                    layer.batchDraw();
+                    setTimeout(resolve, 200);
+                }
+            }).play();
+        });
+    }
+
+    highlightNode(index, color, duration = 1) {
+        const node = this.nodeGroups[index];
+        if (!node) return Promise.resolve();
+
+        const circle = node.findOne('Circle');
+        const originalFill = circle.fill();
+        circle.fill(color);
+        layer.batchDraw();
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                new Konva.Tween({ node: circle, duration: 0.4, fill: originalFill, easing: Konva.Easings.EaseOut, onFinish: resolve }).play();
+            }, duration * 1000);
+        });
+    }
+
     compareNodes(index1, index2) {
         const node1 = this.nodeGroups[index1];
         const node2 = this.nodeGroups[index2];
-        
         if (!node1 || !node2) return Promise.resolve();
-        
+
         const circle1 = node1.findOne('Circle');
         const circle2 = node2.findOne('Circle');
-        
         const originalFill1 = circle1.fill();
         const originalFill2 = circle2.fill();
-        
+
         circle1.fill('#ffeb3b');
         circle2.fill('#ffeb3b');
         layer.batchDraw();
-        
+
         return new Promise(resolve => {
             setTimeout(() => {
                 circle1.fill(originalFill1);
@@ -452,65 +239,40 @@ calculateNodePositions(maxCapacity = 31) { // Support a tree of depth 4 (31 node
             }, 800);
         });
     }
-    
-    // Insert a value into the heap
+
     async insert(value) {
         const heapType = this.isMinHeap ? "min heap" : "max heap";
         updateStatus(`Inserting ${value} at the end of the ${heapType}`);
-        
-        // Add to the end of the heap
+
         this.heap.push(value);
         const insertIndex = this.heap.length - 1;
-        
-        // Ensure positions are calculated
-        if (this.positions.length === 0) {
-            this.positions = this.calculateNodePositions();
-        }
-        
-        // Create node at the insertion position
+
+        if (this.positions.length === 0) this.positions = this.calculateNodePositions();
+
         await this.createNode(insertIndex, this.positions[insertIndex]);
-        
-        // Create edge to parent if not the root
-        if (insertIndex > 0) {
-            const parentIndex = this.getParentIndex(insertIndex);
-            await this.createEdge(parentIndex, insertIndex);
-        }
-        
-        // Highlight the newly inserted node
+        if (insertIndex > 0) await this.createEdge(this.getParentIndex(insertIndex), insertIndex);
         await this.highlightNode(insertIndex, '#e91e63', 1);
         updateStatus(`New value ${value} added at position ${insertIndex}`);
-        
-        // Heapify up
         await this.heapifyUp(insertIndex);
-        
         updateArrayView(this.heap);
         const optimalValue = this.isMinHeap ? "minimum" : "maximum";
         updateStatus(`Insertion complete. ${heapType.charAt(0).toUpperCase() + heapType.slice(1)} property restored with ${optimalValue} at root.`);
     }
-    
-    // Heapify up operation
+
     async heapifyUp(index) {
         let currentIndex = index;
         let parentIndex = this.getParentIndex(currentIndex);
-        
+
         while (currentIndex > 0 && this.compareValues(this.heap[currentIndex], this.heap[parentIndex])) {
             const compareSymbol = this.isMinHeap ? "<" : ">";
             updateStatus(`${this.heap[currentIndex]} ${compareSymbol} ${this.heap[parentIndex]}, swapping positions ${currentIndex} and ${parentIndex}`);
-            
-            // Compare nodes visually
             await this.compareNodes(currentIndex, parentIndex);
-            
-            // Swap heap values
             this.swap(currentIndex, parentIndex);
-            
-            // Swap nodes visually
             await this.swapNodes(currentIndex, parentIndex);
-            
             currentIndex = parentIndex;
             parentIndex = this.getParentIndex(currentIndex);
         }
-        
-       
+
         if (currentIndex === 0) {
             const rootColor = this.isMinHeap ? '#2196F3' : '#ff9800';
             await this.highlightNode(0, rootColor, 1);
@@ -518,23 +280,19 @@ calculateNodePositions(maxCapacity = 31) { // Support a tree of depth 4 (31 node
             updateStatus(`Value ${this.heap[0]} is now the new ${optimalType} at the root`);
         }
     }
-    
-    // Extract the root value (min or max)
+
     async extractRoot() {
+        this.isBuild = false;
         if (this.heap.length === 0) {
             updateStatus("Heap is empty. Nothing to extract.");
             return null;
         }
-        
+
         const optimalValue = this.heap[0];
         const optimalType = this.isMinHeap ? "minimum" : "maximum";
         updateStatus(`Extracting ${optimalType} value ${optimalValue} from the root`);
-        
-        // Highlight the root element to be extracted
-        const extractColor = '#f44336';
-        await this.highlightNode(0, extractColor, 1);
-        
-        // If this is the last element, just remove it
+        await this.highlightNode(0, '#f44336', 1);
+
         if (this.heap.length === 1) {
             this.heap.pop();
             await this.removeNode(0);
@@ -542,227 +300,147 @@ calculateNodePositions(maxCapacity = 31) { // Support a tree of depth 4 (31 node
             updateStatus("Heap is now empty.");
             return optimalValue;
         }
-        
-        // Get the last element
+
         const lastIndex = this.heap.length - 1;
         const lastValue = this.heap[lastIndex];
-        
-        // Highlight the last element
         await this.highlightNode(lastIndex, '#e91e63', 1);
         updateStatus(`Last element ${lastValue} will replace the root`);
-        
-        // Remove the last element from heap
+
+        this.swap(0, lastIndex);
+        await this.swapNodes(0, lastIndex);
+
+        await this.removeNode(lastIndex);
         this.heap.pop();
-        
-        // Move the last element to the root position
-        this.heap[0] = lastValue;
-        
-        // Update the root node text
-        this.updateNodeText(0);
-        
-        // Highlight the new root
+        updateArrayView(this.heap);
+
         const rootColor = this.isMinHeap ? '#2196F3' : '#ff9800';
         await this.highlightNode(0, rootColor, 1);
-        
-        // Remove the last node
-        await this.removeNode(lastIndex);
-        
-        // Heapify down from the root
         await this.heapifyDown(0);
-        
-        updateArrayView(this.heap);
+
         const heapType = this.isMinHeap ? "min heap" : "max heap";
         updateStatus(`Extraction complete. ${heapType.charAt(0).toUpperCase() + heapType.slice(1)} property restored.`);
-        
+        this.isBuild = true;
         return optimalValue;
     }
-    
-    // Heapify down operation
+
     async heapifyDown(index) {
         let currentIndex = index;
-        
+
         while (true) {
             let optimalIndex = currentIndex;
             const leftIndex = this.getLeftChildIndex(currentIndex);
             const rightIndex = this.getRightChildIndex(currentIndex);
             const compareSymbol = this.isMinHeap ? "<" : ">";
-            
-            // Check if left child exists and is more optimal than current
+
             if (leftIndex < this.heap.length) {
                 await this.compareNodes(optimalIndex, leftIndex);
                 updateStatus(`Compare: ${this.heap[leftIndex]} ${compareSymbol} ${this.heap[optimalIndex]}?`);
-                
-                if (this.compareValues(this.heap[leftIndex], this.heap[optimalIndex])) {
-                    optimalIndex = leftIndex;
-                }
+                if (this.compareValues(this.heap[leftIndex], this.heap[optimalIndex])) optimalIndex = leftIndex;
             }
-            
-            // Check if right child exists and is more optimal than current
+
             if (rightIndex < this.heap.length) {
                 await this.compareNodes(optimalIndex, rightIndex);
                 updateStatus(`Compare: ${this.heap[rightIndex]} ${compareSymbol} ${this.heap[optimalIndex]}?`);
-                
-                if (this.compareValues(this.heap[rightIndex], this.heap[optimalIndex])) {
-                    optimalIndex = rightIndex;
-                }
+                if (this.compareValues(this.heap[rightIndex], this.heap[optimalIndex])) optimalIndex = rightIndex;
             }
-            
-            // If optimal is not current, swap
+
             if (optimalIndex !== currentIndex) {
                 updateStatus(`${this.heap[optimalIndex]} ${compareSymbol} ${this.heap[currentIndex]}, swapping positions ${optimalIndex} and ${currentIndex}`);
-                
-                // Swap heap values
                 this.swap(currentIndex, optimalIndex);
-                
-                // Swap nodes visually
                 await this.swapNodes(currentIndex, optimalIndex);
-                
                 currentIndex = optimalIndex;
-            } else {
-                
-                break;
-            }
+            } else break;
         }
     }
-    
-    // Build heap from array
+
     async buildHeap(array) {
-        // Clear existing heap
         await this.clear();
-        
         this.heap = [...array];
         updateArrayView(this.heap);
         const heapType = this.isMinHeap ? "min heap" : "max heap";
         updateStatus(`Building a ${heapType} from the array`);
-        
-        // Calculate positions if needed
-        if (this.positions.length === 0) {
-            this.positions = this.calculateNodePositions();
-        }
-        
-        // Create all nodes and edges
+
+        if (this.positions.length === 0) this.positions = this.calculateNodePositions();
         await this.initialVisualize();
-        
-        // Start heapify down from the last non-leaf node
-        for (let i = Math.floor(this.heap.length / 2) - 1; i >= 0; i--) {
-            updateStatus(`Heapifying down from index ${i}`);
-            await this.heapifyDown(i);
-        }
-        
-        updateStatus(`${heapType.charAt(0).toUpperCase() + heapType.slice(1)} built successfully`);
-        updateArrayView(this.heap);
     }
 
-    // Heap sort implementation
     async heapSort() {
+        if (!heap.isBuild) {
+            alert(`Please wait, the ${this.isMinHeap ? "Min" : "Max"} heap is building...`);
+            await heap.heapBuild();
+            heap.isBuild = true;
+        }
         if (this.heap.length <= 1) {
             updateStatus("Array already sorted (0 or 1 elements)");
             return [...this.heap];
         }
-        
-        // Clone the heap array to avoid modifying the original
-        const originalHeap = [...this.heap];
+
         const sortedArray = [];
-        const arrayView = document.getElementById('sortedArrayView');
-        
-        // If it doesn't exist, create it
+        let arrayView = document.getElementById('sortedArrayView');
+
         if (!arrayView) {
-            const newArrayView = document.createElement('div');
-            newArrayView.id = 'sortedArrayView';
-            newArrayView.className = 'array-view';
-            newArrayView.style.backgroundColor = '#e8f5e9';
-            document.body.insertBefore(newArrayView, document.getElementById('arrayView').nextSibling);
+            arrayView = document.createElement('div');
+            arrayView.id = 'sortedArrayView';
+            arrayView.className = 'array-view';
+            arrayView.style.backgroundColor = '#151515';
+            const mainArrayView = document.getElementById('arrayView');
+            mainArrayView.parentNode.insertBefore(arrayView, mainArrayView.nextSibling);
         }
-        
+
         updateStatus("Starting heap sort...");
-        
-        // For ascending order, use max heap; for descending order, use min heap
         const ascendingOrder = !this.isMinHeap;
         updateStatus(`Using ${this.isMinHeap ? "min heap" : "max heap"} to sort in ${ascendingOrder ? "ascending" : "descending"} order`);
-        
-        // Extract elements one by one
+
         const heapSize = this.heap.length;
         for (let i = 0; i < heapSize; i++) {
-            // Extract the root (min or max) and add to sorted array
+            if (this.heap.length === 0) break;
             const extractedValue = await this.extractRoot();
-            sortedArray.push(extractedValue);
-            
-            // Update the sorted array view
-            updateSortedArrayView(sortedArray, ascendingOrder);
-            
-            updateStatus(`Extracted ${extractedValue}, ${this.heap.length} elements remaining`);
+            if (extractedValue !== null && extractedValue !== undefined) {
+                sortedArray.push(extractedValue);
+                updateSortedArrayView(sortedArray, ascendingOrder);
+                updateStatus(`Extracted ${extractedValue}, ${this.heap.length} elements remaining`);
+            }
         }
-        
+
         updateStatus(`Heap sort complete! Array sorted in ${ascendingOrder ? "ascending" : "descending"} order`);
-        
-        // Restore the original heap
-        await this.buildHeap(originalHeap);
-        
         return sortedArray;
     }
-    
-    // Initial visualization - creates all nodes at once
+
     async initialVisualize() {
-        // Clear previous visualization if any
         layer.destroyChildren();
         this.nodeGroups = {};
         this.edgeLines = {};
-        
+
         if (this.heap.length === 0) {
             layer.batchDraw();
             return;
         }
-        
-        // Create all edges first (behind nodes)
+
         for (let i = 0; i < this.heap.length; i++) {
             const leftChildIndex = this.getLeftChildIndex(i);
             const rightChildIndex = this.getRightChildIndex(i);
-            
-            if (leftChildIndex < this.heap.length) {
-                await this.createEdge(i, leftChildIndex, true);
-            }
-            
-            if (rightChildIndex < this.heap.length) {
-                await this.createEdge(i, rightChildIndex, true);
-            }
+            if (leftChildIndex < this.heap.length) await this.createEdge(i, leftChildIndex, true);
+            if (rightChildIndex < this.heap.length) await this.createEdge(i, rightChildIndex, true);
         }
-        
-        // Create all nodes
+
         for (let i = 0; i < this.heap.length; i++) {
             await this.createNode(i, this.positions[i], true);
         }
-        
-        // Reveal all elements with a fade-in
+
         return new Promise(resolve => {
             layer.opacity(0);
             layer.visible(true);
             layer.batchDraw();
-            
-            const stageTween = new Konva.Tween({
-                node: layer,
-                duration: 0.8,
-                opacity: 1,
-                easing: Konva.Easings.EaseInOut,
-                onFinish: resolve
-            });
-            
-            stageTween.play();
+            new Konva.Tween({ node: layer, duration: 0.8, opacity: 1, easing: Konva.Easings.EaseInOut, onFinish: resolve }).play();
         });
     }
-    
-    // Clear the heap
+
     async clear() {
-        // Clear data
         this.heap = [];
-        
-        // Fade out and clear visualization
         if (layer.children.length > 0) {
             await new Promise(resolve => {
-                const fadeTween = new Konva.Tween({
-                    node: layer,
-                    duration: 0.5,
-                    opacity: 0,
-                    easing: Konva.Easings.EaseOut,
+                new Konva.Tween({
+                    node: layer, duration: 0.5, opacity: 0, easing: Konva.Easings.EaseOut,
                     onFinish: () => {
                         layer.destroyChildren();
                         this.nodeGroups = {};
@@ -771,9 +449,7 @@ calculateNodePositions(maxCapacity = 31) { // Support a tree of depth 4 (31 node
                         layer.batchDraw();
                         resolve();
                     }
-                });
-                
-                fadeTween.play();
+                }).play();
             });
         } else {
             layer.destroyChildren();
@@ -781,133 +457,141 @@ calculateNodePositions(maxCapacity = 31) { // Support a tree of depth 4 (31 node
             this.edgeLines = {};
             layer.batchDraw();
         }
-        
+
         updateArrayView([]);
-        
-        // Clear sorted array view if it exists
         const sortedArrayView = document.getElementById('sortedArrayView');
-        if (sortedArrayView) {
-            sortedArrayView.innerHTML = '';
-        }
-        
+        if (sortedArrayView) sortedArrayView.innerHTML = '';
         updateStatus("Heap cleared");
     }
-    
-    // Toggle between min and max heap
+
     async toggleHeapType() {
         this.isMinHeap = !this.isMinHeap;
         const heapType = this.isMinHeap ? "min heap" : "max heap";
         updateStatus(`Switched to ${heapType}`);
-        
-        // If heap is not empty, rebuild it with the new heap type
-        if (this.heap.length > 0) {
-            const currentHeap = [...this.heap];
-            await this.buildHeap(currentHeap);
-        }
-        
-        // Update the toggle button text
         const toggleButton = document.getElementById('toggleHeapBtn');
         if (toggleButton) {
             toggleButton.textContent = `Switch to ${this.isMinHeap ? "Max" : "Min"} Heap`;
             toggleButton.style.backgroundColor = this.isMinHeap ? '#4CAF50' : '#2196F3';
         }
-        
-        // Update extract button text
+
         const extractBtn = document.getElementById('extractRootBtn');
-        if (extractBtn) {
-            extractBtn.textContent = `Extract ${this.isMinHeap ? "Min" : "Max"}`;
+        const playBtn = document.getElementById('playBtn');
+        if (playBtn) playBtn.textContent = `Build ${this.isMinHeap ? "Min" : "Max"} Heap`;
+        if (extractBtn) extractBtn.textContent = `Extract ${this.isMinHeap ? "Min" : "Max"}`;
+        if (this.heap.length > 0) {
+            const currentHeap = [...this.heap];
+            await this.buildHeap(currentHeap);
         }
     }
 }
 
-// Function to update the sorted array view
 function updateSortedArrayView(array, ascending = true) {
     const sortedArrayView = document.getElementById('sortedArrayView');
     if (!sortedArrayView) return;
-    
+
     sortedArrayView.innerHTML = '<h3>Sorted Array:</h3>';
-    
     array.forEach((value) => {
         const element = document.createElement('div');
         element.className = 'array-element';
         element.textContent = value;
-        // Color gradient from green to red based on value
-        const hue = ascending ? 
-            120 - (value / 100 * 120) : // Green to Red for ascending
-            (value / 100 * 120);        // Red to Green for descending
+        const hue = ascending ? 120 - (value / 100 * 120) : (value / 100 * 120);
         element.style.backgroundColor = `hsl(${hue}, 80%, 45%)`;
         sortedArrayView.appendChild(element);
     });
 }
-        // Initialize heap
-        // Initialize heap
-const heap = new OptimizedHeap(false); // Starting with a Max Heap
 
-// Event listeners
-document.getElementById('insertBtn').addEventListener('click', async () => {
+const heap = new OptimizedHeap(false);
+let isOperating = false;
+let animationPaused = false;
+
+async function withLock(operation) {
+    if (isOperating) {
+        alert("⏳ Please wait! Another operation is currently running.");
+        return;
+    }
+    isOperating = true;
+    try {
+        await operation();
+    } finally {
+        isOperating = false;
+    }
+}
+
+document.getElementById('insertBtn').addEventListener('click', () => withLock(async () => {
     const valueInput = document.getElementById('valueInput');
     const value = parseInt(valueInput.value);
-    
     if (!isNaN(value)) {
+        if (!heap.isBuild) {
+            alert(`Please wait, the ${heap.isMinHeap ? "Min" : "Max"} heap is building...`);
+            await heap.heapBuild();
+            heap.isBuild = true;
+        }
         await heap.insert(value);
         valueInput.value = '';
-    } else {
-        updateStatus("Please enter a valid number");
+    } else updateStatus("Please enter a valid number");
+}));
+
+document.getElementById('extractRootBtn').addEventListener('click', () => withLock(async () => {
+    if (!heap.isBuild) {
+        alert(`Please wait, the ${heap.isMinHeap ? "Min" : "Max"} heap is building...`);
+        await heap.heapBuild();
+        heap.isBuild = true;
     }
-});
-
-document.getElementById('extractRootBtn').addEventListener('click', async () => {
     await heap.extractRoot();
-});
+}));
 
-document.getElementById('buildHeapBtn').addEventListener('click', async () => {
+document.getElementById('buildHeapBtn').addEventListener('click', () => withLock(async () => {
     const randomArray = Array.from({ length: 7 }, () => Math.floor(Math.random() * 100));
     updateStatus(`Generated random array: [${randomArray.join(', ')}]`);
     await heap.buildHeap(randomArray);
-});
+}));
 
-document.getElementById('heapSortBtn').addEventListener('click', async () => {
+document.getElementById('heapSortBtn').addEventListener('click', () => withLock(async () => {
     await heap.heapSort();
-});
+}));
 
-document.getElementById('toggleHeapBtn').addEventListener('click', async () => {
+document.getElementById('toggleHeapBtn').addEventListener('click', () => withLock(async () => {
     await heap.toggleHeapType();
-});
+}));
 
-document.getElementById('clearBtn').addEventListener('click', async () => {
+document.getElementById('clearBtn').addEventListener('click', () => withLock(async () => {
     await heap.clear();
+}));
+
+const playBtn = document.getElementById('playBtn');
+
+playBtn.addEventListener('click', async () => {
+    if (isOperating) {
+        alert("⏳ Please wait! Another operation is currently running.");
+        return;
+    }
+    
+    isOperating = true;
+    animationPaused = false;
+    playBtn.innerHTML = `<i class="fas fa-pause"></i> Pause`;
+    updateStatus("Building heap...");
+    await heap.heapBuild();
+    const heapType = heap.isMinHeap ? "min heap" : "max heap";
+    updateStatus(`${heapType.charAt(0).toUpperCase() + heapType.slice(1)} built successfully`);
+    updateArrayView(heap.heap);
+    heap.isBuild = true;
+    playBtn.innerHTML = `<i class="fas fa-play"></i> Build ${heapType} Heap`;
+    isOperating = false;
 });
 
-// Also add Enter key support for insertion
-document.getElementById('valueInput').addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter') {
-        const value = parseInt(e.target.value);
-        
-        if (!isNaN(value)) {
-            await heap.insert(value);
-            e.target.value = '';
-        } else {
-            updateStatus("Please enter a valid number");
-        }
-    }
-});
 window.addEventListener('resize', () => {
     const newWidth = container.clientWidth;
     const newHeight = container.clientHeight;
-    
     stage.width(newWidth);
     stage.height(newHeight);
-    
-    // Recalculate positions and redraw if heap exists
     if (heap && heap.heap.length > 0) {
         heap.positions = heap.calculateNodePositions();
         heap.initialVisualize();
     }
 });
-// Initialize with a small example heap
+
 (async function init() {
     const initialArray = [45, 30, 60, 10, 20, 50, 70];
     updateStatus(`Initializing with array: [${initialArray.join(', ')}]`);
     await heap.buildHeap(initialArray);
 })();
-  
