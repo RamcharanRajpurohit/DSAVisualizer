@@ -6,7 +6,7 @@ import { layer } from "konva_setup";
 let root = null;
 
 
-const verticalSpacing = 100;
+const verticalSpacing = 80;
 export function insertNode(value) {
     console.log(` ${value}`);
     const newNode = {
