@@ -1,15 +1,49 @@
 import { stage } from "konva_setup";
 import { animateConnection, animatePath, flashNode } from "bst_animation";
-import { updateZoom } from "bst_zoom";
 import { redrawTree, updateTreePositions } from "draw_bst";
 import { layer } from "konva_setup";
 
 let root = null;
-const verticalSpacing = 100;
+const verticalSpacing = 80;
+let originalScale = 1;
 // Function to get the height of a node
 function getHeight(node) {
   if (!node) return -1;
   return node.height;
+}
+function getMaxDepth(node) {
+  if (!node) return 0;
+  return 1 + Math.max(getMaxDepth(node.left), getMaxDepth(node.right));
+}
+
+function adjustZoomForDepth() {
+  const maxDepth = getMaxDepth(root);
+  let targetScale;
+
+  if (maxDepth <= 5) {
+    targetScale = originalScale;
+  } else if (maxDepth <= 10) {
+    targetScale = originalScale * 0.8;
+  } else {
+    targetScale = originalScale * 0.5;
+  }
+
+  if (Math.abs(targetScale - stage.scaleX()) > 0.01) {
+    const stageWidth = stage.width();
+
+   
+    const newX = (stageWidth - stageWidth * targetScale) / 2;
+    const newY = 0; 
+
+    stage.to({
+      scaleX: targetScale,
+      scaleY: targetScale,
+      x: newX,
+      y: newY,
+      duration: 0.5,
+      easing: Konva.Easings.EaseInOut
+    });
+  }
 }
 
 
@@ -164,7 +198,6 @@ export function insertNode(value) {
   if (!root) {
     root = newNode;
     animateConnection(null, newNode);
-    updateZoom();
     return Promise.resolve();
   }
   
@@ -205,8 +238,8 @@ function recursiveInsert(current, newNode, path) {
           updateTreePositions(root, 0, stage.width() / 2, 80, stage.width() / 4);
           layer.destroyChildren();
           redrawTree(root);
+          adjustZoomForDepth();
           
-          updateZoom();
           resolve();
         }, 2000);
         });
@@ -241,7 +274,8 @@ function recursiveInsert(current, newNode, path) {
                 layer.destroyChildren();
                 redrawTree(root);
     
-                updateZoom();
+                adjustZoomForDepth();
+          
                 resolve();
             }, 2000);
         });
@@ -310,7 +344,8 @@ export function deleteNode(value) {
         updateTreePositions(root, 0, stage.width() / 2, 80, stage.width() / 4);
         layer.destroyChildren();
         redrawTree(root);
-        updateZoom();
+        adjustZoomForDepth();
+          
       });
     }
   });

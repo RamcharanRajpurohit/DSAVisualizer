@@ -1,9 +1,6 @@
-import { stage, layer } from "konva_setup";
-import { redrawTree } from "draw_avl";
+import { stage} from "konva_setup";
 import { insertNode, findNode, deleteNode } from "avl_operations";
-import { updateZoom } from "avl_zoom";
 
-// 🌳 Input Elements
 const nodeInput = document.getElementById("nodeInput");
 const arrayInput = document.getElementById("arrayInput");
 const deleteInput = document.getElementById("deleteInput");
@@ -82,14 +79,4 @@ document.getElementById("zoomOut").addEventListener("click", () => {
   stage.draw();
 });
 
-// 🪄 Resize Handler
-window.addEventListener("resize", () => {
-  stage.width(window.innerWidth);
-  stage.height(window.innerHeight - 50);
-  if (root) {
-    updateTreePositions(root, 0, stage.width() / 2, 80, stage.width() / 4);
-    layer.destroyChildren();
-    redrawTree(root);
-  }
-  updateZoom();
-});
+

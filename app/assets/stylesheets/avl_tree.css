@@ -1,6 +1,7 @@
 .main-container {
     max-width: 1200px;
     margin: 3rem auto 1rem;
+   
     padding: 0 1rem;
     display: flex;
     flex-direction: column;
@@ -9,6 +10,7 @@
 
 .page-title {
     text-align: center;
+    margin-top: 1rem;
     margin-bottom: 1rem;
     font-size: 1.5rem;
     background: linear-gradient(45deg, var(--accent), var(--accent-alt));

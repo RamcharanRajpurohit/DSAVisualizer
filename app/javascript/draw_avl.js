@@ -1,7 +1,4 @@
- import{stage ,layer} from "konva_setup";
-
- const vertcalSpacing = 100;
-
+ import{layer} from "konva_setup";
  export function redrawTree(node) {
     if (!node) return;
     if (node.parent) {

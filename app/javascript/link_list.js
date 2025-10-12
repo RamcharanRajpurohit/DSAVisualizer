@@ -1,1073 +1,588 @@
+// Konva setup
+Konva.pixelRatio = 1;
+const width = window.innerWidth - 40;
+const height = window.innerHeight * 0.7;
+const stage = new Konva.Stage({ container: 'container', width, height });
+const layer = new Konva.Layer();
+stage.add(layer);
 
-        // Optimize for high DPI displays
-        Konva.pixelRatio = 1;
+// Utility functions
+const updateStatus = (text) => {
+    document.getElementById('status-bar').textContent = `Status: ${text}`;
+};
 
-        // Initialize Konva Stage
-        const width = window.innerWidth - 40;
-        const height = window.innerHeight * 0.7;
-        
-        const stage = new Konva.Stage({
-            container: 'container',
-            width: width,
-            height: height
-        });
-        
-        const layer = new Konva.Layer();
-        stage.add(layer);
-        
-        // Status text update function
-        function updateStatus(text) {
-            statusBar = document.getElementById('status-bar');
-            console.log(text);
-            console.log("again");
-            statusBar.textContent = `Status: ${text}`;
-            
-        }
-        
-        // List view update function
-        function updateListView(list) {
-            const listView = document.getElementsByClassName('listView')[0];
-        
-            listView.innerHTML = '';
-            
-            if (list.isEmpty()) {
-                listView.innerHTML = '<p>Empty List</p>';
-                return;
-            }
-            
-            let current = list.head;
-            let index = 0;
-            
-            do {
-                const element = document.createElement('div');
-                element.className = 'list-element';
-                element.textContent = current.value;
-                
-                // Add arrow between elements
-                if (index > 0) {
-                    const arrow = document.createElement('span');
-                    arrow.textContent = ' → ';
-                    arrow.style.margin = '0 5px';
-                    listView.appendChild(arrow);
-                }
-                
-                listView.appendChild(element);
-                
-                current = current.next;
-                index++;
-                
-                // For circular lists, break after visiting all nodes once
-                if (list.isCircular && current === list.head) break;
-            } while (current !== null);
-            
-            // For circular lists, show the connection back to head
-            if (list.isCircular) {
-                const arrow = document.createElement('span');
-                arrow.textContent = ' ↩ ';
-                arrow.style.margin = '0 5px';
-                listView.appendChild(arrow);
-            }
-        }
-
-        class Node {
-            constructor(value) {
-                this.value = value;
-                this.next = null;
-                this.prev = null; // For doubly linked lists
-                this.nodeGroup = null; // Konva group for visualization
-            }
-        }
-
-        class LinkedList {
-            constructor(type = 'singly') {
-                this.head = null;
-                this.tail = null;
-                this.type = type;
-                this.isDoubly = type === 'doubly' || type === 'circularDoubly';
-                this.isCircular = type === 'circular' || type === 'circularDoubly';
-                this.nodeRadius = 30;
-                this.nodeSpacing = 120;
-                this.nodeGroups = {};
-                this.arrowLines = {};
-                this.size = 0;
-            }
-            
-            isEmpty() {
-                return this.head === null;
-            }
-            
-            // Calculate node positions horizontally
-          
-            
-            // Create a node with animation
-            async createNode(node, position, skipAnimation = false) {
-                const group = new Konva.Group({
-                    x: position.x,
-                    y: position.y,
-                    opacity: skipAnimation ? 1 : 0
-                });
-                
-                // Node circle
-                const circle = new Konva.Circle({
-                    radius: this.nodeRadius,
-                    fill: '#4CAF50',
-                    stroke: '#333',
-                    strokeWidth: 2
-                });
-                
-                // Node value text
-                const text = new Konva.Text({
-                    text: node.value.toString(),
-                    fontSize: 18,
-                    fontFamily: 'Arial',
-                    fontStyle: 'bold',
-                    fill: 'white',
-                    align: 'center',
-                    verticalAlign: 'middle',
-                    x: -this.nodeRadius,
-                    y: -9,
-                    width: this.nodeRadius * 2
-                });
-                
-                group.add(circle);
-                group.add(text);
-                
-                // Add next pointer visualization
-                if (this.isDoubly) {
-                    // Add prev pointer visualization for doubly linked lists
-                    const prevPointer = new Konva.Text({
-                        text: 'prev',
-                        fontSize: 12,
-                        fontFamily: 'Arial',
-                        fill: '#333',
-                        align: 'center',
-                        x: -this.nodeRadius,
-                        y: -this.nodeRadius - 20,
-                        width: this.nodeRadius * 2
-                    });
-                    group.add(prevPointer);
-                }
-                
-                const nextPointer = new Konva.Text({
-                    text: 'next',
-                    fontSize: 12,
-                    fontFamily: 'Arial',
-                    fill: '#333',
-                    align: 'center',
-                    x: -this.nodeRadius,
-                    y: this.nodeRadius + 5,
-                    width: this.nodeRadius * 2
-                });
-                group.add(nextPointer);
-                
-                layer.add(group);
-                node.nodeGroup = group;
-                
-                if (!skipAnimation) {
-                    return new Promise(resolve => {
-                        const nodeAnim = new Konva.Tween({
-                            node: group,
-                            duration: 0.5,
-                            opacity: 1,
-                            easing: Konva.Easings.ElasticEaseOut,
-                            onFinish: resolve
-                        });
-                        
-                        nodeAnim.play();
-                    });
-                }
-                
-                return Promise.resolve();
-            }
-            calculateNodePositions() {
-    const startX = Math.min(100, window.innerWidth * 0.1);
-    const startY = height / 2;
-    const nodeSpacing = Math.min(this.nodeSpacing, (window.innerWidth - 2 * startX) / Math.max(10, this.size));
-    const positions = [];
+const updateListView = (list) => {
+    const listView = document.getElementsByClassName('listView')[0];
+    listView.innerHTML = '';
     
-    for (let i = 0; i < Math.max(20, this.size); i++) { // Support up to max(20, size) nodes
-        positions.push({
-            x: startX + i * nodeSpacing,
-            y: startY
-        });
-    }
-    
-    return positions;
-}
-            // Create an arrow between nodes
-            async createArrow(fromNode, toNode, isReverse = false, skipAnimation = false) {
-                const fromGroup = fromNode.nodeGroup;
-                const toGroup = toNode.nodeGroup;
-                
-                if (!fromGroup || !toGroup) return Promise.resolve();
-                
-                const arrowKey = `${fromNode.value}-${toNode.value}-${isReverse ? 'prev' : 'next'}`;
-                
-                // Calculate arrow points
-                const startX = fromGroup.x() + (isReverse ? -this.nodeRadius : this.nodeRadius);
-                const startY = fromGroup.y();
-                const endX = toGroup.x() + (isReverse ? this.nodeRadius : -this.nodeRadius);
-                const endY = toGroup.y();
-                
-                // Create the arrow
-                const arrow = new Konva.Arrow({
-                    points: [startX, startY, endX, endY],
-                    pointerLength: 10,
-                    pointerWidth: 10,
-                    fill: isReverse ? '#ff9800' : '#2196F3',
-                    stroke: isReverse ? '#ff9800' : '#2196F3',
-                    strokeWidth: 2,
-                    opacity: skipAnimation ? 1 : 0
-                });
-                
-                layer.add(arrow);
-                
-                // Make sure arrows are behind nodes
-                arrow.moveToBottom();
-                
-                // Store reference to the arrow
-                this.arrowLines[arrowKey] = arrow;
-                
-                if (!skipAnimation) {
-                    return new Promise(resolve => {
-                        const arrowAnim = new Konva.Tween({
-                            node: arrow,
-                            duration: 0.3,
-                            opacity: 1,
-                            easing: Konva.Easings.EaseInOut,
-                            onFinish: resolve
-                        });
-                        
-                        arrowAnim.play();
-                    });
-                }
-                
-                return Promise.resolve();
-            }
-            
-            // Remove a node with animation
-            async removeNode(node) {
-                if (!node || !node.nodeGroup) return Promise.resolve();
-                
-                return new Promise(resolve => {
-                    const tween = new Konva.Tween({
-                        node: node.nodeGroup,
-                        duration: 0.7,
-                        y: node.nodeGroup.y() - 100,
-                        opacity: 0,
-                        easing: Konva.Easings.EaseIn,
-                        onFinish: () => {
-                            // Remove all arrows connected to this node
-                            this.removeNodeArrows(node);
-                            
-                            // Destroy the node
-                            node.nodeGroup.destroy();
-                            node.nodeGroup = null;
-                            
-                            layer.batchDraw();
-                            resolve();
-                        }
-                    });
-                    
-                    tween.play();
-                });
-            }
-            
-            // Remove all arrows connected to a node
-            removeNodeArrows(node) {
-                Object.keys(this.arrowLines).forEach(key => {
-                    if (key.startsWith(`${node.value}-`) || key.endsWith(`-${node.value}`)) {
-                        this.arrowLines[key].destroy();
-                        delete this.arrowLines[key];
-                    }
-                });
-            }
-            
-            // Highlight a node temporarily
-            async highlightNode(node, color = '#e91e63', duration = 1) {
-                if (!node || !node.nodeGroup) return Promise.resolve();
-                
-                const circle = node.nodeGroup.findOne('Circle');
-                const originalFill = circle.fill();
-                
-                circle.fill(color);
-                layer.batchDraw();
-                
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        const fadeTween = new Konva.Tween({
-                            node: circle,
-                            duration: 0.4,
-                            fill: originalFill,
-                            easing: Konva.Easings.EaseOut,
-                            onFinish: resolve
-                        });
-                        
-                        fadeTween.play();
-                    }, duration * 1000);
-                });
-            }
-            
-            // Move node to a new position with animation
-            async moveNode(node, newPosition) {
-    if (!node || !node.nodeGroup) return Promise.resolve();
-    
-    return new Promise(resolve => {
-        const tween = new Konva.Tween({
-            node: node.nodeGroup,
-            duration: 0.8,
-            x: newPosition.x,
-            y: newPosition.y,
-            easing: Konva.Easings.EaseInOut,
-            onFinish: resolve
-        });
-        
-        tween.play();
-    });
-}
-            
-            // Redraw all arrows after node positions change
-            async redrawArrows() {
-                // Remove all existing arrows
-                Object.values(this.arrowLines).forEach(arrow => arrow.destroy());
-                this.arrowLines = {};
-                
-                // If list is empty, nothing to redraw
-                if (this.isEmpty()) return;
-                
-                // Create new arrows
-                let current = this.head;
-                
-                do {
-                    if (current.next) {
-                        await this.createArrow(current, current.next, false, true);
-                    }
-                    
-                    if (this.isDoubly && current.prev) {
-                        await this.createArrow(current, current.prev, true, true);
-                    }
-                    
-                    current = current.next;
-                    
-                    // For circular lists, break after visiting all nodes once
-                    if (this.isCircular && current === this.head) break;
-                } while (current !== null);
-                
-                layer.batchDraw();
-            }
-            
-            // Insert at head
-            async insertAtHead(value) {
-                const newNode = new Node(value);
-                
-                if (this.isEmpty()) {
-                    this.head = newNode;
-                    this.tail = newNode;
-                    
-                    // For circular lists, point back to itself
-                    if (this.isCircular) {
-                        newNode.next = newNode;
-                        if (this.isDoubly) newNode.prev = newNode;
-                    }
-                } else {
-                    newNode.next = this.head;
-                    
-                    if (this.isDoubly) {
-                        this.head.prev = newNode;
-                    }
-                    
-                    this.head = newNode;
-                    
-                    if (this.isCircular) {
-                        this.tail.next = this.head;
-                        if (this.isDoubly) this.head.prev = this.tail;
-                    }
-                }
-                
-                this.size++;
-            }  
-            async redrawList() {
-                // Calculate positions for all nodes
-                const positions = this.calculateNodePositions();
-                
-                // If list is empty, nothing to redraw
-                if (this.isEmpty()) return;
-                
-                // Move all nodes to their new positions
-                let current = this.head;
-                let index = 0;
-                const movePromises = [];
-                
-                do {
-                    movePromises.push(this.moveNode(current, positions[index]));
-                    current = current.next;
-                    index++;
-                    
-                    // For circular lists, break after visiting all nodes once
-                    if (this.isCircular && current === this.head) break;
-                } while (current !== null);
-                
-                // Wait for all nodes to be moved
-                await Promise.all(movePromises);
-                
-                // Redraw all arrows
-                await this.redrawArrows();
-            }
-                        // Insert at head
-                     async insertAtHead(value) {
-                const newNode = new Node(value);
-                
-                if (this.isEmpty()) {
-                    this.head = newNode;
-                    this.tail = newNode;
-                    
-                    // For circular lists, point back to itself
-                    if (this.isCircular) {
-                        newNode.next = newNode;
-                        if (this.isDoubly) newNode.prev = newNode;
-                    }
-                } else {
-                    newNode.next = this.head;
-                    
-                    if (this.isDoubly) {
-                        this.head.prev = newNode;
-                    }
-                    
-                    this.head = newNode;
-                    
-                   
-                    if (this.isCircular) {
-                        this.tail.next = this.head;
-                        if (this.isDoubly) this.head.prev = this.tail;
-                    }
-                }
-                
-                this.size++;
-                
-                // Visualize the new node
-                await this.visualizeList();
-                
-                updateStatus(`Inserted ${value} at the head of the list`);
-                updateListView(this);
-            }
-                            // Redraw all nodes and connections
-          
-            
-            // Insert at tail
-            async insertAtTail(value) {
-                const newNode = new Node(value);
-                
-                if (this.isEmpty()) {
-                    this.head = newNode;
-                    this.tail = newNode;
-                    
-                    // For circular lists, point back to itself
-                    if (this.isCircular) {
-                        newNode.next = newNode;
-                        if (this.isDoubly) newNode.prev = newNode;
-                    }
-                } else {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                  this.tail.next = newNode;
-                    
-                    if (this.isDoubly) {
-                        newNode.prev = this.tail;
-                    }
-                    
-                    this.tail = newNode;
-                    
-                    if (this.isCircular) {
-                        this.tail.next = this.head;
-                        if (this.isDoubly) this.head.prev = this.tail;
-                    }
-                }
-                
-                this.size++;
-                
-                // Visualize the new node
-                await this.visualizeList();
-                
-                updateStatus(`Inserted ${value} at the tail of the list`);
-                updateListView(this);
-            }
-            
-            // Insert at position
-            async insertAtPosition(value, position) {
-                // Validate position
-                if (position < 0 || position > this.size) {
-                    updateStatus(`Invalid position: ${position}. Valid range: 0 to ${this.size}`);
-                    return;
-                }
-                
-                // Special cases: insert at head or tail
-                if (position === 0) {
-                    await this.insertAtHead(value);
-                    return;
-                }
-                
-                if (position === this.size) {
-                    await this.insertAtTail(value);
-                    return;
-                }
-                
-                // Regular case: insert in the middle
-                const newNode = new Node(value);
-                let current = this.head;
-                let index = 0;
-                
-                // Traverse to the node before the insertion point
-                while (index < position - 1) {
-                    current = current.next;
-                    index++;
-                }
-                
-                // Highlight the node we're inserting after
-                await this.highlightNode(current, '#e91e63');
-                
-                // Insert the new node
-                newNode.next = current.next;
-                if (this.isDoubly) {
-                    newNode.prev = current;
-                    current.next.prev = newNode;
-                }
-                current.next = newNode;
-                
-                this.size++;
-                
-                // Visualize the new node
-                await this.visualizeList();
-                
-                updateStatus(`Inserted ${value} at position ${position}`);
-                updateListView(this);
-            }
-            
-            // Delete from head
-            async deleteFromHead() {
-                if (this.isEmpty()) {
-                    updateStatus("List is empty. Nothing to delete.");
-                    return null;
-                }
-                
-                const deletedValue = this.head.value;
-                
-                // Highlight the node to be deleted
-                await this.highlightNode(this.head, '#f44336');
-                
-                if (this.head === this.tail) {
-                    // Only one node in the list
-                    await this.removeNode(this.head);
-                    this.head = null;
-                    this.tail = null;
-                } else {
-                    const oldHead = this.head;
-                    this.head = this.head.next;
-                    
-                    if (this.isDoubly) {
-                        this.head.prev = this.isCircular ? this.tail : null;
-                    }
-                    
-                    if (this.isCircular) {
-                        this.tail.next = this.head;
-                    }
-                    
-                    await this.removeNode(oldHead);
-                }
-                
-                this.size--;
-                
-                // Visualize the updated list
-                await this.visualizeList();
-                
-                updateStatus(`Deleted ${deletedValue} from the head of the list`);
-                updateListView(this);
-                
-                return deletedValue;
-            }
-            
-            // Delete from tail
-            async deleteFromTail() {
-                if (this.isEmpty()) {
-                    updateStatus("List is empty. Nothing to delete.");
-                    return null;
-                }
-                
-                const deletedValue = this.tail.value;
-                
-                // Highlight the node to be deleted
-                await this.highlightNode(this.tail, '#f44336');
-                
-                if (this.head === this.tail) {
-                    // Only one node in the list
-                    await this.removeNode(this.head);
-                    this.head = null;
-                    this.tail = null;
-                } else {
-                    let current = this.head;
-                    
-                    // Find the node before the tail
-                    while (current.next !== this.tail) {
-                        current = current.next;
-                    }
-                    
-                    // Update pointers
-                    current.next = this.isCircular ? this.head : null;
-                    if (this.isCircular && this.isDoubly) {
-                        this.head.prev = current;
-                    }
-                    
-                    await this.removeNode(this.tail);
-                    this.tail = current;
-                }
-                
-                this.size--;
-                
-                // Visualize the updated list
-                await this.visualizeList();
-                
-                updateStatus(`Deleted ${deletedValue} from the tail of the list`);
-                updateListView(this);
-                
-                return deletedValue;
-            }
-            
-            // Delete at position
-            async deleteAtPosition(position) {
-                // Validate position
-                if (position < 0 || position >= this.size) {
-                    updateStatus(`Invalid position: ${position}. Valid range: 0 to ${this.size - 1}`);
-                    return null;
-                }
-                
-                // Special cases: delete from head or tail
-                if (position === 0) {
-                    return await this.deleteFromHead();
-                }
-                
-                if (position === this.size - 1) {
-                    return await this.deleteFromTail();
-                }
-                
-                // Regular case: delete from the middle
-                let current = this.head;
-                let index = 0;
-                
-                // Traverse to the node before the deletion point
-                while (index < position - 1) {
-                    current = current.next;
-                    index++;
-                }
-                
-                // Highlight the node to be deleted
-                await this.highlightNode(current.next, '#f44336');
-                
-                const deletedNode = current.next;
-                const deletedValue = deletedNode.value;
-                
-                // Update pointers
-                current.next = deletedNode.next;
-                if (this.isDoubly) {
-                    deletedNode.next.prev = current;
-                }
-                
-                await this.removeNode(deletedNode);
-                this.size--;
-                
-                // Visualize the updated list
-                await this.visualizeList();
-                
-                updateStatus(`Deleted ${deletedValue} from position ${position}`);
-                updateListView(this);
-                
-                return deletedValue;
-            }
-
-// Search a value
-            async search(value) {
-                if (this.isEmpty()) {
-                    updateStatus("List is empty. Nothing to search.");
-                    return -1;
-                }
-                
-                let current = this.head;
-                let index = 0;
-                
-                do {
-                    // Highlight each node as we search
-                    await this.highlightNode(current, '#2196F3', 0.5);
-                    
-                    if (current.value == value) {
-                        // Found the value, highlight in green
-                        await this.highlightNode(current, '#4CAF50', 1.5);
-                        updateStatus(`Found value ${value} at position ${index}`);
-                        return index;
-                    }
-                    
-                    current = current.next;
-                    index++;
-                    
-                    // For circular lists, break after visiting all nodes once
-                    if (this.isCircular && current === this.head) break;
-                } while (current !== null);
-                
-                updateStatus(`Value ${value} not found in the list`);
-                return -1;
-            }
-            
-            // Reverse the list
-            async reverse() {
-                if (this.isEmpty() || this.size === 1) {
-                    updateStatus("Nothing to reverse.");
-                    return;
-                }
-                
-                let current = this.head;
-                let prev = null;
-                let next = null;
-                
-                // For circular lists, break the circle first
-                if (this.isCircular) {
-                    this.tail.next = null;
-                    if (this.isDoubly) this.head.prev = null;
-                }
-                
-                // Store reference to the head
-                const oldHead = this.head;
-                
-                do {
-                    // Highlight current node
-                    await this.highlightNode(current, '#9c27b0', 0.5);
-                    
-                    // Store next
-                    next = current.next;
-                    
-                    // Reverse pointers
-                    current.next = prev;
-                    if (this.isDoubly) {
-                        current.prev = next;
-                    }
-                    
-                    // Move prev and current one step forward
-                    prev = current;
-                    current = next;
-                } while (current !== null);
-                
-                // Update head and tail
-                this.tail = oldHead;
-                this.head = prev;
-                
-                // For circular lists, restore the circle
-                if (this.isCircular) {
-                    this.tail.next = this.head;
-                    if (this.isDoubly) this.head.prev = this.tail;
-                }
-                
-                // Visualize the updated list
-                await this.visualizeList();
-                
-                updateStatus("List reversed successfully");
-                updateListView(this);
-            }
-            
-            /// Improved clean-up method to prevent memory leaks
-async clear() {
-    if (this.isEmpty()) {
-        updateStatus("List is already empty.");
+    if (list.isEmpty()) {
+        listView.innerHTML = '<p>Empty List</p>';
         return;
     }
     
-    // Highlight all nodes as they're removed
-    let current = this.head;
-    const highlightPromises = [];
-    const nodesToRemove = [];
+    let current = list.head;
+    let index = 0;
     
     do {
-        highlightPromises.push(this.highlightNode(current, '#f44336', 0.5));
-        nodesToRemove.push(current);
-        current = current.next;
+        if (index > 0) {
+            const arrow = document.createElement('span');
+            arrow.textContent = ' → ';
+            arrow.style.margin = '0 5px';
+            listView.appendChild(arrow);
+        }
         
-        // For circular lists, break after visiting all nodes once
-        if (this.isCircular && current === this.head) break;
+        const element = document.createElement('div');
+        element.className = 'list-element';
+        element.textContent = current.value;
+        listView.appendChild(element);
+        
+        current = current.next;
+        index++;
+        if (list.isCircular && current === list.head) break;
     } while (current !== null);
     
-    await Promise.all(highlightPromises);
+    if (list.isCircular) {
+        const arrow = document.createElement('span');
+        arrow.textContent = ' ↩ ';
+        arrow.style.margin = '0 5px';
+        listView.appendChild(arrow);
+    }
+};
+
+// Node class
+class Node {
+    constructor(value) {
+        this.value = value;
+        this.next = null;
+        this.prev = null;
+        this.nodeGroup = null;
+    }
+}
+
+// LinkedList class
+class LinkedList {
+    constructor(type = 'singly') {
+        this.head = null;
+        this.tail = null;
+        this.type = type;
+        this.isDoubly = type === 'doubly' || type === 'circularDoubly';
+        this.isCircular = type === 'circular' || type === 'circularDoubly';
+        this.nodeRadius = 30;
+        this.nodeSpacing = 120;
+        this.arrowLines = {};
+        this.size = 0;
+    }
     
-    // Properly remove each node and clean up references
-    for (const node of nodesToRemove) {
-        if (node.nodeGroup) {
-            node.nodeGroup.destroy();
-            node.nodeGroup = null;
+    isEmpty() { return this.head === null; }
+    
+    calculateNodePositions() {
+        const startX = Math.min(100, window.innerWidth * 0.1);
+        const startY = height / 2;
+        const spacing = Math.min(this.nodeSpacing, (window.innerWidth - 2 * startX) / Math.max(10, this.size));
+        return Array.from({ length: Math.max(20, this.size) }, (_, i) => ({
+            x: startX + i * spacing,
+            y: startY
+        }));
+    }
+    
+    async animateNode(node, props, duration = 0.5) {
+        return new Promise(resolve => {
+            new Konva.Tween({ node, duration, ...props, onFinish: resolve }).play();
+        });
+    }
+    
+    async createNode(node, position, skipAnimation = false) {
+        const group = new Konva.Group({ x: position.x, y: position.y, opacity: skipAnimation ? 1 : 0 });
+        
+        group.add(new Konva.Circle({ radius: this.nodeRadius, fill: '#4CAF50', stroke: '#333', strokeWidth: 2 }));
+        group.add(new Konva.Text({
+            text: node.value.toString(),
+            fontSize: 18,
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fill: 'white',
+            align: 'center',
+            verticalAlign: 'middle',
+            x: -this.nodeRadius,
+            y: -9,
+            width: this.nodeRadius * 2
+        }));
+        
+        if (this.isDoubly) {
+            group.add(new Konva.Text({
+                text: 'prev', fontSize: 12, fontFamily: 'Arial', fill: '#333',
+                align: 'center', x: -this.nodeRadius, y: -this.nodeRadius - 20,
+                width: this.nodeRadius * 2
+            }));
+        }
+        
+        group.add(new Konva.Text({
+            text: 'next', fontSize: 12, fontFamily: 'Arial', fill: '#333',
+            align: 'center', x: -this.nodeRadius, y: this.nodeRadius + 5,
+            width: this.nodeRadius * 2
+        }));
+        
+        layer.add(group);
+        node.nodeGroup = group;
+        
+        if (!skipAnimation) {
+            await this.animateNode(group, { opacity: 1, easing: Konva.Easings.ElasticEaseOut });
         }
     }
     
-    // Clear all arrows
-    Object.values(this.arrowLines).forEach(arrow => {
-        arrow.destroy();
-    });
+    async createArrow(fromNode, toNode, isReverse = false, skipAnimation = false) {
+        if (!fromNode.nodeGroup || !toNode.nodeGroup) return;
+        
+        const key = `${fromNode.value}-${toNode.value}-${isReverse ? 'prev' : 'next'}`;
+        const startX = fromNode.nodeGroup.x() + (isReverse ? -this.nodeRadius : this.nodeRadius);
+        const endX = toNode.nodeGroup.x() + (isReverse ? this.nodeRadius : -this.nodeRadius);
+        const color = isReverse ? '#ff9800' : '#2196F3';
+        
+        const arrow = new Konva.Arrow({
+            points: [startX, fromNode.nodeGroup.y(), endX, toNode.nodeGroup.y()],
+            pointerLength: 10, pointerWidth: 10, fill: color, stroke: color,
+            strokeWidth: 2, opacity: skipAnimation ? 1 : 0
+        });
+        
+        layer.add(arrow);
+        arrow.moveToBottom();
+        this.arrowLines[key] = arrow;
+        
+        if (!skipAnimation) {
+            await this.animateNode(arrow, { opacity: 1, duration: 0.3, easing: Konva.Easings.EaseInOut });
+        }
+    }
     
-    // Reset list properties
-    this.head = null;
-    this.tail = null;
-    this.size = 0;
-    this.nodeGroups = {};
-    this.arrowLines = {};
+    async removeNode(node) {
+        if (!node || !node.nodeGroup) return;
+        
+        await this.animateNode(node.nodeGroup, {
+            y: node.nodeGroup.y() - 100,
+            opacity: 0,
+            duration: 0.7,
+            easing: Konva.Easings.EaseIn
+        });
+        
+        Object.keys(this.arrowLines).forEach(key => {
+            if (key.includes(`${node.value}-`)) {
+                this.arrowLines[key].destroy();
+                delete this.arrowLines[key];
+            }
+        });
+        
+        node.nodeGroup.destroy();
+        node.nodeGroup = null;
+        layer.batchDraw();
+    }
     
-    // Ensure the layer is properly redrawn
-    layer.batchDraw();
+    async highlightNode(node, color = '#e91e63', duration = 1) {
+        if (!node || !node.nodeGroup) return;
+        
+        const circle = node.nodeGroup.findOne('Circle');
+        const originalFill = circle.fill();
+        circle.fill(color);
+        layer.batchDraw();
+        
+        await new Promise(resolve => setTimeout(resolve, duration * 1000));
+        await this.animateNode(circle, { fill: originalFill, duration: 0.4, easing: Konva.Easings.EaseOut });
+    }
     
-    updateStatus("List cleared successfully");
-    updateListView(this);
-}
-
-           
-
-            
-            // Visualize the entire list
-            async visualizeList() {
-                // Clear previous visualization
-                layer.destroyChildren();
-                this.nodeGroups = {};
-                this.arrowLines = {};
-                
-                if (this.isEmpty()) {
-                    layer.batchDraw();
-                    return;
-                }
-                
-                // Calculate positions for each node
-                const positions = this.calculateNodePositions();
-                
-                // Create nodes
-                let current = this.head;
-                let index = 0;
-                
-                do {
-                    await this.createNode(current, positions[index], true);
-                    current = current.next;
-                    index++;
-                    
-                    // For circular lists, break after visiting all nodes once
-                    if (this.isCircular && current === this.head) break;
-                } while (current !== null);
-                
-                // Create arrows between nodes
-                current = this.head;
-                index = 0;
-                
-                do {
-                    if (current.next) {
-                        await this.createArrow(current, current.next, false, true);
-                    }
-                    
-                    if (this.isDoubly && current.prev) {
-                        await this.createArrow(current, current.prev, true, true);
-                    }
-                    
-                    current = current.next;
-                    index++;
-                    
-                    // For circular lists, break after visiting all nodes once
-                    if (this.isCircular && current === this.head) break;
-                } while (current !== null);
-                
-                layer.batchDraw();
+    async moveNode(node, newPosition) {
+        if (!node || !node.nodeGroup) return;
+        await this.animateNode(node.nodeGroup, { x: newPosition.x, y: newPosition.y, duration: 0.8, easing: Konva.Easings.EaseInOut });
+    }
+    
+    async redrawArrows() {
+        Object.values(this.arrowLines).forEach(arrow => arrow.destroy());
+        this.arrowLines = {};
+        if (this.isEmpty()) return;
+        
+        let current = this.head;
+        do {
+            if (current.next) await this.createArrow(current, current.next, false, true);
+            if (this.isDoubly && current.prev) await this.createArrow(current, current.prev, true, true);
+            current = current.next;
+            if (this.isCircular && current === this.head) break;
+        } while (current !== null);
+        
+        layer.batchDraw();
+    }
+    
+    async redrawList() {
+        const positions = this.calculateNodePositions();
+        if (this.isEmpty()) return;
+        
+        let current = this.head;
+        let index = 0;
+        const promises = [];
+        
+        do {
+            promises.push(this.moveNode(current, positions[index]));
+            current = current.next;
+            index++;
+            if (this.isCircular && current === this.head) break;
+        } while (current !== null);
+        
+        await Promise.all(promises);
+        await this.redrawArrows();
+    }
+    
+    async insertAtHead(value) {
+        const newNode = new Node(value);
+        
+        if (this.isEmpty()) {
+            this.head = this.tail = newNode;
+            if (this.isCircular) {
+                newNode.next = newNode;
+                if (this.isDoubly) newNode.prev = newNode;
+            }
+        } else {
+            newNode.next = this.head;
+            if (this.isDoubly) this.head.prev = newNode;
+            this.head = newNode;
+            if (this.isCircular) {
+                this.tail.next = this.head;
+                if (this.isDoubly) this.head.prev = this.tail;
             }
         }
         
-        // Initialize linked list
-        let list = new LinkedList('singly');
+        this.size++;
+        await this.visualizeList();
+        updateStatus(`Inserted ${value} at the head`);
+        updateListView(this);
+    }
+    
+    async insertAtTail(value) {
+        const newNode = new Node(value);
         
-        // Event handlers
-        document.getElementById('listTypeSelect').addEventListener('change', function() {
-            const newType = this.value;
+        if (this.isEmpty()) {
+            this.head = this.tail = newNode;
+            if (this.isCircular) {
+                newNode.next = newNode;
+                if (this.isDoubly) newNode.prev = newNode;
+            }
+        } else {
+            this.tail.next = newNode;
+            if (this.isDoubly) newNode.prev = this.tail;
+            this.tail = newNode;
+            if (this.isCircular) {
+                this.tail.next = this.head;
+                if (this.isDoubly) this.head.prev = this.tail;
+            }
+        }
+        
+        this.size++;
+        await this.visualizeList();
+        updateStatus(`Inserted ${value} at the tail`);
+        updateListView(this);
+    }
+    
+    async insertAtPosition(value, position) {
+        if (position < 0 || position > this.size) {
+            updateStatus(`Invalid position: ${position}. Valid range: 0 to ${this.size}`);
+            return;
+        }
+        
+        if (position === 0) return await this.insertAtHead(value);
+        if (position === this.size) return await this.insertAtTail(value);
+        
+        const newNode = new Node(value);
+        let current = this.head;
+        for (let i = 0; i < position - 1; i++) current = current.next;
+        
+        await this.highlightNode(current, '#e91e63');
+        
+        newNode.next = current.next;
+        if (this.isDoubly) {
+            newNode.prev = current;
+            current.next.prev = newNode;
+        }
+        current.next = newNode;
+        
+        this.size++;
+        await this.visualizeList();
+        updateStatus(`Inserted ${value} at position ${position}`);
+        updateListView(this);
+    }
+    
+    async deleteFromHead() {
+        if (this.isEmpty()) {
+            updateStatus("List is empty");
+            return null;
+        }
+        
+        const deletedValue = this.head.value;
+        await this.highlightNode(this.head, '#f44336');
+        
+        if (this.head === this.tail) {
+            await this.removeNode(this.head);
+            this.head = this.tail = null;
+        } else {
+            const oldHead = this.head;
+            this.head = this.head.next;
+            if (this.isDoubly) this.head.prev = this.isCircular ? this.tail : null;
+            if (this.isCircular) this.tail.next = this.head;
+            await this.removeNode(oldHead);
+        }
+        
+        this.size--;
+        await this.visualizeList();
+        updateStatus(`Deleted ${deletedValue} from head`);
+        updateListView(this);
+        return deletedValue;
+    }
+    
+    async deleteFromTail() {
+        if (this.isEmpty()) {
+            updateStatus("List is empty");
+            return null;
+        }
+        
+        const deletedValue = this.tail.value;
+        await this.highlightNode(this.tail, '#f44336');
+        
+        if (this.head === this.tail) {
+            await this.removeNode(this.head);
+            this.head = this.tail = null;
+        } else {
+            let current = this.head;
+            while (current.next !== this.tail) current = current.next;
             
-            // Create a new list of the selected type
-            list = new LinkedList(newType);
+            current.next = this.isCircular ? this.head : null;
+            if (this.isCircular && this.isDoubly) this.head.prev = current;
             
-            // Clear the visualization
-            layer.destroyChildren();
+            await this.removeNode(this.tail);
+            this.tail = current;
+        }
+        
+        this.size--;
+        await this.visualizeList();
+        updateStatus(`Deleted ${deletedValue} from tail`);
+        updateListView(this);
+        return deletedValue;
+    }
+    
+    async deleteAtPosition(position) {
+        if (position < 0 || position >= this.size) {
+            updateStatus(`Invalid position: ${position}`);
+            return null;
+        }
+        
+        if (position === 0) return await this.deleteFromHead();
+        if (position === this.size - 1) return await this.deleteFromTail();
+        
+        let current = this.head;
+        for (let i = 0; i < position - 1; i++) current = current.next;
+        
+        await this.highlightNode(current.next, '#f44336');
+        
+        const deletedNode = current.next;
+        const deletedValue = deletedNode.value;
+        
+        current.next = deletedNode.next;
+        if (this.isDoubly) deletedNode.next.prev = current;
+        
+        await this.removeNode(deletedNode);
+        this.size--;
+        await this.visualizeList();
+        updateStatus(`Deleted ${deletedValue} from position ${position}`);
+        updateListView(this);
+        return deletedValue;
+    }
+    
+    async search(value) {
+        if (this.isEmpty()) {
+            updateStatus("List is empty");
+            return -1;
+        }
+        
+        let current = this.head;
+        let index = 0;
+        
+        do {
+            await this.highlightNode(current, '#2196F3', 0.5);
+            
+            if (current.value == value) {
+                await this.highlightNode(current, '#4CAF50', 1.5);
+                updateStatus(`Found value ${value} at position ${index}`);
+                return index;
+            }
+            
+            current = current.next;
+            index++;
+            if (this.isCircular && current === this.head) break;
+        } while (current !== null);
+        
+        updateStatus(`Value ${value} not found`);
+        return -1;
+    }
+    
+    async reverse() {
+        if (this.isEmpty() || this.size === 1) {
+            updateStatus("Nothing to reverse");
+            return;
+        }
+        
+        let current = this.head;
+        let prev = null;
+        
+        if (this.isCircular) {
+            this.tail.next = null;
+            if (this.isDoubly) this.head.prev = null;
+        }
+        
+        const oldHead = this.head;
+        
+        do {
+            await this.highlightNode(current, '#9c27b0', 0.5);
+            const next = current.next;
+            current.next = prev;
+            if (this.isDoubly) current.prev = next;
+            prev = current;
+            current = next;
+        } while (current !== null);
+        
+        this.tail = oldHead;
+        this.head = prev;
+        
+        if (this.isCircular) {
+            this.tail.next = this.head;
+            if (this.isDoubly) this.head.prev = this.tail;
+        }
+        
+        await this.visualizeList();
+        updateStatus("List reversed");
+        updateListView(this);
+    }
+    
+    async clear() {
+        if (this.isEmpty()) {
+            updateStatus("List is already empty");
+            return;
+        }
+        
+        let current = this.head;
+        const promises = [];
+        
+        do {
+            promises.push(this.highlightNode(current, '#f44336', 0.5));
+            const node = current;
+            current = current.next;
+            if (node.nodeGroup) node.nodeGroup.destroy();
+            if (this.isCircular && current === this.head) break;
+        } while (current !== null);
+        
+        await Promise.all(promises);
+        
+        Object.values(this.arrowLines).forEach(arrow => arrow.destroy());
+        this.head = this.tail = null;
+        this.size = 0;
+        this.arrowLines = {};
+        
+        layer.batchDraw();
+        updateStatus("List cleared");
+        updateListView(this);
+    }
+    
+    async visualizeList() {
+        layer.destroyChildren();
+        this.arrowLines = {};
+        
+        if (this.isEmpty()) {
             layer.batchDraw();
-            
-            updateStatus(`Switched to ${newType} linked list`);
-            updateListView(list);
-        });
-        
-        document.getElementById('insertHeadBtn').addEventListener('click', async function() {
-            const valueInput = document.getElementById('valueInput');
-            const value = parseInt(valueInput.value);
-            
-        
-            if (isNaN(value)) {
-                updateStatus("Please enter a valid number");
-            
-                return;
-            }
-            
-            await list.insertAtHead(value);
-            valueInput.value = '';
-            
-        });
-        
-        document.getElementById('insertTailBtn').addEventListener('click', async function() {
-            const valueInput = document.getElementById('valueInput');
-            const value = parseInt(valueInput.value);
-            
-            if (isNaN(value)) {
-                updateStatus("Please enter a valid number");
-                return;
-            }
-            
-            await list.insertAtTail(value);
-            valueInput.value = '';
-        });
-        
-        document.getElementById('insertPosBtn').addEventListener('click', async function() {
-            const valueInput = document.getElementById('valueInput');
-            const positionInput = document.getElementById('positionInput');
-            const value = parseInt(valueInput.value);
-            const position = parseInt(positionInput.value);
-            
-            if (isNaN(value)) {
-                updateStatus("Please enter a valid number");
-                return;
-            }
-            
-            if (isNaN(position)) {
-                updateStatus("Please enter a valid position");
-                return;
-            }
-            
-            await list.insertAtPosition(value, position);
-            valueInput.value = '';
-            positionInput.value = '';
-        });
-        
-        document.getElementById('deleteHeadBtn').addEventListener('click', async function() {
-            await list.deleteFromHead();
-        });
-        
-        document.getElementById('deleteTailBtn').addEventListener('click', async function() {
-            await list.deleteFromTail();
-        });
-        
-        document.getElementById('deletePosBtn').addEventListener('click', async function() {
-            const positionInput = document.getElementById('positionInput');
-            const position = parseInt(positionInput.value);
-            
-            if (isNaN(position)) {
-                updateStatus("Please enter a valid position");
-                return;
-            }
-            
-            await list.deleteAtPosition(position);
-            positionInput.value = '';
-        });
-        
-        document.getElementById('searchBtn').addEventListener('click', async function() {
-            const valueInput = document.getElementById('valueInput');
-            const value = parseInt(valueInput.value);
-            
-            if (isNaN(value)) {
-                updateStatus("Please enter a valid number");
-                return;
-            }
-            
-            await list.search(value);
-            valueInput.value = '';
-        });
-        
-        document.getElementById('reverseBtn').addEventListener('click', async function() {
-            await list.reverse();
-        });
-        
-        document.getElementById('clearBtn').addEventListener('click', async function() {
-            await list.clear();
-        });
-        document.getElementById('insertHeadBtn').addEventListener('click', async function() {
-    const valueInput = document.getElementById('valueInput');
-    const result = validateInput(valueInput);
-    
-    if (result.isValid) {
-        await list.insertAtHead(result.value);
-        valueInput.value = '';
-    }
-});
-
-// Example for the insertAtPosition button:
-document.getElementById('insertPosBtn').addEventListener('click', async function() {
-    const valueInput = document.getElementById('valueInput');
-    const positionInput = document.getElementById('positionInput');
-    const result = validateInput(valueInput, positionInput);
-    
-    if (result.isValid) {
-        await list.insertAtPosition(result.value, result.position);
-        valueInput.value = '';
-        positionInput.value = '';
-    }
-});
-document.getElementById("randomBtn").addEventListener("click", async function() {
-    type = document.getElementById("listTypeSelect").value;
-    
-    const value = Math.floor(Math.random() * 100);
-    console.log(value);
-    await list.insertAtTail(value);
-});
-document.getElementById("preloadBtn").addEventListener("click", async function() {
-    for (let i = 0; i < 10; i++) {
-        const value = Math.floor(Math.random() * 100);
-        await list.insertAtTail(value);
-    }
-    
-   
-});
-function validateInput(valueInput, positionInput = null) {
-    const value = parseInt(valueInput.value);
-    
-    if (isNaN(value)) {
-        
-        return { isValid: false };
-    }
-    
-    if (positionInput) {
-        const position = parseInt(positionInput.value);
-        
-        if (isNaN(position)) {
-           
-            return { isValid: false };
+            return;
         }
         
-        return { isValid: true, value, position };
+        const positions = this.calculateNodePositions();
+        let current = this.head;
+        let index = 0;
+        
+        do {
+            await this.createNode(current, positions[index], true);
+            current = current.next;
+            index++;
+            if (this.isCircular && current === this.head) break;
+        } while (current !== null);
+        
+        current = this.head;
+        do {
+            if (current.next) await this.createArrow(current, current.next, false, true);
+            if (this.isDoubly && current.prev) await this.createArrow(current, current.prev, true, true);
+            current = current.next;
+            if (this.isCircular && current === this.head) break;
+        } while (current !== null);
+        
+        layer.batchDraw();
     }
-    
-    return { isValid: true, value };
 }
 
-        
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            const newWidth = window.innerWidth - 40;
-            const newHeight = window.innerHeight * 0.7;
-            
-            stage.width(newWidth);
-            stage.height(newHeight);
-            
-            // Redraw the list with new dimensions
-            list.visualizeList();
-        });
-        
-        // Initial message
-        updateStatus("Select a list type and add elements to visualize");
+// Initialize
+let list = new LinkedList('singly');
+
+// Event handlers
+const handlers = {
+    listTypeSelect: () => {
+        list = new LinkedList(document.getElementById('listTypeSelect').value);
+        layer.destroyChildren();
+        layer.batchDraw();
+        updateStatus(`Switched to ${list.type} linked list`);
         updateListView(list);
-  
+    },
+    insertHeadBtn: async () => {
+        const val = parseInt(document.getElementById('valueInput').value);
+        if (isNaN(val)) return updateStatus("Enter valid number");
+        await list.insertAtHead(val);
+        document.getElementById('valueInput').value = '';
+    },
+    insertTailBtn: async () => {
+        const val = parseInt(document.getElementById('valueInput').value);
+        if (isNaN(val)) return updateStatus("Enter valid number");
+        await list.insertAtTail(val);
+        document.getElementById('valueInput').value = '';
+    },
+    insertPosBtn: async () => {
+        const val = parseInt(document.getElementById('valueInput').value);
+        const pos = parseInt(document.getElementById('positionInput').value);
+        if (isNaN(val) || isNaN(pos)) return updateStatus("Enter valid inputs");
+        await list.insertAtPosition(val, pos);
+        document.getElementById('valueInput').value = '';
+        document.getElementById('positionInput').value = '';
+    },
+    deleteHeadBtn: async () => await list.deleteFromHead(),
+    deleteTailBtn: async () => await list.deleteFromTail(),
+    deletePosBtn: async () => {
+        const pos = parseInt(document.getElementById('positionInput').value);
+        if (isNaN(pos)) return updateStatus("Enter valid position");
+        await list.deleteAtPosition(pos);
+        document.getElementById('positionInput').value = '';
+    },
+    searchBtn: async () => {
+        const val = parseInt(document.getElementById('valueInput').value);
+        if (isNaN(val)) return updateStatus("Enter valid number");
+        await list.search(val);
+        document.getElementById('valueInput').value = '';
+    },
+    reverseBtn: async () => await list.reverse(),
+    clearBtn: async () => await list.clear(),
+    randomBtn: async () => await list.insertAtTail(Math.floor(Math.random() * 100)),
+    preloadBtn: async () => {
+        for (let i = 0; i < 10; i++) {
+            await list.insertAtTail(Math.floor(Math.random() * 100));
+        }
+    }
+};
+
+// Attach event handlers
+Object.keys(handlers).forEach(id => {
+    document.getElementById(id).addEventListener('click', handlers[id]);
+});
+
+// Window resize
+window.addEventListener('resize', () => {
+    stage.width(window.innerWidth - 40);
+    stage.height(window.innerHeight * 0.7);
+    list.visualizeList();
+});
+
+updateStatus("Select a list type and add elements to visualize");
+updateListView(list);
