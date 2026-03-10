@@ -14,7 +14,7 @@ Rails.application.configure do
 
   # Enable server timing.
   config.server_timing = true
-  
+
   config.assets.debug = true
 config.assets.compile = true
 config.assets.digest = false
