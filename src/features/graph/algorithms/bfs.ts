@@ -31,7 +31,7 @@ export function runBFS(G: Graph, s: string): GraphStep[] {
   R.row(1, "VISIT ORDER", []);
   R.snap(
     `Start BFS at ${L(s)}`,
-    `${L(s)} goes into the queue at distance 0. BFS explores in waves — first everything 1 edge away, then 2 edges away, and so on. Badges show each node's distance in edges.`,
+    `${L(s)} goes into the queue at distance 0. BFS explores in waves: everything 1 edge away, then 2, and so on.`,
     "info",
     { line: [2, 3], vars: { s: L(s), u: null, v: null, "dist[v]": null, queue: qText() } },
   );
@@ -79,8 +79,7 @@ export function runBFS(G: Graph, s: string): GraphStep[] {
   const missed = G.nodes.filter((n) => !seen.has(n.id)).map((n) => n.label);
   R.snap(
     "✓ BFS complete",
-    `Visit order: **${order.map(L).join(" → ")}**. Green edges form the BFS tree — each one is part of a path with the fewest possible edges from ${L(s)}.` +
-      (missed.length ? `\n${missed.join(", ")} can't be reached from ${L(s)}.` : ""),
+    `Visit order: **${order.map(L).join(" → ")}**${missed.length ? ` (${missed.join(", ")} unreachable)` : ""}. Green edges form the BFS tree: fewest-edge paths from ${L(s)}.`,
     "ok",
     { line: 11, vars: { s: L(s), visited: order.length, unreachable: missed.length } },
   );

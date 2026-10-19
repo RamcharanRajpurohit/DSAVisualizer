@@ -93,6 +93,17 @@ export interface GraphView {
   weightEdit: WeightEditRequest | null;
   /** The user zoomed or panned away from the auto-fit view. */
   viewMoved: boolean;
+  /** Every recorded step of the running algorithm (same array while it runs). */
+  steps: readonly GraphStep[];
+}
+
+/** The editable graph in a portable form (share links). Positions are 0–1 in a landscape box. */
+export interface GraphExport {
+  directed: boolean;
+  weighted: boolean;
+  nodes: { label: string; x: number; y: number }[];
+  edges: { u: string; v: string; w: number }[];
+  start: string | null;
 }
 
 export interface GraphEngineOptions {
@@ -176,6 +187,8 @@ export class GraphEngine {
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private destroyed = false;
   private view: GraphView | null = null;
+  /** Bumped on every structural change, so a delayed "run after build" can tell it went stale. */
+  private graphGen = 0;
 
   constructor(Konva: K, container: HTMLDivElement, opts: GraphEngineOptions) {
     this.K = Konva;
@@ -192,7 +205,7 @@ export class GraphEngine {
 
     this.hud = new Konva.Text({ x: 16, y: 14, fontSize: 12.5, fontFamily: this.mono, fill: GTHEME.hud, wrap: "none", ellipsis: true, listening: false });
     this.toolHint = new Konva.Text({
-      x: 16, y: 50, fontSize: 12.5, fontFamily: this.sans, fill: GTHEME.hint, wrap: "none", ellipsis: true, listening: false, text: TOOL_HINTS.move,
+      x: 16, y: 50, fontSize: 12.5, fontFamily: this.sans, fill: GTHEME.hint, wrap: "none", ellipsis: true, listening: false, visible: false, text: TOOL_HINTS.move,
     });
     this.strip = new Konva.Rect({
       x: 8, y: 40, height: 76, cornerRadius: 12, fill: GTHEME.stripBg, stroke: GTHEME.stripLine, strokeWidth: 1, opacity: 0, listening: false,
@@ -265,6 +278,7 @@ export class GraphEngine {
       pending: this.pending,
       weightEdit: this.weightEdit,
       viewMoved: this.zoom !== 1 || this.ox !== 0 || this.oy !== 0,
+      steps: this.steps,
     };
     this.opts.onChange(this.view);
   }
@@ -547,7 +561,7 @@ export class GraphEngine {
     const ring = new K.Circle({ radius: R + 7, stroke: GTHEME.startRing, strokeWidth: 2, dash: [5, 4], opacity: 0, listening: false });
     const circle = new K.Circle({
       radius: R, fill, stroke, strokeWidth: 2.5,
-      shadowColor: "#000000", shadowBlur: 10, shadowOpacity: 0.45, shadowOffset: { x: 0, y: 3 },
+      shadowColor: GTHEME.shadow, shadowBlur: 3, shadowOpacity: 0.12, shadowOffset: { x: 0, y: 1 },
     });
     const text = new K.Text({
       x: -R, y: -R, width: 2 * R, height: 2 * R, text: n.label, align: "center", verticalAlign: "middle",
@@ -598,11 +612,10 @@ export class GraphEngine {
     const line = new K.Arrow({
       points: [0, 0, 0, 0, 0, 0, 0, 0], bezier: true, stroke: B.stroke, fill: B.stroke, strokeWidth: B.width, opacity: B.opacity,
       pointerLength: this.directed ? 11 : 0, pointerWidth: this.directed ? 10 : 0, lineCap: "round", lineJoin: "round", hitStrokeWidth: 16,
-      shadowColor: B.stroke, shadowBlur: 0, shadowOpacity: 0.85, shadowForStrokeEnabled: true,
     });
     const label = new K.Group({ opacity: this.weighted ? 1 : 0, listening: this.weighted });
     const lbg = new K.Rect({
-      height: 20, cornerRadius: 10, stroke: GTHEME.weightStroke, strokeWidth: 1.5, shadowColor: "#000000", shadowBlur: 4, shadowOpacity: 0.4,
+      height: 20, cornerRadius: 10, stroke: GTHEME.weightStroke, strokeWidth: 1.5,
     });
     const ltext = new K.Text({ height: 20, fontSize: 12, fontStyle: "bold", fontFamily: this.mono, align: "center", verticalAlign: "middle" });
     label.add(lbg, ltext);
@@ -737,11 +750,9 @@ export class GraphEngine {
     if (!v) return Promise.resolve();
     v.state = state || null;
     const [fill, stroke, tc] = nodeColors(state);
-    const glow = state === "current" || state === "selected" || state === "danger";
-    const attrs = {
-      fill, stroke, strokeWidth: state ? 3.5 : 2.5,
-      shadowColor: glow ? stroke : "#000000", shadowBlur: glow ? 22 : state ? 14 : 10, shadowOpacity: glow ? 0.95 : 0.45,
-    };
+    // Emphasis comes from a heavier ink outline, not from glow.
+    const strong = state === "current" || state === "selected" || state === "danger";
+    const attrs = { fill, stroke, strokeWidth: strong ? 4 : state ? 3 : 2 };
     if (s === 0) {
       v.circle.setAttrs(attrs);
       v.text.fill(tc);
@@ -757,10 +768,9 @@ export class GraphEngine {
     const S = edgeStyle(state);
     v.line.dash(S.dash || []);
     v.line.dashEnabled(!!S.dash);
-    const glow = state === "active" || state === "tree" || (state != null && state.startsWith("c"));
     const lo = !this.weighted ? 0 : state === "faded" ? 0.3 : 1;
     return Promise.all([
-      this.tween(v.line, { stroke: S.stroke, fill: S.stroke, strokeWidth: S.width, opacity: S.opacity, shadowColor: S.stroke, shadowBlur: glow ? 10 : 0 }, s),
+      this.tween(v.line, { stroke: S.stroke, fill: S.stroke, strokeWidth: S.width, opacity: S.opacity }, s),
       this.tween(v.lbg, { stroke: state && state !== "faded" ? S.stroke : GTHEME.weightStroke }, s),
       this.tween(v.label, { opacity: lo }, s),
     ]);
@@ -830,7 +840,7 @@ export class GraphEngine {
   private makeChip(it: Chip): ChipView {
     const K = this.K;
     const g = new K.Group({ opacity: 0 });
-    const rect = new K.Rect({ y: -14, height: 28, cornerRadius: 8, strokeWidth: 2, shadowColor: "#000000", shadowBlur: 6, shadowOpacity: 0.35 });
+    const rect = new K.Rect({ y: -14, height: 28, cornerRadius: 8, strokeWidth: 1.5, shadowColor: GTHEME.shadow, shadowBlur: 2, shadowOpacity: 0.1, shadowOffset: { x: 0, y: 1 } });
     const text = new K.Text({ y: -14, height: 28, fontSize: 13, fontStyle: "bold", fontFamily: this.mono, align: "center", verticalAlign: "middle" });
     g.add(rect, text);
     this.chipGroup.add(g);
@@ -892,7 +902,6 @@ export class GraphEngine {
       t.visible(!!(r && r.title));
       if (r) t.text(r.title);
     });
-    this.toolHint.visible(!rows.length);
     jobs.push(this.tween(this.strip, { opacity: rows.length ? 1 : 0 }, s || 0.001));
     const slots = this.chipSlots(rows);
     const want = new Map<string, Chip>();
@@ -914,7 +923,7 @@ export class GraphEngine {
       const [f, st, tc] = chipColors(it.tone);
       jobs.push(
         this.tween(v.g, { x: slot.x, y: slot.y, scaleX: 1, scaleY: 1, opacity: 1 }, s),
-        this.tween(v.rect, { fill: f, stroke: st, shadowColor: it.tone === "current" ? st : "#000000", shadowBlur: it.tone === "current" ? 14 : 6 }, s),
+        this.tween(v.rect, { fill: f, stroke: st, strokeWidth: it.tone === "current" ? 2.5 : 1.5 }, s),
         this.tween(v.text, { fill: tc }, s),
       );
     });
@@ -1053,12 +1062,11 @@ export class GraphEngine {
     if (from !== tail) p = reverseCubic(p);
     const color = edgeStyle(style).stroke;
     const trail = new this.K.Line({
-      stroke: color, strokeWidth: 6, lineCap: "round", lineJoin: "round", opacity: 0.95,
-      shadowColor: color, shadowBlur: 14, shadowOpacity: 0.9, listening: false,
+      stroke: color, strokeWidth: 5, lineCap: "round", lineJoin: "round", opacity: 0.9, listening: false,
     });
     const p0 = cubicAt(p, 0);
     trail.points([p0.x, p0.y, p0.x, p0.y]);
-    const head = new this.K.Circle({ ...p0, radius: 6, fill: "#ffffff", shadowColor: color, shadowBlur: 18, shadowOpacity: 1, listening: false });
+    const head = new this.K.Circle({ ...p0, radius: 6, fill: GTHEME.weightBg, stroke: color, strokeWidth: 2.5, listening: false });
     this.fxGroup.add(trail, head);
     await this.animate(this.sec(0.5) * 1000, (k) => {
       const out: number[] = [];
@@ -1506,6 +1514,37 @@ export class GraphEngine {
     this.build(spec);
   }
 
+  /**
+   * Build `spec`, then run `key` once the nodes have popped in (lesson "Try it" buttons).
+   * Skipped if the graph is edited or another run starts in the meantime.
+   */
+  loadAndRun(spec: GraphSpec, key: AlgoKey) {
+    this.build(spec);
+    const gen = this.graphGen;
+    const delay = this.sec(0.06) * 1000 * spec.n + 150 + Math.min(this.sec(0.05) * 1000 * spec.edges.length, 700) + 250;
+    this.later(() => {
+      if (this.graphGen === gen && !this.steps.length) this.run(key);
+    }, delay);
+  }
+
+  /** The graph as plain data: labels, positions normalised to a landscape box, edges by label. */
+  exportGraph(): GraphExport {
+    const portrait = this.VH > this.VW * 1.05; // specPositions() rotates presets on portrait canvases — undo that
+    const unit = (v: number) => clamp(v, 0, 1);
+    const L = (id: string) => this.nodes.get(id)?.label ?? "?";
+    return {
+      directed: this.directed,
+      weighted: this.weighted,
+      nodes: this.sortedNodes().map((n) => ({
+        label: n.label,
+        x: unit(portrait ? n.y / this.VH : n.x / this.VW),
+        y: unit(portrait ? n.x / this.VW : n.y / this.VH),
+      })),
+      edges: [...this.edges.values()].map((e) => ({ u: L(e.u), v: L(e.v), w: e.w })),
+      start: this.startId ? L(this.startId) : null,
+    };
+  }
+
   private build(spec: GraphSpec) {
     this.stopAlgorithm(true);
     this.cancelPending();
@@ -1518,7 +1557,7 @@ export class GraphEngine {
 
     const ids: string[] = [];
     for (let i = 0; i < spec.n; i++) {
-      const n: NodeData = { id: `n${++this.uid}`, label: LETTERS[i], x: 0, y: 0 };
+      const n: NodeData = { id: `n${++this.uid}`, label: spec.labels?.[i] ?? LETTERS[i], x: 0, y: 0 };
       this.nodes.set(n.id, n);
       ids.push(n.id);
     }
@@ -1541,7 +1580,7 @@ export class GraphEngine {
       this.makeEdgeView(e);
       this.growEdge(e, edgeStart + this.sec(0.05) * 1000 * j);
     });
-    this.startId = ids[0] ?? null;
+    this.startId = ids[spec.start ?? 0] ?? ids[0] ?? null;
     this.graphChanged();
     this.status(spec.title, spec.detail, "ok");
   }
@@ -1580,6 +1619,7 @@ export class GraphEngine {
   }
 
   private graphChanged() {
+    this.graphGen++;
     if (this.steps.length) this.stopAlgorithm(true);
     this.updateHud();
     this.paintStart();

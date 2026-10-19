@@ -8,7 +8,7 @@
  */
 import type { Tone } from "@/lib/theme";
 import type { WatchValue } from "@/lib/player/types";
-import type { Field, LLStep, ListKind, ListNode, ListState, NodeMark, NodeSnap, Place, PtrSnap } from "./types";
+import type { Field, ImplKey, LLStep, ListKind, ListNode, ListState, NodeMark, NodeSnap, Place, PtrSnap } from "./types";
 
 export const MAX_NODES = 15;
 
@@ -35,10 +35,12 @@ export interface Code {
   lines: readonly string[];
   /** key → 1-based line numbers (a statement may span several lines). */
   at: Readonly<Record<string, readonly number[]>>;
+  /** The matching real-code listing (see code/). */
+  impl?: ImplKey;
 }
 
 /** Build pseudocode from lines; `[key, text]` lines can be referenced by key. Falsy entries are skipped. */
-export function code(lines: readonly CodeLine[]): Code {
+export function code(lines: readonly CodeLine[], impl?: ImplKey): Code {
   const out: string[] = [];
   const at: Record<string, number[]> = {};
   for (const l of lines) {
@@ -49,7 +51,7 @@ export function code(lines: readonly CodeLine[]): Code {
       (at[l[0]] ??= []).push(out.length);
     }
   }
-  return { lines: out, at };
+  return { lines: out, at, impl };
 }
 
 // ───────────────────────────── recorder ─────────────────────────────
@@ -200,7 +202,7 @@ export class Rec {
       line: lines && lines.length ? lines : undefined,
       vars: { ...this.ptrVars(), ...(o.vars ?? {}) },
       hold: o.hold,
-      kind: this.kind, nodes, ptrs, code: this.cur.lines, callout: o.callout, direct: this.direct || undefined,
+      kind: this.kind, nodes, ptrs, code: this.cur.lines, impl: this.cur.impl, callout: o.callout, direct: this.direct || undefined,
     });
     this.hot = {};
   }

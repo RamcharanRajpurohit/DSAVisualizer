@@ -58,7 +58,7 @@ export function RepresentationPanel({ nodes, edges, directed, weighted, step, mo
                     <th
                       className={cn(
                         "h-6 min-w-6 border border-line px-1 text-center font-semibold transition-colors duration-300",
-                        a.id === focus ? "bg-viz-amber text-[#1a1a1a]" : "bg-viz-blue/5 text-viz-blue",
+                        a.id === focus ? "bg-viz-amber/25 text-fg" : "bg-viz-blue/5 text-viz-blue",
                       )}
                     >
                       {a.label}
@@ -72,9 +72,9 @@ export function RepresentationPanel({ nodes, edges, directed, weighted, step, mo
                           className={cn(
                             "h-6 min-w-6 border border-line px-1 text-center tabular-nums transition-colors duration-300",
                             isHot
-                              ? "bg-viz-blue/45 text-white"
+                              ? "bg-viz-blue/20 font-semibold text-viz-blue-deep"
                               : e
-                                ? cn("bg-white/5", e.w < 0 && weighted ? "text-viz-red" : "text-fg")
+                                ? cn("bg-bg-elev", e.w < 0 && weighted ? "text-viz-red" : "text-fg")
                                 : "text-fg-faint/40",
                             a.id === focus && !isHot && "bg-viz-amber/10",
                           )}
@@ -105,7 +105,7 @@ export function RepresentationPanel({ nodes, edges, directed, weighted, step, mo
                   <b
                     className={cn(
                       "inline-block min-w-[1.4rem] rounded text-center transition-colors duration-300",
-                      a.id === focus ? "bg-viz-amber text-[#1a1a1a]" : "text-viz-blue",
+                      a.id === focus ? "bg-viz-amber/25 text-fg" : "text-viz-blue",
                     )}
                   >
                     {a.label}
@@ -117,7 +117,7 @@ export function RepresentationPanel({ nodes, edges, directed, weighted, step, mo
                         key={b.id}
                         className={cn(
                           "inline-flex items-baseline rounded px-1.5 transition-colors duration-300",
-                          e.id === hot ? "bg-viz-blue/45 text-white" : "bg-white/5 text-fg",
+                          e.id === hot ? "bg-viz-blue/20 font-semibold text-viz-blue-deep" : "bg-bg-elev text-fg",
                         )}
                       >
                         {b.label}

@@ -33,7 +33,7 @@ export function runKruskal(G: Graph): GraphStep[] {
   R.row(1, "MST", []);
   R.snap(
     "Start Kruskal's algorithm",
-    "Sort all edges by weight. Every node starts in its own set — shown by its own colour. Take edges cheapest-first and keep one only if it joins two **different** sets.",
+    "Sort the edges by weight; every node starts in its own colour-coded set. Keep an edge only if it joins two **different** sets.",
     "info",
     { line: [2, 3], vars: { edge: null, w: null, "find(u)": null, "find(v)": null, "MST weight": 0, "MST edges": 0 } },
   );
@@ -62,7 +62,7 @@ export function runKruskal(G: Graph): GraphStep[] {
       total += G.w(e);
       count++;
       R.move(`e${e.id}`, 1, { tone: "ok" });
-      R.snap(`Add ${name(e)}`, `Different sets → no cycle. Keep the edge; the two sets merge into one colour. MST weight so far: **${total}**.`, "ok", {
+      R.snap(`Add ${name(e)}`, `Different sets → no cycle, so keep it and merge the colours. MST weight so far: **${total}**.`, "ok", {
         line: 6,
         vars: { ...vars, "MST weight": total, "MST edges": count },
       });

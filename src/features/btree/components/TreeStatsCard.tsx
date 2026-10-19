@@ -25,7 +25,7 @@ function Tile({ label, value, accent }: { label: string; value: string | number;
 
 /** Live counters plus the four defining B-tree properties (they flicker to ✗ while a split or merge is mid-way). */
 export function TreeStatsCard({ stats, props, busy }: { stats: TreeStats; props: TreeProps; busy: boolean }) {
-  const { order, maxKeys, minKeys } = stats;
+  const { maxKeys, minKeys } = stats;
   const checks = [
     { ok: props.sorted, text: "In-order keys are sorted" },
     { ok: props.maxOk, text: `Every node has ≤ ${maxKeys} keys` },
@@ -34,18 +34,13 @@ export function TreeStatsCard({ stats, props, busy }: { stats: TreeStats; props:
   ];
   return (
     <Section title="Tree stats" icon={<Activity />}>
-      <div className="grid grid-cols-3 gap-1.5">
-        <Tile label="Order" value={order} accent="text-viz-blue" />
-        <Tile label="Height" value={stats.height} accent="text-viz-purple" />
+      {/* Order and height are already in the header badges. */}
+      <div className="grid grid-cols-4 gap-1.5">
         <Tile label="Keys" value={stats.keys} accent="text-viz-green" />
         <Tile label="Nodes" value={stats.nodes} />
         <Tile label="Leaves" value={stats.leaves} />
         <Tile label="Fill" value={`${Math.round(stats.fill * 100)}%`} accent="text-viz-amber" />
       </div>
-      <p className="text-xs leading-relaxed text-fg-dim">
-        Per node: at most <b className="text-fg">{maxKeys}</b> keys ({order} children). Every node except the root keeps at least{" "}
-        <b className="text-fg">{minKeys}</b> key{minKeys === 1 ? "" : "s"} ({minKeys + 1} children).
-      </p>
       <ul className="flex flex-col gap-1">
         {checks.map((c) => (
           <li key={c.text} className={cn("flex items-center gap-2 text-xs transition-colors", c.ok ? "text-fg-dim" : "text-viz-red")}>

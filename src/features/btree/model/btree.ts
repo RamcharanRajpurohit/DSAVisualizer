@@ -88,12 +88,51 @@ export class BTree {
     this.root = this.newNode(true);
   }
 
-  newNode(leaf: boolean): BNode {
-    return { id: `n${++this.uid}`, leaf, keys: [], children: [] };
+  newNode(leaf: boolean, id?: string): BNode {
+    return { id: id ?? `n${++this.uid}`, leaf, keys: [], children: [] };
   }
 
   newKey(v: number): BKey {
     return { id: `k${++this.uid}`, v };
+  }
+
+  /**
+   * Replace the whole tree with the exact structure `shape` (levels → nodes → key values; level d+1
+   * lists the children of level d left to right). With `reuse`, key objects and node ids of the
+   * current tree are kept for equal values, so the renderer glides them instead of re-creating them.
+   * The caller validates the shape (see shape.ts).
+   */
+  loadShape(order: number, shape: readonly (readonly (readonly number[])[])[], reuse = true) {
+    const oldKeys = new Map<number, BKey>(), oldNode = new Map<number, string>();
+    if (reuse && !this.isEmpty()) {
+      const walk = (n: BNode) => {
+        for (const k of realKeys(n.keys)) {
+          oldKeys.set(k.v, k);
+          oldNode.set(k.v, n.id);
+        }
+        if (!n.leaf) n.children.forEach(walk);
+      };
+      walk(this.root);
+    }
+    this.reset(order);
+    if (!shape.length) return;
+    const used = new Set<string>();
+    const levels = shape.map((level, d) =>
+      level.map((vals) => {
+        const id = vals.map((v) => oldNode.get(v)).find((x): x is string => !!x && !used.has(x));
+        if (id) used.add(id);
+        const node = this.newNode(d === shape.length - 1, id);
+        node.keys = vals.map((v) => oldKeys.get(v) ?? this.newKey(v));
+        return node;
+      }));
+    for (let d = 0; d + 1 < levels.length; d++) {
+      let c = 0;
+      for (const p of levels[d]) {
+        p.children = levels[d + 1].slice(c, c + p.keys.length + 1);
+        c += p.keys.length + 1;
+      }
+    }
+    this.root = levels[0][0];
   }
 
   ghostKey(): BKey {

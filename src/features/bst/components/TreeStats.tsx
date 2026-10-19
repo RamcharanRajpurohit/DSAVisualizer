@@ -33,7 +33,7 @@ export function TreeStats({ stats, showRotations }: { stats: Stats; showRotation
   const color = !size || height <= minHeight + 1 ? TONE_COLOR.ok : degenerate ? TONE_COLOR.danger : TONE_COLOR.warn;
 
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-3">
+    <section className="rounded-xl border border-line bg-surface p-3">
       <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
         <span className="flex items-center gap-2">
           <BarChart3 size={14} className="text-viz-blue" /> Tree stats
@@ -62,19 +62,12 @@ export function TreeStats({ stats, showRotations }: { stats: Stats; showRotation
           <div className="relative h-1.5 overflow-hidden rounded-full bg-surface-3">
             <motion.div
               className="absolute inset-y-0 left-0 rounded-full"
-              style={{ background: color, boxShadow: `0 0 8px ${color}` }}
+              style={{ background: color }}
               initial={false}
               animate={{ width: `${Math.max(4, frac * 100)}%` }}
               transition={{ type: "spring", stiffness: 200, damping: 26 }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-fg-faint">
-            {degenerate
-              ? "Degenerate: every node has at most one child — the tree is a linked list and search is O(n)."
-              : height <= minHeight + 1
-                ? "Close to the minimum height, so searches take about log₂ n steps."
-                : "Taller than necessary: some searches walk extra levels."}
-          </p>
         </div>
       )}
     </section>

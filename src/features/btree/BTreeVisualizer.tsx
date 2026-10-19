@@ -2,28 +2,54 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  ComplexityCard, Legend, PseudocodePanel, StatusCard, VariablesPanel, VisualizerLayout, useValueInput,
+  CodePanel, ComplexityCard, Legend, QuizCard, StatusCard, VariablesPanel, VisualizerLayout, useValueInput,
 } from "@/components/visualizer";
 import { Badge } from "@/components/ui";
+import type { LessonActions } from "@/lib/lesson";
+import { useUrlParams } from "@/lib/share";
+import { TONE_COLOR } from "@/lib/theme";
 import { pickOne, randomValue, randomValues } from "@/lib/values";
+import { IMPLEMENTATIONS } from "./code";
 import { ControlsPanel, type PresetId } from "./components/ControlsPanel";
 import { CanvasOverlay } from "./components/CanvasOverlay";
 import { EngineBar } from "./components/EngineBar";
 import { HistoryLog } from "./components/HistoryLog";
 import { TreeStatsCard } from "./components/TreeStatsCard";
 import { ASCENDING, DICE_COUNT, MAX_BATCH, SAMPLE } from "./constants";
+import type { BTreeEngine } from "./engine/BTreeEngine";
 import { COMPLEXITY, COMPLEXITY_NOTE, LEGEND } from "./info";
+import { BTREE_LESSON } from "./lesson";
 import type { ReplaceStrategy } from "./model/btree";
+import { BORROW_TREE, MERGE_TREE, SAMPLE_TREE } from "./model/examples";
+import { makeQuestion } from "./model/quiz";
+import { snapshotKey, type Snapshot } from "./model/shape";
+import { parseShare, shareParams } from "./model/share";
 import { CODE, OP_TITLE } from "./pseudocode";
-import { ENGINE_DEFAULTS, useBTreeEngine } from "./useBTreeEngine";
+import { ENGINE_DEFAULTS, SHARE_OPTS, settle, useBTreeEngine } from "./useBTreeEngine";
+
+const SHORTCUTS = [
+  { keys: ["Ctrl", "Z"], label: "Undo the last operation" },
+  { keys: ["Ctrl", "Shift", "Z"], label: "Redo" },
+  { keys: ["→"], label: "Next phase (step mode)" },
+  { keys: ["End"], label: "Finish the running operation" },
+] as const;
 
 export function BTreeVisualizer() {
-  const { containerRef, withEngine, ready, busy, busyLabel, waiting, paused, step, lastOp, stats, props, history } = useBTreeEngine();
+  const params = useUrlParams();
+  const bt = useBTreeEngine(params);
+  const { containerRef, withEngine, ready, busy, busyLabel, waiting, paused, step, lastOp, stats, props, log } = bt;
   const input = useValueInput({ mode: "multi", maxCount: MAX_BATCH });
-  const [order, setOrder] = useState(ENGINE_DEFAULTS.order);
   const [rate, setRate] = useState(ENGINE_DEFAULTS.rate);
   const [stepMode, setStepMode] = useState(ENGINE_DEFAULTS.stepMode);
   const [strategy, setStrategy] = useState<ReplaceStrategy>(ENGINE_DEFAULTS.replace);
+
+  // A shared link may carry the replacement rule (the hook restores the tree itself) — apply once.
+  const [urlApplied, setUrlApplied] = useState(false);
+  if (params && !urlApplied) {
+    setUrlApplied(true);
+    const s = parseShare((k) => params.get(k), SHARE_OPTS).strategy;
+    if (s) setStrategy(s);
+  }
 
   const locked = !ready || busy;
   const empty = stats.keys === 0;
@@ -42,14 +68,12 @@ export function BTreeVisualizer() {
     if (locked) return;
     if (p === "sample") withEngine((e) => e.build(SAMPLE, "Sample B-tree"));
     else if (p === "ascending") {
-      withEngine((e) => e.build(ASCENDING, "Sorted input",
-        "Keys inserted in ascending order — the worst case for a plain BST — still give a perfectly balanced B-tree, because it only grows at the root."));
+      withEngine((e) => e.build(ASCENDING, "Sorted input", "Sorted keys still give a perfectly balanced B-tree — it only grows at the root."));
     } else withEngine((e) => e.build(randomValues(12), "Random tree"));
   };
 
   const onOrder = (o: number) => {
-    if (locked || o === order) return;
-    setOrder(o);
+    if (locked || o === stats.order) return;
     withEngine((e) => e.setOrder(o));
   };
 
@@ -58,11 +82,50 @@ export function BTreeVisualizer() {
     withEngine((e) => e.setStepMode(on));
   };
 
-  // Space = pause / resume, → = next step, End = skip (ignored while typing or on a focused control).
+  /** Lesson "Try it": finish whatever runs, load an exact example if needed, then animate. */
+  const scenario = (setup: Snapshot | null, act: (e: BTreeEngine) => unknown, title = "Example tree") =>
+    withEngine(async (e) => {
+      await settle(e);
+      if (setup && snapshotKey(e.snapshot()) !== snapshotKey(setup)) {
+        await e.restore(setup, title, "");
+      }
+      await act(e);
+    });
+
+  const toOrder = (o: number) => () => void scenario(null, (e) => (e.order === o ? undefined : e.setOrder(o)));
+
+  const lessonActions: LessonActions = {
+    sample: () => void scenario(SAMPLE_TREE, () => undefined, "Sample B-tree"),
+    order3: toOrder(3),
+    order4: toOrder(4),
+    order5: toOrder(5),
+    search55: () => void scenario(SAMPLE_TREE, (e) => e.search([55])),
+    searchMiss: () => void scenario(SAMPLE_TREE, (e) => e.search([58])),
+    split: () => void scenario(SAMPLE_TREE, (e) => e.insert([36, 37])),
+    sorted: () => void scenario(null, async (e) => {
+      await e.build([], "Empty tree", "", 3);
+      await e.insert([10, 20, 30, 40, 50, 60, 70]);
+    }),
+    borrow: () => void scenario(BORROW_TREE, (e) => e.delete([25])),
+    merge: () => void scenario(MERGE_TREE, (e) => e.delete([35])),
+    internal: () => void scenario(BORROW_TREE, (e) => e.delete([40])),
+    cascade: () => void scenario(SAMPLE_TREE, (e) => e.delete([5])),
+    big: () => void scenario(null, (e) => e.build(randomValues(60), "Big tree · order 7", "Wide nodes keep it shallow.", 7)),
+  };
+
+  // Space = pause / resume, → = next step, End = skip, Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) = undo / redo.
+  // Ignored while typing, so the key box keeps its own text undo.
+  const { undo, redo } = bt;
   const onKey = useCallback((ev: KeyboardEvent) => {
     const el = ev.target as HTMLElement | null;
     const tag = el?.tagName?.toLowerCase();
     if (tag === "input" || tag === "textarea" || tag === "select" || el?.isContentEditable) return;
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
+      const k = ev.key.toLowerCase();
+      if (k === "z" && !ev.shiftKey) { ev.preventDefault(); undo(); }
+      else if ((k === "z" && ev.shiftKey) || k === "y") { ev.preventDefault(); redo(); }
+      return;
+    }
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     withEngine((e) => {
       if (!e.isBusy) return;
@@ -71,32 +134,44 @@ export function BTreeVisualizer() {
       else if (ev.key === "ArrowRight") { ev.preventDefault(); e.next(); }
       else if (ev.key === "End") { ev.preventDefault(); e.skip(); }
     });
-  }, [withEngine]);
+  }, [withEngine, undo, redo]);
 
   useEffect(() => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onKey]);
 
+  const current = bt.current;
+
   return (
     <VisualizerLayout
       title="B-Tree"
-      subtitle="A multi-way search tree that stays perfectly balanced. Watch medians rise on a split, separators drop on a merge, and keys rotate through the parent when a sibling lends one."
+      subtitle="A multi-way search tree that stays perfectly balanced."
       headerExtra={
         <>
-          <Badge color="#39aaff">order {stats.order}</Badge>
-          <Badge color="#c08bff">height {stats.height}</Badge>
-          <Badge color="#2ee68a">O(log n) per op</Badge>
+          <Badge color={TONE_COLOR.info}>order {stats.order}</Badge>
+          <Badge color={TONE_COLOR.merge}>height {stats.height}</Badge>
+          <Badge color={TONE_COLOR.ok}>O(log n)</Badge>
         </>
       }
+      lesson={BTREE_LESSON}
+      lessonActions={lessonActions}
+      share={() => (current ? shareParams(current, strategy) : {})}
+      shortcuts={SHORTCUTS}
       controls={
         <ControlsPanel
           input={input}
           locked={locked}
           empty={empty}
-          order={order}
+          order={stats.order}
           rate={rate}
           strategy={strategy}
+          canUndo={bt.canUndo}
+          canRedo={bt.canRedo}
+          undoLabel={bt.undoLabel}
+          redoLabel={bt.redoLabel}
+          onUndo={bt.undo}
+          onRedo={bt.redo}
           onInsert={() => runOp("insert")}
           onSearch={() => runOp("search")}
           onDelete={() => runOp("delete")}
@@ -129,14 +204,16 @@ export function BTreeVisualizer() {
           <div className="shrink-0">
             <StatusCard title={step.title} detail={step.detail} tone={step.tone} heading={step.step && busy ? `Current step · phase ${step.step}` : "Current step"} />
           </div>
-          <PseudocodePanel
-            title={`Pseudocode · ${OP_TITLE[lastOp]}`}
+          <CodePanel
+            title={`Code · ${OP_TITLE[lastOp]}`}
             code={CODE[lastOp].code}
             active={step.op === lastOp ? step.lines : undefined}
+            implementations={IMPLEMENTATIONS[lastOp]}
           />
           <VariablesPanel vars={step.vars} />
           <TreeStatsCard stats={stats} props={props} busy={busy} />
-          <HistoryLog entries={history} />
+          <QuizCard generate={() => (current ? makeQuestion(current, strategy) : null)} emptyText="Insert a few keys first." />
+          <HistoryLog entries={log} />
           <Legend items={LEGEND} />
           <ComplexityCard rows={COMPLEXITY} note={COMPLEXITY_NOTE} />
         </>

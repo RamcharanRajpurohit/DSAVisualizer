@@ -1,4 +1,4 @@
-import { EDGE, TONE_COLOR, VIZ, type Triple } from "@/lib/theme";
+import { EDGE, PAPER, TONE_COLOR, VIZ, type Triple } from "@/lib/theme";
 import { isComp } from "./recorder";
 import type { ChipTone, EdgeState, NodeState } from "./types";
 
@@ -13,10 +13,13 @@ const hslHex = (h: number, s: number, l: number) => {
   return "#" + [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
 };
 
-/** 12 well-separated colours for union-find sets / SCCs: [fill, stroke] (golden-angle hue steps). */
-export const PALETTE: readonly (readonly [string, string])[] = Array.from({ length: 12 }, (_, i) => {
-  const h = (205 + i * 137.508) % 360;
-  return [hslHex(h, 60, 38), hslHex(h, 95, 72)] as const;
+/**
+ * 12 well-separated colours for union-find sets / SCCs (golden-angle hue steps), drawn like the
+ * rest of the paper theme: a soft tint, a strong outline and dark text of the same hue.
+ */
+export const PALETTE: readonly Triple[] = Array.from({ length: 12 }, (_, i) => {
+  const h = (215 + i * 137.508) % 360;
+  return [hslHex(h, 85, 90), hslHex(h, 75, 38), hslHex(h, 80, 20)] as const;
 });
 
 export interface EdgeStyle {
@@ -29,7 +32,7 @@ export interface EdgeStyle {
 /** Graph-specific palette — the shared VIZ / EDGE colours where they match. */
 export const GTHEME = {
   node: {
-    base: ["#2f2f39", "#6c6c78", "#ececec"],
+    base: VIZ.base,
     frontier: VIZ.compare,
     current: VIZ.active,
     visited: VIZ.visited,
@@ -45,34 +48,33 @@ export const GTHEME = {
     faded: { stroke: EDGE.base, width: 2, opacity: 0.16 },
   } satisfies Record<string, EdgeStyle>,
   chip: {
-    base: ["#2b2b35", "#6c6c78", "#ececec"],
+    base: VIZ.base,
     frontier: VIZ.compare,
     current: VIZ.active,
     ok: VIZ.visited,
     dim: VIZ.dim,
     danger: VIZ.danger,
   } satisfies Record<string, Triple>,
-  badge: ["#0f1b27", "#39aaff", "#cfe8ff"] as Triple,
+  badge: [PAPER.well, "rgba(26, 26, 26, 0.35)", PAPER.ink] as Triple,
   badgeHot: VIZ.active,
-  startRing: "#00f2ff",
+  startRing: EDGE.active,
   rubber: TONE_COLOR.merge,
   deleteHover: TONE_COLOR.danger,
-  weightBg: "#16161c",
-  weightBgNeg: "#3a1414",
-  weightText: "#d6d6e0",
-  weightTextNeg: "#ff9a9a",
-  weightStroke: "#55555f",
-  hud: "#8a8a96",
-  hint: "#6c6c78",
-  rowTitle: "#6c6c78",
-  stripBg: "rgba(10, 10, 14, 0.72)",
-  stripLine: "rgba(255, 255, 255, 0.07)",
+  weightBg: PAPER.well,
+  weightBgNeg: VIZ.danger[0],
+  weightText: PAPER.ink,
+  weightTextNeg: VIZ.danger[2],
+  weightStroke: "rgba(26, 26, 26, 0.22)",
+  hud: PAPER.inkDim,
+  hint: PAPER.inkFaint,
+  rowTitle: PAPER.inkDim,
+  stripBg: "rgba(247, 242, 234, 0.94)",
+  stripLine: PAPER.line,
+  /** The only shadow: soft and neutral, like paper cut-outs. */
+  shadow: "#000000",
 } as const;
 
-const compColors = (tag: string): Triple => {
-  const p = PALETTE[Number(tag.slice(1)) % PALETTE.length];
-  return [p[0], p[1], "#ffffff"];
-};
+const compColors = (tag: string): Triple => PALETTE[Number(tag.slice(1)) % PALETTE.length];
 
 export function nodeColors(state: NodeState | null | undefined): Triple {
   if (!state) return GTHEME.node.base;

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlaybackApi } from "@/lib/player/types";
 import { GraphEngine, type GraphView } from "../engine/GraphEngine";
+import { decodeGraphShare } from "../share";
 
 /** Resolve a next/font CSS variable (e.g. "--font-jetbrains") to a usable canvas font stack. */
 function cssFont(variable: string, fallback: string) {
@@ -13,6 +14,7 @@ function cssFont(variable: string, fallback: string) {
 /**
  * Mounts the Konva graph engine into `hostRef` (client-only: Konva is imported dynamically) and
  * mirrors its view model into React state. The engine is destroyed on unmount.
+ * A share link's graph (?n=…&e=…) replaces the default example; malformed links are ignored.
  */
 export function useGraphEngine() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -30,6 +32,7 @@ export function useGraphEngine() {
         onChange: setView,
         monoFont: cssFont("--font-jetbrains", "Consolas, Monaco, monospace"),
         sansFont: cssFont("--font-inter", "system-ui, sans-serif"),
+        initial: decodeGraphShare(new URLSearchParams(window.location.search)) ?? undefined,
       });
       setEngine(eng);
       void document.fonts?.ready.then(() => eng?.refreshText());

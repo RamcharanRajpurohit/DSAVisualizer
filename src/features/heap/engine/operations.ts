@@ -76,14 +76,14 @@ export function recordPeek(items: readonly HeapItem[], kind: HeapKind): OpResult
   }
   R.snap(
     `peek${W.M}()`,
-    `Where is the ${W.topWord}? No search needed: the heap property chains every key to its parent, its parent's parent, … all the way up to the root.`,
+    `No search needed: every key is ${W.le} its parent, all the way up to the root.`,
     { line: R.line("head") },
   );
   const top = R.a[0];
   R.setVars({ "a[0]": top.v });
   R.snap(
     `${W.top} = ${top.v}, read in O(1)`,
-    `Since ${W.prop}, every key is ${W.le} its parent ${W.le} … ${W.le} the root. So a[0] = **${top.v}** is the ${W.topWord} — one array read, the heap is not changed.`,
+    `a[0] = **${top.v}** is the ${W.topWord} — one array read, nothing changes.`,
     {
       tone: "ok", line: R.line("ret"), marks: { 0: "best" }, ptrs: { "a[0]": 0 },
       callouts: [{ key: "peek", at: 0, text: `${W.top} = ${top.v}`, tone: "ok" }],
@@ -105,7 +105,7 @@ export function recordInsert(items: readonly HeapItem[], kind: HeapKind, adds: r
     R.setVars({ key: item.v, i: null, parent: null });
     R.snap(
       adds.length > 1 ? `insert(${item.v}) — key ${k + 1} of ${adds.length}` : `insert(${item.v})`,
-      `A new key always goes into the first free slot, index n = **${n}** — the leftmost gap on the bottom level. That keeps the tree complete (no holes in the array); afterwards we repair the order by sifting the key up.`,
+      `A new key goes into the first free slot, a[${n}], which keeps the tree complete. Sift-up then repairs the order.`,
       { line: R.line("head"), hold: k > 0 ? 0.7 : 1 },
     );
     R.a.push(item);
@@ -124,10 +124,10 @@ export function recordInsert(items: readonly HeapItem[], kind: HeapKind, adds: r
     const broken = R.beats(item.v, pv);
     R.snap(
       `Append ${item.v} at index ${n}`,
-      `${item.v} lands in a[${n}] and n becomes ${n + 1}. Its parent is a[⌊(${n} − 1) / 2⌋] = a[${p}] = ${pv}. ` +
+      `Its parent is a[⌊(${n} − 1) / 2⌋] = a[${p}] = ${pv}. ` +
         (broken
-          ? `${item.v} ${W.gt} ${pv}, so the red edge breaks the heap property — sift ${item.v} up.`
-          : `${pv} ${W.ge} ${item.v}, so the heap property already holds — sift-up will stop at once.`),
+          ? `${item.v} ${W.gt} ${pv} breaks the heap property, so sift it up.`
+          : `${pv} ${W.ge} ${item.v}, so the order already holds.`),
       {
         line: R.line("append", "grow", "call"), marks: { [n]: "new" },
         callouts: [{ key: "new", at: n, text: `new ${item.v}`, tone: "merge" }],
@@ -139,7 +139,7 @@ export function recordInsert(items: readonly HeapItem[], kind: HeapKind, adds: r
     const h = treeHeight(R.size);
     R.snap(
       `Inserted ${item.v}`,
-      `${item.v} settled at index ${at} after ${plural(R.swaps, "swap")}. Sift-up climbs at most the height of the tree, ⌊log₂ ${R.size}⌋ = ${h} levels, so insert is **O(log n)** (and O(1) on average for random keys — most keys stay near the bottom).`,
+      `${item.v} settled at index ${at} after ${plural(R.swaps, "swap")}. It can climb at most ⌊log₂ ${R.size}⌋ = ${h} levels, so insert is **O(log n)**.`,
       { tone: "ok", line: R.line("call"), marks: { [at]: "ok" }, hold: 0.8 },
     );
   });
@@ -168,7 +168,7 @@ export function recordExtract(items: readonly HeapItem[], kind: HeapKind, opts?:
   R.setVars({ top: top.v });
   R.snap(
     `extract${W.M}() — the ${W.top} is the root`,
-    `The ${W.topWord} is always a[0] = **${top.v}**. We can't just delete the root — that would leave a hole at the top. Instead we fill it with the last key, which is the only slot that can disappear without breaking the complete shape.`,
+    `The ${W.topWord} is always a[0] = **${top.v}**. Removing it would leave a hole, so the last key fills it instead.`,
     { line: R.line("head", "top"), marks: { 0: "best" }, callouts: [{ key: "top", at: 0, text: `${W.top} = ${top.v}`, tone: "merge" }] },
   );
   if (n === 1) {
@@ -184,7 +184,7 @@ export function recordExtract(items: readonly HeapItem[], kind: HeapKind, opts?:
   R.exchange(0, n - 1, false);
   R.snap(
     `Swap the root ${top.v} with the last key ${last.v}`,
-    `a[0] ↔ a[${n - 1}]: ${top.v} goes to the end of the array, ready to be cut off, and ${last.v} jumps to the root. The shape is still a complete tree.`,
+    `${top.v} goes to the end, ready to be cut off, and ${last.v} jumps to the root. The tree stays complete.`,
     {
       tone: "warn", line: R.line("swap"), marks: { 0: "current", [n - 1]: "removed" }, swap: [last.id, top.id],
       callouts: [{ key: "top", at: n - 1, text: `${W.top} ${top.v}`, tone: "merge" }],
@@ -194,17 +194,17 @@ export function recordExtract(items: readonly HeapItem[], kind: HeapKind, opts?:
   const broken = (R.size > 1 && R.beats(R.a[1].v, last.v)) || (R.size > 2 && R.beats(R.a[2].v, last.v));
   R.snap(
     `Remove ${top.v} from the end (n = ${R.size})`,
-    `The heap shrinks by one; ${top.v} is out. ` +
+    `The heap shrinks by one. ` +
       (broken
-        ? `But ${last.v} — a key from the bottom — is now the root and loses to a child (red edge). Sift it down to restore the heap property.`
-        : `${last.v} happens to be in order at the root, but we still run sift-down to check.`),
+        ? `${last.v} came from the bottom and loses to a child, so sift it down.`
+        : `${last.v} happens to be in order, but sift-down still checks.`),
     { line: R.line("shrink", "call"), marks: { 0: "current" }, callouts: [{ key: "out", outId: top.id, text: `${W.top} = ${top.v}`, tone: "merge" }] },
   );
   R.siftDown(0);
   const h = treeHeight(n);
   R.snap(
     `Extracted ${top.v}`,
-    `Returned **${top.v}**. The new root a[0] = ${R.a[0].v} is the next ${W.top}. Sift-down used ${plural(R.swaps, "swap")}; it can sink at most ⌊log₂ ${n}⌋ = ${h} levels, so extract is **O(log n)**.`,
+    `Returned **${top.v}**; the next ${W.top} is ${R.a[0].v}. Sift-down used ${plural(R.swaps, "swap")} (at most ⌊log₂ ${n}⌋ = ${h}), so extract is **O(log n)**.`,
     {
       tone: "ok", line: R.line("ret"), marks: { 0: "ok" },
       callouts: [
@@ -227,7 +227,7 @@ export function recordDelete(items: readonly HeapItem[], kind: HeapKind, k: numb
   const x = R.a[k];
   R.snap(
     `deleteAt(${k}) — remove ${x.v}`,
-    `Remove a[${k}] = **${x.v}**. As with extract, the hole is filled with the last key so the tree stays complete; then the order is repaired in whichever direction it broke.`,
+    `As with extract, the last key fills the hole so the tree stays complete. Then the order is repaired up or down.`,
     { line: R.line("head"), marks: { [k]: "removed" }, callouts: [{ key: "del", at: k, text: `delete ${x.v}`, tone: "danger" }], ptrs: { k } },
   );
   if (k === n - 1) {
@@ -249,7 +249,7 @@ export function recordDelete(items: readonly HeapItem[], kind: HeapKind, k: numb
   R.popToTray("deleted");
   R.snap(
     `Remove ${x.v} (n = ${R.size})`,
-    `${last.v} now sits in slot ${k}, which it never belonged to. It came from the bottom of a *different* branch, so it may be too ${W.better} for its new parent or too ${W.worse} for its new children.`,
+    `${last.v} came from the bottom of a different branch. It may be too ${W.better} for its new parent or too ${W.worse} for its children.`,
     { line: R.line("shrink", "last"), marks: { [k]: "current" }, ptrs: { k }, callouts: [{ key: "out", outId: x.id, text: `deleted ${x.v}`, tone: "danger" }] },
   );
   if (k > 0 && R.beats(last.v, R.a[parentOf(k)].v)) {
@@ -313,8 +313,8 @@ export function recordUpdate(items: readonly HeapItem[], kind: HeapKind, k: numb
   R.snap(
     `a[${k}] ← ${v} (key ${verb})`,
     up
-      ? `In a ${kind}-heap a key that ${verb} moved *towards the top* of the order. Its children were already ${W.le} ${old.v}, so they are still ${W.le} ${v} — only the **parent** can now be beaten.`
-      : `In a ${kind}-heap a key that ${verb} moved *away from the top*. Its parent was ${W.ge} ${old.v}, so it is still ${W.ge} ${v} — only a **child** can now beat it.`,
+      ? `In a ${kind}-heap, a key that ${verb} moves towards the top. Its children are still ${W.le} ${v}, so only the **parent** can be beaten.`
+      : `In a ${kind}-heap, a key that ${verb} moves away from the top. Its parent is still ${W.ge} ${v}, so only a **child** can beat it.`,
     { tone: "warn", line: R.line("set"), marks: { [k]: "new" }, ptrs: { k }, callouts: [{ key: "upd", at: k, text: `${old.v} → ${v}`, tone: "warn" }] },
   );
   R.snap(
@@ -326,7 +326,7 @@ export function recordUpdate(items: readonly HeapItem[], kind: HeapKind, k: numb
   else R.siftDown(k);
   R.snap(
     `Updated ${old.v} → ${v}`,
-    `Restored with ${plural(R.swaps, "swap")}. A changed key moves in one direction only, at most the tree height ⌊log₂ ${n}⌋ = ${treeHeight(n)} levels: **O(log n)**. (Priority queues call this increase-key / decrease-key.)`,
+    `Restored with ${plural(R.swaps, "swap")}. The key moves one way only, at most ⌊log₂ ${n}⌋ = ${treeHeight(n)} levels: **O(log n)**.`,
     { tone: "ok", line: R.line("head") },
   );
   return { steps: R.steps, final: R.a };
@@ -349,15 +349,15 @@ function floyd(R: HeapRecorder, lines: FloydLines, phase = "") {
   R.setVars({ bound });
   R.snap(
     `${phase}Load the ${n} keys as a complete tree`,
-    `Any array already IS a complete binary tree — a[i]'s children are a[2i+1] and a[2i+2]. It just isn't ordered yet: red edges break the ${R.kind}-heap property. ` +
-      `Floyd's method fixes it bottom-up. The left margin shows each level's height h: a key at height h can sink at most h levels.`,
+    `Any array already is a complete tree; red edges break the ${R.kind}-heap order. ` +
+      `Floyd fixes it bottom-up: a key at height h (left margin) sinks at most h levels.`,
     { line: lines.intro },
   );
   if (n <= 1) return;
   for (let i = first + 1; i < n; i++) R.settled.add(i);
   R.snap(
     `${phase}Leaves ${first + 1}…${n - 1} are already heaps`,
-    `Slots ⌊n/2⌋ = ${first + 1} through ${n - 1} have no children (2i+1 ≥ n), and a single node is always a valid heap. That's ${n - first - 1} of ${n} keys done with **zero** work — we start at the last internal node, ⌊n/2⌋ − 1 = ${first}.`,
+    `Slots ${first + 1}…${n - 1} have no children, so ${n - first - 1} of ${n} keys are heaps with **zero** work. Start at the last internal node, ⌊n/2⌋ − 1 = ${first}.`,
     { tone: "ok", line: lines.leaves, ptrs: { first: first + 1 } },
   );
   for (let i = first; i >= 0; i--) {
@@ -373,7 +373,7 @@ function floyd(R: HeapRecorder, lines: FloydLines, phase = "") {
   }
   R.snap(
     `${phase}${W.M}-heap built with ${plural(R.swaps, "swap")}`,
-    `Total work: ${R.swaps} swaps ≤ Σ heights = ${bound} < n = ${n}. Half the nodes are leaves (0 work), a quarter sink ≤ 1 level, an eighth ≤ 2 … Σ h·n/2^(h+1) < n, so build-heap is **O(n)** — cheaper than ${n} separate inserts (O(n log n)).`,
+    `${R.swaps} swaps ≤ Σ heights = ${bound} < n = ${n}. Most nodes sit near the bottom and barely sink, so build-heap is **O(n)**.`,
     { tone: "ok", line: lines.intro, marks: Object.fromEntries(R.a.map((_, i) => [i, "ok" as const])) },
   );
 }
@@ -408,7 +408,7 @@ export function recordHeapSort(
   R.vars = { n, end: null, i: null, left: null, right: null, [W.best]: null, swaps: 0 };
   R.snap(
     `heapSort — ${plural(n, "key")}, ${W.order}`,
-    `Two phases, all inside the same array (O(1) extra space): **1)** arrange the keys into a ${kind}-heap, **2)** repeatedly swap the root — the ${W.topWord} — to the end of the heap and shrink the heap by one. The array ends up in ${W.order} order${kind === "min" ? " (use a max-heap for ascending)" : ""}.`,
+    `**1)** Build a ${kind}-heap. **2)** Repeatedly swap the root (the ${W.topWord}) to the end and shrink the heap — in place, ending ${W.order}.`,
     { line: R.line("head") },
   );
   if (n <= 1) {
@@ -439,8 +439,8 @@ export function recordHeapSort(
     R.size = end;
     R.snap(
       `Move ${W.top} ${x.v} to its final slot ${end}`,
-      `The root ${x.v} is the ${W.topWord} of the ${end + 1} keys still in the heap, so it belongs in the last heap slot. Swap a[0] ↔ a[${end}] and shrink the heap to n = ${end}: ${x.v} is now locked in the sorted region.` +
-        (end > 1 ? ` ${y.v} at the root is probably out of order — sift it down.` : ""),
+      `${x.v} is the ${W.topWord} of the ${end + 1} heap keys, so it belongs in slot ${end} — now locked.` +
+        (end > 1 ? ` Sift ${y.v} down from the root.` : ""),
       {
         tone: "warn", line: R.line("loop", "swap", "shrink"), marks: { 0: "current" }, swap: [y.id, x.id],
         callouts: [{ key: "lock", at: end, text: `${x.v} ✓`, tone: "ok" }],
@@ -452,7 +452,7 @@ export function recordHeapSort(
   R.setVars({ end: 0, i: null, left: null, right: null, [W.best]: null });
   R.snap(
     `Sorted: ${R.a.map((x) => x.v).join(", ")}`,
-    `With one key left, a[0] is the ${W.topWord === "maximum" ? "smallest" : "largest"} and already in place. Phase 1 cost O(n)${opts.alreadyHeap ? " (skipped here)" : ` (${plural(buildSwaps, "swap")})`}; phase 2 ran n − 1 = ${n - 1} sift-downs of O(log n) each → **O(n log n)** in the worst case, in place. Heap sort is not stable. (Your heap is left as it was after phase 1.)`,
+    `Phase 1 cost O(n)${opts.alreadyHeap ? " (skipped)" : ` (${plural(buildSwaps, "swap")})`}, phase 2 ran ${n - 1} sift-downs of O(log n): **O(n log n)**, in place, not stable. Your heap is kept as it was after phase 1.`,
     { tone: "ok", line: R.line("head"), ptrs: {} },
   );
   return { steps: R.steps, final: heap, sorted: R.a.map((x) => x.v) };

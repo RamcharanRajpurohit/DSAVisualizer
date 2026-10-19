@@ -8,9 +8,9 @@ export const KIND_NAME: Record<ListKind, string> = {
 };
 
 const KIND_BLURB: Record<ListKind, string> = {
-  singly: "Each node stores its **data** and one pointer, `next`, to the following node. The last node's `next` is NULL.",
-  doubly: "Each node stores **data** plus two pointers: `next` (forward) and `prev` (backward), so the list can be walked both ways.",
-  circular: "Like a singly linked list, but the last node's `next` points back to the **head** instead of NULL — there is no end.",
+  singly: "Each node stores **data** and one pointer, `next`; the last node's `next` is NULL.",
+  doubly: "Each node stores **data**, `next` and `prev`, so the list can be walked both ways.",
+  circular: "Like singly, but the last node's `next` points back to the **head** — there is no end.",
 };
 
 /** What a node looks like in code — shown whenever no operation is running. */
@@ -25,7 +25,7 @@ export function codeStruct(kind: ListKind, tailPtr: boolean): Code {
     ["head", "  head = NULL   # first node"],
     tailPtr && ["tail", "  tail = NULL   # last node"],
     kind === "circular" && "  # always: last.next == head",
-  ]);
+  ], { op: "struct", kind, tailPtr });
 }
 
 /** One-step recording that just shows the list. */
@@ -37,38 +37,55 @@ export function describe(r: Rec, title?: string, extra = "") {
   });
 }
 
-export function codeBuild(): Code {
+export function codeBuild(kind: ListKind, tailPtr: boolean): Code {
   return code([
     "build(values):",
-    ["head", "  head = NULL"],
+    ["head", tailPtr ? "  head = tail = NULL" : "  head = NULL"],
     ["loop", "  for v in values:"],
     ["append", "    insertAtTail(v)"],
-  ]);
+  ], { op: "build", kind, tailPtr });
+}
+
+export function codeClear(kind: ListKind, tailPtr: boolean): Code {
+  return code([
+    "clear():",
+    kind === "circular" && ["open", "  last.next = NULL  # open ring"],
+    ["loop", "  while head != NULL:"],
+    ["free", "    temp = head"],
+    ["free", "    head = head.next"],
+    ["free", "    free(temp)"],
+    tailPtr && ["tail", "  tail = NULL"],
+  ], { op: "clear", kind, tailPtr });
 }
 
 export function recordBuild(state: ListState, values: number[], label?: string): Rec {
   const s = listFrom(values, state.kind, state.tailPtr, state.seq);
-  const r = new Rec(s, codeBuild());
-  r.snap(label ? `Loaded "${label}"` : `Built a list of ${values.length} node${values.length === 1 ? "" : "s"}`, `${KIND_BLURB[r.kind]}\nList: **${fmtList(values)}**. Every node lives at its own heap address (shown under it) — they are *not* next to each other in memory like an array; only the pointers connect them.`, {
+  const r = new Rec(s, codeBuild(state.kind, state.tailPtr));
+  r.snap(label ? `Loaded "${label}"` : `Built a list of ${values.length} node${values.length === 1 ? "" : "s"}`, `${KIND_BLURB[r.kind]}\nList: **${fmtList(values)}**. Nodes sit at scattered heap addresses (under each node); only pointers connect them.`, {
     tone: "ok", line: ["head", "loop", "append"], vars: { n: values.length },
   });
   return r;
 }
 
 export function recordClear(state: ListState): Rec {
-  const r = new Rec(state, code(["clear():", ["loop", "  while head != NULL:"], ["free", "    temp = head"], ["free", "    head = head.next"], ["free", "    free(temp)"]]));
+  const r = new Rec(state, codeClear(state.kind, state.tailPtr));
   const n = r.size;
   for (const id of r.walk()) r.free(id);
   r.ptr("head", null);
   if (r.tailPtr) r.ptr("tail", null);
   r.snap(n ? `Freed all ${n} nodes` : "The list is already empty", n
     ? "Every node is freed one by one (we must save `head.next` before freeing `head`). `head` is NULL again."
-    : "`head` is already NULL.", { tone: n ? "ok" : "warn", line: ["loop", "free"], vars: { n: 0 } });
+    : "`head` is already NULL.", { tone: n ? "ok" : "warn", line: ["open", "loop", "free", "tail"], vars: { n: 0 } });
   return r;
 }
 
 export function recordTailPtr(state: ListState, on: boolean): Rec {
-  const r = new Rec({ ...state, tailPtr: false }, code(["# keep a pointer to the last node", ["walk", "tail = head"], ["walk2", "while tail.next != " + (state.kind === "circular" ? "head:" : "NULL:")], ["walk2", "  tail = tail.next"]]));
+  const r = new Rec({ ...state, tailPtr: false }, code([
+    "# keep a pointer to the last node",
+    ["walk", "tail = head"],
+    ["walk2", "while tail.next != " + (state.kind === "circular" ? "head:" : "NULL:")],
+    ["walk2", "  tail = tail.next"],
+  ], { op: "findTail", kind: state.kind, tailPtr: true }));
   if (!on) {
     describe(r, "Tail pointer removed", "Without `tail`, reaching the last node means walking the whole list: insert at tail becomes **O(n)**.");
     return r;
@@ -104,7 +121,7 @@ export function recordKind(state: ListState, to: ListKind): Rec {
     to === "doubly" && ["setPrev", "    curr.prev = prev"],
     to === "doubly" && ["adv", "    prev = curr; curr = curr.next"],
     to === "circular" && ["close", "  last.next = head  # close ring"],
-  ]));
+  ], { op: "struct", kind: to, tailPtr: state.tailPtr }));
   const ids = r.walk();
   if (from === to) { describe(r); return r; }
   if (!ids.length) {

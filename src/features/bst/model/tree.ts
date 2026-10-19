@@ -40,6 +40,11 @@ export function replaceChild(root: TreeNode | null, parent: TreeNode | null, old
   return root;
 }
 
+/** Deep copy (same ids, keys and stored heights) so callers can experiment without touching the original. */
+export function cloneTree(n: TreeNode | null): TreeNode | null {
+  return n ? { ...n, left: cloneTree(n.left), right: cloneTree(n.right) } : null;
+}
+
 // ───────────────────────────── walks ─────────────────────────────
 
 /** Every node of the subtree in pre-order. */

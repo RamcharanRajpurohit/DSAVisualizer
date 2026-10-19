@@ -1,15 +1,15 @@
 import { VIZ, type Triple } from "@/lib/theme";
 
-/** Node box styles: [fill, stroke]. */
+/** Node box styles: [fill, stroke] — paper boxes with an ink outline; states are soft tints with a strong outline. */
 export const NODE_STYLE = {
-  base: ["#2b2b35", "#55555f"],
-  visit: ["#0f2f4a", "#39aaff"],
-  danger: ["#4a1b1b", "#ff5c5c"],
-  donor: ["#46380f", "#ffc53d"],
-  success: ["#103a25", "#2ee68a"],
-  merge: ["#33204a", "#c08bff"],
-  left: ["#12304a", "#5ab4ff"],
-  right: ["#2f1b3d", "#c77ddb"],
+  base: ["#FBF8F2", "#2A2A2A"],
+  visit: ["#E8F0FF", "#2563EB"],
+  danger: ["#FDE8E8", "#DC2626"],
+  donor: ["#FFF1D9", "#D97706"],
+  success: ["#E3F5E9", "#16A34A"],
+  merge: ["#F1E9FE", "#7C3AED"],
+  left: ["#E6F0FF", "#3B82F6"],
+  right: ["#F5EAFD", "#9333EA"],
 } as const satisfies Record<string, readonly [string, string]>;
 export type NodeStyle = keyof typeof NODE_STYLE;
 
@@ -26,18 +26,8 @@ export const KEY_STYLE = {
 } as const satisfies Record<string, Triple>;
 export type KeyStyle = keyof typeof KEY_STYLE;
 
-/** Glow colour drawn around highlighted nodes and keys. */
-export const GLOW: Partial<Record<NodeStyle | KeyStyle, string>> = {
-  visit: "#39aaff",
-  compare: "#39aaff",
-  danger: "#ff5c5c",
-  donor: "#ffc53d",
-  moving: "#ffb000",
-  success: "#2ee68a",
-  merge: "#c08bff",
-  left: "#5ab4ff",
-  right: "#c77ddb",
-};
+/** Ink colours used directly on the canvas (ghost slots, soft drop shadows). */
+export const INK = { faint: "#8C8478", shadow: "#000000" } as const;
 
 /** Geometry (world units, scaled to fit the canvas). */
 export const GEO = { slot: 42, pad: 8, r: 17, nodeH: 44, levelGap: 96, gap: 26, top: 96 } as const;

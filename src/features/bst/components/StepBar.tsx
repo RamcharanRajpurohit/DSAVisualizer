@@ -1,15 +1,16 @@
 "use client";
 
 import { FastForward, Footprints, Pause, Play, StepForward } from "lucide-react";
-import { Kbd } from "@/components/ui";
 import { SPEED_OPTIONS } from "@/lib/player/useStepPlayer";
 import { cn } from "@/lib/utils";
 import type { BSTEngine } from "../engine/BSTEngine";
 import type { RunInfo } from "../engine/types";
 
-const btn =
-  "flex h-9 w-9 items-center justify-center rounded-lg border border-line-strong bg-surface-2 text-fg-dim transition " +
-  "hover:bg-surface-3 hover:text-fg disabled:pointer-events-none disabled:opacity-35 active:scale-95";
+const shape =
+  "flex h-9 items-center justify-center rounded-lg border transition disabled:pointer-events-none disabled:opacity-35 active:scale-95";
+const btn = `${shape} w-9 border-line-strong bg-surface-2 text-fg-dim hover:bg-surface-3 hover:text-fg`;
+/** The one primary control: solid ink. */
+const primary = `${shape} w-11 border-transparent bg-fg text-bg hover:opacity-85`;
 
 const PHASE_TEXT: Record<RunInfo["phase"], string> = {
   idle: "Ready",
@@ -27,7 +28,7 @@ const PHASE_DOT: Record<RunInfo["phase"], string> = {
 
 /**
  * Live-engine playback bar (styled like the shared PlaybackControls): pause / resume, next step,
- * finish instantly, step mode and speed.
+ * finish instantly, step mode and speed. Keyboard hints live in the tooltips and the "?" dialog.
  */
 export function StepBar({
   engine, run, speed, onSpeed,
@@ -36,10 +37,10 @@ export function StepBar({
   const running = run.phase === "running";
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-surface/90 px-3 py-2.5 backdrop-blur">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-surface px-3 py-2.5">
       <div className="flex items-center gap-1.5">
         <button
-          className={cn(btn, "w-11 border-transparent bg-gradient-to-r from-[#0b6fb8] to-[#6a2bd0] text-white hover:text-white hover:brightness-110")}
+          className={primary}
           onClick={() => engine?.togglePause()}
           disabled={!busy}
           title={running ? "Pause (Space)" : "Resume (Space)"}
@@ -61,7 +62,7 @@ export function StepBar({
         aria-checked={run.stepMode}
         onClick={() => engine?.setStepMode(!run.stepMode)}
         disabled={!engine}
-        title="Stop at every phase of an operation and wait for Next step"
+        title="Stop at every phase and wait for Next step (→)"
         className={cn(
           "flex h-9 items-center gap-2 rounded-lg border px-2.5 text-xs font-medium transition disabled:opacity-40",
           run.stepMode ? "border-viz-blue/50 bg-viz-blue/15 text-fg" : "border-line-strong bg-surface-2 text-fg-dim hover:text-fg",
@@ -96,19 +97,6 @@ export function StepBar({
             {s}×
           </button>
         ))}
-      </div>
-
-      <div className="flex w-full items-center justify-between gap-2 text-[11px] text-fg-faint">
-        <span className="truncate">
-          {run.stepMode
-            ? "Step mode: every phase waits for Next step."
-            : busy
-              ? "Pause any time, or press Next step to stop at the next phase."
-              : "Run an operation — it animates live; turn on Step mode to go phase by phase."}
-        </span>
-        <span className="hidden items-center gap-1 sm:flex">
-          <Kbd>Space</Kbd> pause · <Kbd>→</Kbd> next · <Kbd>Esc</Kbd> finish
-        </span>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export function codeInsertHead(kind: ListKind, tailPtr: boolean): Code {
         : [["last", "  last = head"] as const, ["walk", "  while last.next != head:"] as const, ["step", "    last = last.next"] as const]),
       ["close", "  last.next = new"],
       ["move", "  head = new"],
-    ]);
+    ], { op: "insertHead", kind, tailPtr });
   }
   return code([
     "insertAtHead(value):",
@@ -29,7 +29,7 @@ export function codeInsertHead(kind: ListKind, tailPtr: boolean): Code {
     ["move", "  head = new"],
     tailPtr && ["tailIf", "  if tail == NULL:"],
     tailPtr && ["tail", "    tail = new"],
-  ]);
+  ], { op: "insertHead", kind, tailPtr });
 }
 
 export function codeInsertTail(kind: ListKind, tailPtr: boolean): Code {
@@ -57,7 +57,7 @@ export function codeInsertTail(kind: ListKind, tailPtr: boolean): Code {
           ["link", "  curr.next = new"] as const,
           dbl && (["back", "  new.prev = curr"] as const),
         ]),
-  ]);
+  ], { op: "insertTail", kind, tailPtr });
 }
 
 export function codeInsertAt(kind: ListKind, tailPtr: boolean): Code {
@@ -76,7 +76,7 @@ export function codeInsertAt(kind: ListKind, tailPtr: boolean): Code {
     dbl && ["back", "    curr.next.prev = new"],
     ["relink", "  curr.next = new        # 2nd"],
     tailPtr && ["tail", "  if curr == tail: tail = new"],
-  ]);
+  ], { op: "insertAt", kind, tailPtr });
 }
 
 export function codeBug(): Code {
@@ -90,7 +90,7 @@ export function codeBug(): Code {
     "# correct order:",
     ["fix1", "#   new.next = curr.next"],
     ["fix2", "#   curr.next = new"],
-  ]);
+  ], { op: "bug", kind: "singly", tailPtr: false });
 }
 
 // ───────────────────────────── helpers ─────────────────────────────
@@ -322,7 +322,7 @@ export function doInsertAt(r: Rec, index: number, value: number) {
     line: "alloc", callout: `new = Node(${value})`, vars: { index, value },
   });
   r.setNext(id, after);
-  r.snap("new.next = curr.next", `**Order matters.** First copy curr's \`next\` into the new node, so it points at **${afterTxt}**. Now both curr and new point there — nothing is lost. If we did \`curr.next = new\` first, the only reference to the rest of the list would be overwritten.`, {
+  r.snap("new.next = curr.next", `**Order matters:** copy curr's \`next\` first, so the new node also points at **${afterTxt}**. Writing \`curr.next = new\` first would lose the rest of the list.`, {
     line: "link", callout: "new.next = curr.next", vars: { index, value },
   });
   if (r.dbl) {
@@ -364,7 +364,7 @@ export function doBugDemo(r: Rec, index: number, value: number) {
   r.setNext(curr, id);
   const lost = r.walk(after).filter((x) => x !== r.head && x !== id).length;
   r.snap("✗ curr.next = new (first!)", after
-    ? `We overwrote curr.next before saving it. The ${lost} node${lost === 1 ? "" : "s"} after **${r.v(curr)}** ${lost === 1 ? "is" : "are"} now **unreachable** — no pointer leads to ${lost === 1 ? "it" : "them"}. In C/C++ that memory is leaked; in Java/Python it would be garbage-collected and lost.`
+    ? `curr.next was overwritten before being saved: the ${lost} node${lost === 1 ? "" : "s"} after **${r.v(curr)}** ${lost === 1 ? "is" : "are"} now **unreachable**. In C/C++ that memory leaks.`
     : "curr was the last node, so nothing is lost yet — but watch the next line.", {
     line: "relink", tone: "danger", callout: "curr.next = new",
   });

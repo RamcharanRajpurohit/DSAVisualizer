@@ -6,9 +6,10 @@ import { SPEED_OPTIONS } from "@/lib/player/useStepPlayer";
 import type { PlaybackApi } from "@/lib/player/types";
 import { cn } from "@/lib/utils";
 
-const btn =
-  "flex h-9 w-9 items-center justify-center rounded-lg border border-line-strong bg-surface-2 text-fg-dim transition " +
-  "hover:bg-surface-3 hover:text-fg disabled:pointer-events-none disabled:opacity-35 active:scale-95";
+const btnShape =
+  "flex h-9 items-center justify-center rounded-lg border transition disabled:pointer-events-none disabled:opacity-35 active:scale-95";
+const btn = `${btnShape} w-9 border-line-strong bg-surface-2 text-fg-dim hover:bg-surface-3 hover:text-fg`;
+const playBtn = `${btnShape} w-11 border-fg bg-fg text-bg-elev hover:bg-[#333]`;
 
 export interface PlaybackControlsProps {
   player: PlaybackApi;
@@ -31,7 +32,7 @@ export function PlaybackControls({
   const last = Math.max(0, total - 1);
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-surface/90 px-3 py-2.5 backdrop-blur", className)}>
+    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-surface/90 px-3 py-2", className)}>
       <div className="flex items-center gap-1.5">
         <button className={btn} onClick={player.first} disabled={!has || index <= 0} title="First step (Home)" aria-label="First step">
           <ChevronFirst size={16} />
@@ -40,7 +41,7 @@ export function PlaybackControls({
           <ChevronLeft size={16} />
         </button>
         <button
-          className={cn(btn, "w-11 border-fg bg-fg text-bg-elev hover:bg-[#333] hover:text-bg-elev")}
+          className={playBtn}
           onClick={player.toggle}
           disabled={total < 2}
           title="Play / pause (Space)"

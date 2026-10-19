@@ -19,8 +19,8 @@ export const PRESETS: readonly { id: string; label: string; title: string }[] = 
 ];
 
 /** [fill, stroke, text] per highlight. */
-export const SORTED_STYLE: Triple = ["#13211a", "#2b5a41", "#7fd3a6"];
-export const REMOVED_STYLE: Triple = ["#4a1626", "#ff7a99", "#ffe1e8"];
+export const SORTED_STYLE: Triple = ["#EEF3EC", "#8DBB9B", "#2F5D3F"];
+export const REMOVED_STYLE: Triple = ["#FFE4E6", "#E11D48", "#881337"];
 
 export const MARK_STYLE: Record<Mark | "base", Triple> = {
   base: VIZ.base,
@@ -47,7 +47,7 @@ export const EDGE_STYLE: Record<EdgeMark | "base" | "bad" | "locked", EdgeStyle>
   violation: { stroke: EDGE.rejected, width: 4, opacity: 1 },
   ok: { stroke: EDGE.tree, width: 4, opacity: 1 },
   bad: { stroke: EDGE.rejected, width: 2.5, dash: "7 5", opacity: 0.8 },
-  locked: { stroke: "#34343e", width: 1.5, dash: "3 5", opacity: 0.7 },
+  locked: { stroke: VIZ.dim[1], width: 1.5, dash: "3 5", opacity: 0.8 },
 };
 
 export const POINTER_COLOR: Record<string, string> = {

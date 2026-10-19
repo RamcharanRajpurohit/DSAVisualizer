@@ -18,7 +18,7 @@ export function codeDeleteHead(kind: ListKind, tailPtr: boolean): Code {
       ["move", "  head = head.next"],
       ["close", "  last.next = head"],
       ["free", "  free(temp)"],
-    ]);
+    ], { op: "deleteHead", kind, tailPtr });
   }
   return code([
     "deleteHead():",
@@ -28,7 +28,7 @@ export function codeDeleteHead(kind: ListKind, tailPtr: boolean): Code {
     kind === "doubly" && ["prevIf", "  if head != NULL: head.prev = NULL"],
     tailPtr && ["tail", "  if head == NULL: tail = NULL"],
     ["free", "  free(temp)"],
-  ]);
+  ], { op: "deleteHead", kind, tailPtr });
 }
 
 export function codeDeleteTail(kind: ListKind, tailPtr: boolean): Code {
@@ -43,7 +43,7 @@ export function codeDeleteTail(kind: ListKind, tailPtr: boolean): Code {
       ["tail", "    tail = temp.prev"],
       ["cut", "    tail.next = NULL"],
       ["free", "  free(temp)"],
-    ]);
+    ], { op: "deleteTail", kind, tailPtr });
   }
   if (kind === "doubly") {
     return code([
@@ -55,7 +55,7 @@ export function codeDeleteTail(kind: ListKind, tailPtr: boolean): Code {
       ["one", "  if curr.prev == NULL: head = NULL"],
       ["cut", "  else: curr.prev.next = NULL"],
       ["free", "  free(curr)"],
-    ]);
+    ], { op: "deleteTail", kind, tailPtr });
   }
   const end = kind === "circular" ? "head" : "NULL";
   return code([
@@ -71,7 +71,7 @@ export function codeDeleteTail(kind: ListKind, tailPtr: boolean): Code {
     ["cut", `  curr.next = ${end}`],
     tailPtr && ["tail", "  tail = curr"],
     ["free", "  free(temp)"],
-  ]);
+  ], { op: "deleteTail", kind, tailPtr });
 }
 
 export function codeDeleteAt(kind: ListKind, tailPtr: boolean): Code {
@@ -88,7 +88,7 @@ export function codeDeleteAt(kind: ListKind, tailPtr: boolean): Code {
       ["back", "    curr.next.prev = curr.prev"],
       tailPtr && ["tailElse", "  else: tail = curr.prev"],
       ["free", "  free(curr)"],
-    ]);
+    ], { op: "deleteAt", kind, tailPtr });
   }
   return code([
     "deleteAt(index):",
@@ -101,7 +101,7 @@ export function codeDeleteAt(kind: ListKind, tailPtr: boolean): Code {
     ["bypass", "  prev.next = temp.next"],
     tailPtr && ["tail", "  if temp == tail: tail = prev"],
     ["free", "  free(temp)"],
-  ]);
+  ], { op: "deleteAt", kind, tailPtr });
 }
 
 export function codeDeleteValue(kind: ListKind, tailPtr: boolean): Code {
@@ -120,7 +120,7 @@ export function codeDeleteValue(kind: ListKind, tailPtr: boolean): Code {
       ["nextIf", "    curr.next.prev = curr.prev"],
       tailPtr && ["tailElse", "  else: tail = curr.prev"],
       ["free", "  free(curr)"],
-    ]);
+    ], { op: "deleteValue", kind, tailPtr });
   }
   const end = kind === "circular" ? "head" : "NULL";
   return code([
@@ -137,7 +137,7 @@ export function codeDeleteValue(kind: ListKind, tailPtr: boolean): Code {
     ["bypass", "  prev.next = temp.next"],
     tailPtr && ["tail", "  if temp == tail: tail = prev"],
     ["free", "  free(temp)"],
-  ]);
+  ], { op: "deleteValue", kind, tailPtr });
 }
 
 // ───────────────────────────── helpers ─────────────────────────────

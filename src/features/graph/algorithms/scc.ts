@@ -117,7 +117,7 @@ export function runSCC(G: Graph): GraphStep[] {
   G.edges.forEach((e) => (R.edges[e.id] = comp[e.u] === comp[e.v] ? `c${comp[e.u]}` : "faded"));
   R.snap(
     `✓ ${plural(comps.length, "strongly connected component")}`,
-    `Edges flipped back. Each colour is one SCC: ${comps.map((m) => `{${m.map(L).join(", ")}}`).join("  ")}. Faded edges run between components and only go one way.`,
+    `Each colour is one SCC: ${comps.map((m) => `{${m.map(L).join(", ")}}`).join("  ")}. Faded edges run between components, one way only.`,
     "ok",
     { line: 6, vars: { phase: "done", u: null, finished: fin.length, components: comps.length } },
   );

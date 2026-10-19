@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ArrowLeftRight, Bug, CopyMinus, Crosshair, GitMerge, Infinity as InfinityIcon, Link2, ListPlus, Plus, Search, Shuffle, Sparkles, Trash2, Eraser,
+  ArrowLeftRight, Bug, CopyMinus, Crosshair, Eraser, GitMerge, Infinity as InfinityIcon, Link2, ListPlus, Plus, Search, Shuffle, Sparkles,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { ValueInput, useValueInput } from "@/components/visualizer";
@@ -18,23 +18,12 @@ export interface ControlsProps {
 }
 
 const KIND_OPTIONS = [
-  { value: "singly" as const, label: "Singly", title: "Each node: data + next" },
-  { value: "doubly" as const, label: "Doubly", title: "Each node: prev + data + next" },
-  { value: "circular" as const, label: "Circular", title: "Singly linked, last node points back to head" },
+  { value: "singly" as const, label: "Singly", title: "Node = [ data | next ] — walk forward only" },
+  { value: "doubly" as const, label: "Doubly", title: "Node = [ prev | data | next ] — walk both ways" },
+  { value: "circular" as const, label: "Circular", title: "Singly linked; the last node points back to head" },
 ];
 
-/** A block button; when disabled the reason shows as a tooltip (the wrapper catches the hover). */
-function Op({ children, icon, onClick, disabled, why, title, variant = "secondary" }: {
-  children: ReactNode; icon?: ReactNode; onClick: () => void; disabled?: boolean; why?: string; title?: string;
-  variant?: "primary" | "secondary" | "danger" | "success";
-}) {
-  return (
-    <span title={disabled ? why : title} className="flex">
-      <Button block size="sm" variant={variant} icon={icon} onClick={onClick} disabled={disabled}>{children}</Button>
-    </span>
-  );
-}
-
+/** Tiny group caption above a button row. */
 function GroupLabel({ children }: { children: ReactNode }) {
   return <div className="-mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-fg-faint">{children}</div>;
 }
@@ -44,6 +33,7 @@ export function Controls({ list, onRun }: ControlsProps) {
   const values = list.nodes.map((x) => x.value);
   const empty = n === 0;
   const full = n >= MAX_NODES;
+  const circ = list.kind === "circular";
 
   const value = useValueInput({ mode: "multi", maxCount: MAX_NODES });
   const index = useValueInput({ mode: "single", min: 0, max: Math.max(0, n) });
@@ -92,110 +82,104 @@ export function Controls({ list, onRun }: ControlsProps) {
     const b = mergeB.read(() => randomValues(4).sort((x, y) => x - y));
     if (a && b) onRun({ op: "merge", a, b });
   };
+  const bug = () => {
+    const i = readIndex();
+    if (i !== false) onRun({ op: "bug", index: i, value: randomValue(values) });
+  };
   const cycleIdx = cycleTo === "none" ? null : Math.min(Number(cycleTo), Math.max(0, n - 1));
   const emptyWhy = "The list is empty";
+  const fullWhy = `The list is full (${MAX_NODES} nodes)`;
 
   return (
     <>
-      <Section title="List type" icon={<Link2 />}>
-        <Segmented options={KIND_OPTIONS} value={list.kind} onChange={(k: ListKind) => k !== list.kind && onRun({ op: "kind", kind: k })} />
-        <Toggle label="Keep a tail pointer" checked={list.tailPtr} onChange={(on) => onRun({ op: "tailPtr", on })} />
-        <p className="text-[11.5px] leading-relaxed text-fg-faint">
-          {list.kind === "singly" && "Node = [ data | next ]. One-way: you can only walk forward."}
-          {list.kind === "doubly" && "Node = [ prev | data | next ]. Walk both ways; one extra pointer per node."}
-          {list.kind === "circular" && "Like singly, but the last node points back to head — there is no NULL."}
-        </p>
-      </Section>
-
-      <Section title="Insert · delete · search" icon={<ListPlus />}>
-        <ValueInput
-          input={value}
-          label="Value(s)"
-          autoFocus
-          onEnter={() => insert("insertTail")}
-          onRandom={() => value.fill([randomValue(values)])}
-          hint={`Empty = random · "5, 12, 8" inserts three · Enter = insert at tail`}
-        />
-        <ValueInput
-          input={index}
-          label="Index"
-          placeholder={`empty = middle (0–${n})`}
-          onEnter={insertAt}
-          hint={`Insert: 0–${n} · delete: 0–${Math.max(0, n - 1)}`}
-        />
+      <Section title="Operations" icon={<ListPlus />}>
+        <div className="flex gap-2">
+          <ValueInput
+            className="min-w-0 flex-[2]"
+            input={value}
+            label="Value"
+            autoFocus
+            placeholder="e.g. 42 or 5, 8"
+            onEnter={() => insert("insertTail")}
+            onRandom={() => value.fill([randomValue(values)])}
+          />
+          <ValueInput className="min-w-0 flex-1" input={index} label="Index" placeholder={`0–${n}`} onEnter={insertAt} />
+        </div>
         <GroupLabel>Insert</GroupLabel>
         <Row>
-          <Op icon={<Plus size={13} />} onClick={() => insert("insertHead")} disabled={full} why="List is full">Head</Op>
-          <Op icon={<Plus size={13} />} onClick={() => insert("insertTail")} disabled={full} why="List is full" variant="primary">Tail</Op>
-          <Op icon={<Plus size={13} />} onClick={insertAt} disabled={full} why="List is full">At index</Op>
+          <Button block size="sm" icon={<Plus size={13} />} onClick={() => insert("insertHead")} disabled={full} disabledReason={fullWhy} title="Insert at head (empty value = random)">Head</Button>
+          <Button block size="sm" variant="primary" icon={<Plus size={13} />} onClick={() => insert("insertTail")} disabled={full} disabledReason={fullWhy} title="Insert at tail (Enter)">Tail</Button>
+          <Button block size="sm" icon={<Plus size={13} />} onClick={insertAt} disabled={full} disabledReason={fullWhy} title="Insert at index (empty index = middle)">Index</Button>
         </Row>
         <GroupLabel>Delete</GroupLabel>
         <Row>
-          <Op icon={<Trash2 size={13} />} onClick={() => onRun({ op: "deleteHead" })} disabled={empty} why={emptyWhy}>Head</Op>
-          <Op icon={<Trash2 size={13} />} onClick={() => onRun({ op: "deleteTail" })} disabled={empty} why={emptyWhy}>Tail</Op>
+          <Button block size="sm" onClick={() => onRun({ op: "deleteHead" })} disabled={empty} disabledReason={emptyWhy} title="Delete the head">Head</Button>
+          <Button block size="sm" onClick={() => onRun({ op: "deleteTail" })} disabled={empty} disabledReason={emptyWhy} title="Delete the tail">Tail</Button>
+          <Button block size="sm" onClick={deleteAt} disabled={empty} disabledReason={emptyWhy} title="Delete at index (empty index = middle)">Index</Button>
+          <Button block size="sm" onClick={() => byValue("deleteValue")} disabled={empty} disabledReason={emptyWhy} title="Delete the first node with this value (empty = a random existing value)">Value</Button>
         </Row>
-        <Row>
-          <Op icon={<Trash2 size={13} />} onClick={deleteAt} disabled={empty} why={emptyWhy}>At index</Op>
-          <Op icon={<Trash2 size={13} />} onClick={() => byValue("deleteValue")} disabled={empty} why={emptyWhy} title="Empty value box = a random existing value">Value</Op>
-        </Row>
-        <Op icon={<Search size={13} />} onClick={() => byValue("search")} disabled={empty} why={emptyWhy} title="Empty value box = a random existing value" variant="success">
-          Search value
-        </Op>
+        <Button block size="sm" icon={<Search size={13} />} onClick={() => byValue("search")} disabled={empty} disabledReason={emptyWhy} title="Linear search (empty value = a random existing value)">
+          Search
+        </Button>
       </Section>
 
       <Section title="Algorithms" icon={<Sparkles />}>
         <Row>
-          <Op icon={<ArrowLeftRight size={13} />} onClick={() => onRun({ op: "reverse" })} disabled={n < 2} why="Needs at least 2 nodes">Reverse</Op>
-          <Op icon={<Crosshair size={13} />} onClick={() => onRun({ op: "middle" })} disabled={empty} why={emptyWhy}>Middle</Op>
+          <Button block size="sm" variant="primary" icon={<ArrowLeftRight size={13} />} onClick={() => onRun({ op: "reverse" })} disabled={n < 2} disabledReason="Needs at least 2 nodes">Reverse</Button>
+          <Button block size="sm" icon={<Crosshair size={13} />} onClick={() => onRun({ op: "middle" })} disabled={empty} disabledReason={emptyWhy} title="Slow / fast pointers">Middle</Button>
         </Row>
-        <Op icon={<CopyMinus size={13} />} onClick={() => onRun({ op: "dedupe" })} disabled={n < 2} why="Needs at least 2 nodes">Remove duplicates</Op>
-        <div className="flex items-end gap-2">
-          <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-faint">Floyd · demo cycle</span>
-            <Select value={cycleTo === "none" ? "none" : String(cycleIdx)} onChange={(e) => setCycleTo(e.target.value)} disabled={list.kind === "circular" || empty} className="h-8 text-xs">
-              <option value="none">no cycle (NULL end)</option>
-              {list.nodes.map((nd, i) => (
-                <option key={nd.id} value={String(i)}>last → [{i}] {nd.value}</option>
-              ))}
-            </Select>
-          </label>
-          <span title={empty ? emptyWhy : "Floyd's tortoise & hare"} className="flex">
-            <Button size="sm" icon={<InfinityIcon size={14} />} onClick={() => onRun({ op: "cycle", to: cycleIdx })} disabled={empty}>Detect</Button>
-          </span>
+        <Button block size="sm" icon={<CopyMinus size={13} />} onClick={() => onRun({ op: "dedupe" })} disabled={n < 2} disabledReason="Needs at least 2 nodes">Remove duplicates</Button>
+        <div className="flex gap-2">
+          <Select
+            value={cycleTo === "none" ? "none" : String(cycleIdx)}
+            onChange={(e) => setCycleTo(e.target.value)}
+            disabled={circ || empty}
+            className="h-8 min-w-0 flex-1 text-xs"
+            title={circ ? "A circular list is already one big cycle" : "Where the last node points during the demo"}
+            aria-label="Demo cycle"
+          >
+            <option value="none">no cycle</option>
+            {list.nodes.map((nd, i) => (
+              <option key={nd.id} value={String(i)}>last → [{i}] {nd.value}</option>
+            ))}
+          </Select>
+          <Button size="sm" icon={<InfinityIcon size={14} />} onClick={() => onRun({ op: "cycle", to: cycleIdx })} disabled={empty} disabledReason={emptyWhy} title="Floyd's cycle detection (tortoise & hare)">
+            Cycle
+          </Button>
         </div>
-        {list.kind === "circular" && <p className="text-[11px] text-fg-faint">A circular list is already one big cycle — Floyd will find it starting at the head.</p>}
+        <GroupLabel>Merge sorted</GroupLabel>
+        <div className="flex gap-2">
+          <ValueInput className="min-w-0 flex-1" input={mergeA} placeholder="List A" onEnter={doMerge} />
+          <ValueInput className="min-w-0 flex-1" input={mergeB} placeholder="List B" onEnter={doMerge} />
+        </div>
+        <Button block size="sm" icon={<GitMerge size={13} />} onClick={doMerge} disabled={circ} disabledReason="Merge needs NULL-terminated lists" title={`Merge lists A and B (up to ${MAX_MERGE} values each)`}>
+          Merge
+        </Button>
       </Section>
 
-      <Section title="Merge two sorted lists" icon={<GitMerge />}>
-        <ValueInput input={mergeA} label="List A" onEnter={doMerge} onRandom={() => mergeA.fill(randomValues(4).sort((x, y) => x - y))} hint={`Up to ${MAX_MERGE} values · empty = random`} />
-        <ValueInput input={mergeB} label="List B" onEnter={doMerge} onRandom={() => mergeB.fill(randomValues(4).sort((x, y) => x - y))} hint={`Up to ${MAX_MERGE} values · sorted for you if needed`} />
-        <Op icon={<GitMerge size={13} />} onClick={doMerge} disabled={list.kind === "circular"} why="Merge needs NULL-terminated lists — switch to singly or doubly" variant="primary">
-          Merge into a new list
-        </Op>
+      <Section title="List type" icon={<Link2 />}>
+        <Segmented options={KIND_OPTIONS} value={list.kind} onChange={(k: ListKind) => k !== list.kind && onRun({ op: "kind", kind: k })} />
+        <Toggle label="Tail pointer" checked={list.tailPtr} onChange={(on) => onRun({ op: "tailPtr", on })} />
       </Section>
 
-      <Section title="Build" icon={<Shuffle />}>
+      <Section title="Examples" icon={<Shuffle />}>
         <div className="flex flex-wrap gap-1.5">
           {PRESETS.map((p) => (
-            <Button key={p.label} size="sm" variant="ghost" className="border-line-strong" onClick={() => onRun({ op: "build", values: p.values, label: p.label })}>
+            <Button key={p.label} size="sm" variant="secondary" onClick={() => onRun({ op: "build", values: p.values, label: p.label })}>
               {p.label}
             </Button>
           ))}
         </div>
-        <ValueInput input={build} label="Your own values" onEnter={doBuild} onRandom={() => build.fill(randomValues(RANDOM_COUNT))} hint={`Up to ${MAX_NODES} values · empty = ${RANDOM_COUNT} random`} />
+        <ValueInput input={build} label="Your values" onEnter={doBuild} onRandom={() => build.fill(randomValues(RANDOM_COUNT))} />
         <Row>
-          <Op icon={<Shuffle size={13} />} onClick={doBuild}>Build</Op>
-          <Op icon={<Eraser size={13} />} onClick={() => onRun({ op: "clear" })} disabled={empty} why="Already empty" variant="danger">Clear</Op>
+          <Button block size="sm" icon={<Shuffle size={13} />} onClick={doBuild} title={`Build from the box (empty = ${RANDOM_COUNT} random values)`}>Build</Button>
+          <Button block size="sm" icon={<Bug size={13} />} onClick={bug} disabled={empty} disabledReason={emptyWhy} title="Insert with the two pointer writes swapped (uses the index box)">
+            Wrong order
+          </Button>
         </Row>
-      </Section>
-
-      <Section title="Common bug" icon={<Bug />}>
-        <p className="text-[11.5px] leading-relaxed text-fg-faint">
-          What happens if you write <code className="text-viz-amber">curr.next = new</code> <em>before</em> <code className="text-viz-amber">new.next = curr.next</code>? Uses the index box (empty = middle).
-        </p>
-        <Op icon={<Bug size={13} />} onClick={() => { const i = readIndex(); if (i !== false) onRun({ op: "bug", index: i, value: randomValue(values) }); }} disabled={empty} why={emptyWhy} variant="danger">
-          Insert in the wrong order
-        </Op>
+        <Button block size="sm" variant="ghost" icon={<Eraser size={13} />} onClick={() => onRun({ op: "clear" })} disabled={empty} disabledReason="Already empty">
+          Clear
+        </Button>
       </Section>
     </>
   );

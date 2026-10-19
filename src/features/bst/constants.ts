@@ -41,6 +41,8 @@ export type DemoId = "LL" | "RR" | "LR" | "RL" | "DEL";
 export interface AvlDemo {
   title: string;
   short: string;
+  /** Play-button label: the operation and the fix, in a few words. */
+  line: string;
   base: readonly number[];
   op: "insert" | "delete";
   value: number;
@@ -49,23 +51,23 @@ export interface AvlDemo {
 
 export const AVL_DEMOS: Record<DemoId, AvlDemo> = {
   LL: {
-    title: "Left-Left case", short: "LL", base: [50, 30, 70, 20, 40], op: "insert", value: 10,
+    title: "Left-Left case", short: "LL", line: "Insert 10 · rotate right", base: [50, 30, 70, 20, 40], op: "insert", value: 10,
     intro: "Inserting 10 makes the left side two levels taller than the right. One **right rotation** at 50 fixes it — watch 40 (T2) change parents.",
   },
   RR: {
-    title: "Right-Right case", short: "RR", base: [30, 20, 50, 40, 60], op: "insert", value: 70,
+    title: "Right-Right case", short: "RR", line: "Insert 70 · rotate left", base: [30, 20, 50, 40, 60], op: "insert", value: 70,
     intro: "Inserting 70 makes the right side too tall. One **left rotation** at 30 fixes it — watch 40 (T2) change parents.",
   },
   LR: {
-    title: "Left-Right case", short: "LR", base: [50, 30, 70, 20, 40], op: "insert", value: 35,
+    title: "Left-Right case", short: "LR", line: "Insert 35 · left, then right", base: [50, 30, 70, 20, 40], op: "insert", value: 35,
     intro: "Inserting 35 creates a zig-zag (left, then right). First a **left rotation** at 30 straightens it, then a **right rotation** at 50.",
   },
   RL: {
-    title: "Right-Left case", short: "RL", base: [30, 20, 60, 50, 70], op: "insert", value: 55,
+    title: "Right-Left case", short: "RL", line: "Insert 55 · right, then left", base: [30, 20, 60, 50, 70], op: "insert", value: 55,
     intro: "Inserting 55 creates a zig-zag (right, then left). First a **right rotation** at 60, then a **left rotation** at 30.",
   },
   DEL: {
-    title: "Delete → rotation", short: "Delete", base: [30, 20, 40, 10, 25], op: "delete", value: 40,
+    title: "Delete → rotation", short: "Delete", line: "Delete 40 · rotate right", base: [30, 20, 40, 10, 25], op: "delete", value: 40,
     intro: "Deleting 40 leaves 30 left-heavy. A **right rotation** at 30 rebalances it, and 25 changes parents.",
   },
 };
@@ -80,7 +82,7 @@ export const BST_LEGEND: readonly LegendItem[] = [
   { label: "Found / inserted", color: VIZ.success[0], stroke: VIZ.success[1], kind: "dot" },
   { label: "Delete / not found", color: VIZ.danger[0], stroke: VIZ.danger[1], kind: "dot" },
   { label: "Subtree moving up", color: VIZ.left[0], stroke: VIZ.left[1], kind: "dot" },
-  { label: "Output (traversal)", color: "#0f4a2c", stroke: "#2ee68a", kind: "dot" },
+  { label: "Output (traversal)", color: VIZ.visited[0], stroke: VIZ.visited[1], kind: "dot" },
   { label: "Search path", color: EDGE.active, kind: "line" },
   { label: "Tree edge", color: EDGE.base, kind: "line" },
 ];

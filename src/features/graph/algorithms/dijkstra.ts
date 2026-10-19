@@ -40,8 +40,10 @@ export function runDijkstra(G: Graph, s: string): GraphStep[] {
   R.row(1, "FINALIZED", []);
   R.snap(
     `Start Dijkstra at ${L(s)}`,
-    `Every distance starts at ∞ except ${L(s)} = 0. Repeat: finalize the closest unfinished node, then **relax** its edges — check whether going through it gives a shorter path.` +
-      (G.hasNeg ? "\n**Heads-up:** this graph has a negative edge. Dijkstra assumes weights ≥ 0, so watch for a wrong answer." : ""),
+    `Every distance starts at ∞ except ${L(s)} = 0. ` +
+      (G.hasNeg
+        ? "**Heads-up:** a negative edge can make Dijkstra's answer wrong."
+        : "Repeatedly finalize the closest node, then **relax** its edges."),
     G.hasNeg ? "warn" : "info",
     { line: [2, 3], vars: { s: L(s), u: null, v: null, w: null, "dist[u]": null, "dist[v]": null, "dist[u] + w": null } },
   );
@@ -112,9 +114,8 @@ export function runDijkstra(G: Graph, s: string): GraphStep[] {
     `Shortest distances from ${L(s)}: ${G.nodes
       .filter((n) => n.id !== s)
       .map((n) => `${n.label} **${fmtDist(dist[n.id])}**`)
-      .join(" · ")}. Green edges form the shortest-path tree.` +
-      (unreached.length ? `\n${unreached.join(", ")} can't be reached.` : "") +
-      (G.hasNeg ? "\n**Some of these may be wrong because of the negative edge — run Bellman-Ford to compare.**" : ""),
+      .join(" · ")}${unreached.length ? ` (${unreached.join(", ")} unreachable)` : ""}. ` +
+      (G.hasNeg ? "**The negative edge may have fooled it — compare with Bellman-Ford.**" : "Green edges form the shortest-path tree."),
     G.hasNeg ? "warn" : "ok",
     { line: 11, vars: { s: L(s), finalized: done.size, unreachable: unreached.length } },
   );

@@ -37,7 +37,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex select-none items-center justify-center whitespace-nowrap rounded-lg border font-medium transition-all",
+        "inline-flex select-none items-center justify-center whitespace-nowrap rounded-lg border font-medium transition-all [&>svg]:shrink-0",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/25",
         "disabled:pointer-events-none disabled:opacity-40 active:scale-[0.97]",
         VARIANTS[variant],

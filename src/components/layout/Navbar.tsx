@@ -28,7 +28,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 h-[var(--navbar-h)] border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-full max-w-[1800px] items-center gap-4 px-4">
-        <Link href="/" className="shrink-0 font-serif text-[23px] leading-none text-fg" onClick={() => setOpen(false)}>
+        <Link href="/" className="shrink-0 font-serif text-[21px] leading-none text-fg" onClick={() => setOpen(false)}>
           DSA Visualizer
         </Link>
 

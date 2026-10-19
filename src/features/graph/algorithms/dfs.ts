@@ -29,7 +29,7 @@ export function runDFS(G: Graph, s: string): GraphStep[] {
   R.row(1, "FINISHED", []);
   R.snap(
     `Start DFS at ${L(s)}`,
-    "Depth-first search follows one path as deep as it can, then backs up to the last node that still has an unexplored edge. The call stack is the current path; badges show **discovery / finish** times.",
+    "DFS follows one path as deep as it can, then backs up to the last node with an unexplored edge. Badges show **discovery / finish** times.",
     "info",
     { line: 2, vars: { time, u: null, v: null, stack: stackText() } },
   );
@@ -94,8 +94,7 @@ export function runDFS(G: Graph, s: string): GraphStep[] {
   const missed = G.nodes.length - order.length;
   R.snap(
     "✓ DFS complete",
-    `Discovery order: **${order.map(L).join(" → ")}**. Green edges form the DFS tree.` +
-      (missed ? `\n${plural(missed, "node")} can't be reached from ${L(s)}.` : ""),
+    `Discovery order: **${order.map(L).join(" → ")}**${missed ? ` (${plural(missed, "node")} unreachable)` : ""}. Green edges form the DFS tree.`,
     "ok",
     { line: 2, vars: { time, visited: order.length, unreachable: missed } },
   );

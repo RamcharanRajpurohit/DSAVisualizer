@@ -13,6 +13,9 @@ const TAG: Record<HistoryOp, string> = {
   build: "BUILD",
   clear: "CLR",
   order: "ORDER",
+  undo: "UNDO",
+  redo: "REDO",
+  load: "LOAD",
 };
 
 /** The last few operations, newest first. */

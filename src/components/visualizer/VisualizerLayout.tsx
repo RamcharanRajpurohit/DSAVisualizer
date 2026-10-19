@@ -67,10 +67,11 @@ export function VisualizerLayout({
 
   return (
     <div className={cn(styles.layout, focus && styles.focus)}>
-      <header className={cn(styles.head, "flex flex-wrap items-end justify-between gap-3 px-1")}>
-        <div className="min-w-0">
-          <h1 className="font-serif text-3xl leading-tight text-fg md:text-[34px]">{title}</h1>
-          {subtitle && !focus && <p className="mt-0.5 max-w-2xl truncate text-sm text-fg-faint">{subtitle}</p>}
+      {/* One compact row: title + short subtitle on the left, badges and tools on the right. */}
+      <header className={cn(styles.head, "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-1")}>
+        <div className="flex min-w-0 flex-1 items-baseline gap-3">
+          <h1 className="shrink-0 font-serif text-[26px] leading-none text-fg md:text-[28px]">{title}</h1>
+          {subtitle && !focus && <p className="hidden min-w-0 truncate text-[13px] text-fg-faint xl:block">{subtitle}</p>}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {headerExtra}

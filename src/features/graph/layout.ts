@@ -102,6 +102,10 @@ export interface GraphSpec {
   edges: [number, number, number?][];
   /** Fixed positions in a 1000 × 560 box (scaled to the drawing area). */
   pos?: [number, number][];
+  /** Node labels (default A, B, C, … in order) — shared links keep the original letters. */
+  labels?: string[];
+  /** Index of the start node (default 0). */
+  start?: number;
   title: string;
   detail: string;
 }
@@ -127,8 +131,7 @@ export const NEG_DEMO: GraphSpec = {
     [2, 4, 8],
   ],
   title: "Negative edge demo",
-  detail:
-    "C → B costs −4. Run **Dijkstra** from A and note D and E, then run **Bellman-Ford** and compare — the true distances are B 1, D 4, E 5.",
+  detail: "C → B costs −4. Run **Dijkstra** from A, then **Bellman-Ford**, and compare D and E.",
 };
 
 /**
@@ -162,8 +165,114 @@ export const DEFAULT_GRAPH: GraphSpec = {
     [1, 4, 9],
   ],
   title: "Ready — press Run",
-  detail:
-    "A small weighted network is loaded and **Dijkstra** is selected. Press **Run** (or Enter) to watch it find every shortest path from A, or pick another algorithm. With the Move tool, click a node to start from there; the Edit tools let you build your own graph.",
+  detail: "Press **Run** to watch Dijkstra find every shortest path from A. Click a node to start somewhere else.",
+};
+
+/** Bellman-Ford's nightmare: B → C → D → B costs −2 + 3 − 3 = −2, so it can be looped forever. */
+export const NEG_CYCLE_DEMO: GraphSpec = {
+  n: 5,
+  directed: true,
+  weighted: true,
+  pos: [
+    [120, 280],
+    [400, 110],
+    [720, 150],
+    [600, 450],
+    [270, 460],
+  ],
+  edges: [
+    [0, 1, 4],
+    [1, 2, -2],
+    [2, 3, 3],
+    [3, 1, -3],
+    [0, 4, 2],
+    [4, 3, 5],
+  ],
+  title: "Negative cycle demo",
+  detail: "B → C → D → B adds up to **−2**: every lap makes the path cheaper. Run **Bellman-Ford** and watch the extra pass catch it.",
+};
+
+/** A fixed DAG whose topological order is not alphabetical (Kahn: B F G A C D E). */
+export const TOPO_DEMO: GraphSpec = {
+  n: 7,
+  directed: true,
+  weighted: false,
+  pos: [
+    [400, 110],
+    [120, 400],
+    [400, 290],
+    [650, 200],
+    [880, 330],
+    [120, 150],
+    [520, 470],
+  ],
+  edges: [
+    [5, 0],
+    [5, 2],
+    [1, 2],
+    [0, 3],
+    [2, 3],
+    [3, 4],
+    [1, 6],
+    [6, 4],
+  ],
+  title: "Prerequisites (a DAG)",
+  detail: "Think of each arrow as \"must come before\". There are no cycles, so a topological order exists — run **Topological Sort**.",
+};
+
+/** Directed graph with one cycle (B → C → D → B): Kahn gets stuck after A, E; DFS finds back edge D → B. */
+export const CYCLE_DEMO: GraphSpec = {
+  n: 5,
+  directed: true,
+  weighted: false,
+  pos: [
+    [120, 280],
+    [400, 110],
+    [720, 150],
+    [600, 450],
+    [270, 460],
+  ],
+  edges: [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 1],
+    [0, 4],
+    [4, 3],
+  ],
+  title: "Directed graph with a cycle",
+  detail: "B → C → D → B is a cycle. Kahn's algorithm will get stuck on it, and DFS will report it as a **back edge**.",
+};
+
+/** Three clusters joined by one-way bridges: SCCs {A, B, C}, {D, E}, {F, G, H}. */
+export const SCC_DEMO: GraphSpec = {
+  n: 8,
+  directed: true,
+  weighted: false,
+  pos: [
+    [110, 170],
+    [300, 100],
+    [230, 400],
+    [470, 250],
+    [560, 450],
+    [720, 270],
+    [900, 140],
+    [880, 430],
+  ],
+  edges: [
+    [0, 1],
+    [1, 2],
+    [2, 0],
+    [2, 3],
+    [3, 4],
+    [4, 3],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+    [7, 5],
+  ],
+  title: "Three clusters",
+  detail: "Inside each cluster you can get from anywhere to anywhere; the bridges between them are one-way. Run **SCCs (Kosaraju)**.",
 };
 
 export const PRESETS: readonly { value: PresetKind; label: string }[] = [

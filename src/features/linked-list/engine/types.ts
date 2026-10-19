@@ -64,12 +64,41 @@ export interface PtrSnap {
   at?: Place;
 }
 
+/** Which real-code listing (Python / C++ / Java / JS) matches the pseudocode on screen. */
+export type ImplOp =
+  | "struct"
+  | "build"
+  | "clear"
+  | "findTail"
+  | "insertHead"
+  | "insertTail"
+  | "insertAt"
+  | "deleteHead"
+  | "deleteTail"
+  | "deleteAt"
+  | "deleteValue"
+  | "search"
+  | "reverse"
+  | "middle"
+  | "cycle"
+  | "dedupe"
+  | "merge"
+  | "bug";
+
+export interface ImplKey {
+  op: ImplOp;
+  kind: ListKind;
+  tailPtr: boolean;
+}
+
 export interface LLStep extends StepBase {
   kind: ListKind;
   nodes: NodeSnap[];
   ptrs: PtrSnap[];
   /** Pseudocode shown for this step (composite operations switch code mid-way). */
   code: readonly string[];
+  /** The real-code listing that matches `code` (absent for plain status steps). */
+  impl?: ImplKey;
   /** Short statement / comparison shown on the canvas, e.g. "new.next = curr.next". */
   callout?: string;
   /** Route cross-row pointers as direct curves (merge) instead of around the margin. */

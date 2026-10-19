@@ -14,7 +14,7 @@ export function codeSearch(kind: ListKind): Code {
       ["step", "    curr = curr.next; i = i + 1"],
       ["loop", "  while curr != head"],
       ["miss", "  return -1"],
-    ]);
+    ], { op: "search", kind, tailPtr: false });
   }
   return code([
     "search(value):",
@@ -23,7 +23,7 @@ export function codeSearch(kind: ListKind): Code {
     ["cmp", "    if curr.data == value: return i"],
     ["step", "    curr = curr.next; i = i + 1"],
     ["miss", "  return -1"],
-  ]);
+  ], { op: "search", kind, tailPtr: false });
 }
 
 export function doSearch(r: Rec, value: number): number {
@@ -96,7 +96,7 @@ export function codeReverse(kind: ListKind, tailPtr: boolean): Code {
       ["adv2", "    curr = next"],
       ["loop", "  while curr != head"],
       ["head", "  head = prev"],
-    ]);
+    ], { op: "reverse", kind, tailPtr });
   }
   return code([
     "reverse():",
@@ -110,7 +110,7 @@ export function codeReverse(kind: ListKind, tailPtr: boolean): Code {
     ["adv1", "    prev = curr"],
     ["adv2", "    curr = next"],
     ["head", "  head = prev"],
-  ]);
+  ], { op: "reverse", kind, tailPtr });
 }
 
 export function doReverse(r: Rec) {
@@ -136,7 +136,7 @@ export function doReverse(r: Rec) {
     }
   } else {
     r.ptr("prev", null, { line: 0, slot: -0.62, lane: 0 });
-    r.snap("prev = NULL", "Three pointers do all the work: `prev` (the part already reversed), `curr` (the node being flipped) and `next` (the rest of the list). The reversed part starts empty, so prev is NULL — the old head will become the end of the list.", {
+    r.snap("prev = NULL", "`prev` holds the reversed part (empty, so NULL), `curr` the node being flipped, `next` the rest. The old head will end up last.", {
       line: "prev", callout: "prev = NULL", vars: { flipped: 0, n },
     });
   }
@@ -192,7 +192,7 @@ export function doReverse(r: Rec) {
   r.drop("prev");
   r.markAll("base");
   r.relayout();
-  r.snap("Reversed!", `Redrawn left-to-right from the new head. Every node was visited once (**O(n)** time) using just three pointers (**O(1)** extra space) — no new nodes, no copying.\n**${fmtList(before)}** became **${fmtList(r.values())}**`, {
+  r.snap("Reversed!", `Each node visited once (**O(n)** time) with three pointers (**O(1)** space).\n**${fmtList(before)}** became **${fmtList(r.values())}**`, {
     tone: "ok", line: "head", hold: 1.6, vars: { flipped, n },
   });
 }
@@ -209,7 +209,7 @@ export function codeMiddle(kind: ListKind): Code {
     ["slow", "    slow = slow.next       # +1"],
     ["fast", "    fast = fast.next.next  # +2"],
     ["ret", "  return slow"],
-  ]);
+  ], { op: "middle", kind, tailPtr: false });
 }
 
 export function doMiddle(r: Rec) {
@@ -227,7 +227,7 @@ export function doMiddle(r: Rec) {
   r.ptr("slow", slow);
   r.ptr("fast", fast);
   r.mark(head, "active");
-  r.snap("slow = fast = head", "The **tortoise & hare** trick: fast moves two nodes per step, slow moves one. When fast reaches the end, slow has covered exactly half the distance — the middle. One pass, and we never need to know the length.", {
+  r.snap("slow = fast = head", "**Tortoise & hare:** fast moves two nodes per step, slow one. When fast reaches the end, slow is at the middle.", {
     line: "init", callout: "slow = head; fast = head", vars: { iteration: 0 },
   });
   let it = 0;
@@ -255,7 +255,7 @@ export function doMiddle(r: Rec) {
   r.mark(slow, "success");
   r.badge(slow, "middle", "ok");
   const idx = r.walk().indexOf(slow);
-  r.snap(`Middle is ${r.v(slow)} (index ${idx})`, `Loop ends: ${why} slow made ${it} step${it === 1 ? "" : "s"} while fast made ${2 * it}. ${n % 2 === 0 ? `With ${n} nodes there are two middles; this version returns the ${r.circ ? "first" : "second"} one.` : ""} **O(n)** time, **O(1)** space.`, {
+  r.snap(`Middle is ${r.v(slow)} (index ${idx})`, `Loop ends: ${why}${n % 2 === 0 ? ` With ${n} nodes this returns the ${r.circ ? "first" : "second"} of the two middles.` : ""}`, {
     tone: "ok", line: "ret", vars: { iteration: it, n, index: idx }, hold: 1.6,
   });
   r.drop("slow", "fast");
@@ -280,7 +280,7 @@ export function codeCycle(): Code {
     ["p2step", "    slow = slow.next"],
     ["p2step", "    fast = fast.next"],
     ["ret", "  return slow   # cycle start"],
-  ]);
+  ], { op: "cycle", kind: "singly", tailPtr: false });
 }
 
 export function doCycle(r: Rec, to: number | null) {
@@ -301,7 +301,7 @@ export function doCycle(r: Rec, to: number | null) {
     const target = ids[to];
     r.setNext(lastId, target);
     r.mark(target, "merge");
-    r.snap(`Demo setup: last.next = node ${to} (${r.v(target)})`, `To have something to detect, the last node (**${r.v(lastId)}**) is made to point back at index ${to} instead of NULL. Now a naive traversal would loop forever — and we can't use a visited set if we want O(1) memory.`, {
+    r.snap(`Demo setup: last.next = node ${to} (${r.v(target)})`, `The last node (**${r.v(lastId)}**) now points back at index ${to} instead of NULL. A naive traversal would loop forever.`, {
       tone: "merge", callout: `last.next = node ${to}`,
     });
     r.mark(target, "base");
@@ -310,7 +310,7 @@ export function doCycle(r: Rec, to: number | null) {
   let fast: string | null = head;
   r.ptr("slow", slow);
   r.ptr("fast", fast);
-  r.snap("slow = fast = head", "Floyd's **tortoise & hare**: fast moves 2 nodes per step, slow moves 1. If there is no cycle, fast reaches NULL. If there is one, fast eventually laps slow and they land on the same node.", {
+  r.snap("slow = fast = head", "**Tortoise & hare:** fast moves 2 nodes per step, slow 1. With no cycle fast hits NULL; with one, fast laps slow and they meet.", {
     line: "init", callout: "slow = head; fast = head",
   });
   let it = 0;
@@ -350,7 +350,7 @@ export function doCycle(r: Rec, to: number | null) {
   r.markAll("base");
   r.mark(fast, "right");
   r.mark(slow, "left");
-  r.snap("Phase 2: slow = head", "Now move slow back to the head and advance **both one step at a time**. A neat bit of arithmetic (head→start distance = meeting point→start distance, mod the cycle length) means they meet exactly at the node where the cycle begins.", {
+  r.snap("Phase 2: slow = head", "Restart slow at the head and move **both one step at a time**. They meet exactly where the cycle begins.", {
     line: "reset", callout: "slow = head", tone: "merge",
   });
   let p2 = 0;
@@ -407,7 +407,7 @@ export function codeDedupe(kind: ListKind, tailPtr: boolean): Code {
     ["add", "      seen.add(curr.data)"],
     ["add", "      prev = curr"],
     ["step", "    curr = prev.next"],
-  ]);
+  ], { op: "dedupe", kind, tailPtr });
 }
 
 export function doDedupe(r: Rec) {
@@ -422,7 +422,7 @@ export function doDedupe(r: Rec) {
   const seen = new Set<number>([r.v(head)]);
   const fmtSeen = () => `{${[...seen].join(", ")}}`;
   r.mark(head, "visited");
-  r.snap("seen = { head.data }", `A hash set remembers every value we've kept so far. Checking "have I seen this?" is O(1) on average, so the whole pass is **O(n)** (the no-extra-memory alternative compares every pair: O(n²)).`, {
+  r.snap("seen = { head.data }", `A hash set remembers the values kept so far — O(1) per lookup, so one pass is **O(n)**.`, {
     line: "init", vars: { seen: fmtSeen(), removed: 0 },
   });
   let prev = head;
@@ -494,10 +494,13 @@ export function codeMerge(kind: ListKind): Code {
     dbl && ["back", "    tail.next.prev = tail"],
     ["adv", "    tail = tail.next"],
     ["rest", "  tail.next = (a != NULL) ? a : b"],
+    dbl && ["restPrev", "  if tail.next != NULL:"],
+    dbl && ["restPrev", "    tail.next.prev = tail"],
     ["head", "  head = dummy.next"],
-    dbl && ["headPrev", "  head.prev = NULL"],
+    dbl && ["headPrev", "  if head != NULL:"],
+    dbl && ["headPrev", "    head.prev = NULL"],
     ["free", "  free(dummy)"],
-  ]);
+  ], { op: "merge", kind: kind === "doubly" ? "doubly" : "singly", tailPtr: false });
 }
 
 export function recordMerge(state: ListState, aVals: number[], bVals: number[]): Rec {
@@ -520,7 +523,7 @@ export function recordMerge(state: ListState, aVals: number[], bVals: number[]):
   let b: string | null = B[0] ?? null;
   r.ptr("a", a, { line: 0, slot: 0, lane: 0 });
   r.ptr("b", b, { line: 1, slot: 0, lane: 0 });
-  r.snap("Two sorted lists", `**A = ${fmtList(aVals)}** and **B = ${fmtList(bVals)}**. We'll splice their nodes into one sorted list without allocating any new nodes — just by rewiring \`next\` pointers.`, {
+  r.snap("Two sorted lists", `**A = ${fmtList(aVals)}** and **B = ${fmtList(bVals)}**. Their nodes are spliced into one sorted list by rewiring \`next\` — no new nodes.`, {
     tone: "merge", vars: { "|A|": aVals.length, "|B|": bVals.length },
   });
   const dummy = r.alloc(0, { line: 2, slot: 0, lane: 0 }, "dummy");
@@ -571,8 +574,8 @@ export function recordMerge(state: ListState, aVals: number[], bVals: number[]):
   if (rest) {
     r.setNext(tail, rest);
     if (kind === "doubly") r.setPrev(rest, tail);
-    r.snap(`${a ? "B" : "A"} is used up → tail.next = ${restName}`, `Everything left in ${a ? "A" : "B"} is already sorted and larger than what we've merged, so it's attached **in one pointer write** — no need to walk it.`, {
-      line: "rest", callout: `tail.next = ${restName}`, vars: { merged: taken },
+    r.snap(`${a ? "B" : "A"} is used up → tail.next = ${restName}`, `The rest of ${a ? "A" : "B"} is sorted and larger, so **one pointer write** attaches it all.${kind === "doubly" ? " Its first node's `prev` points back at the tail." : ""}`, {
+      line: kind === "doubly" ? ["rest", "restPrev"] : "rest", callout: `tail.next = ${restName}`, vars: { merged: taken },
     });
     for (const id of r.walk(rest)) { r.move(id, { line: 2, slot: k++, lane: 0 }); r.mark(id, "success"); }
     r.drop("a", "b");
@@ -597,7 +600,7 @@ export function recordMerge(state: ListState, aVals: number[], bVals: number[]):
     r.ptr("tail", r.walk().at(-1) ?? null);
   }
   const total = aVals.length + bVals.length;
-  r.snap(`Merged ${total} nodes`, `Result: **${fmtList(r.values())}**. Each step does one comparison and one pointer write: **O(n + m)** time and **O(1)** extra space. This is the merge step of merge sort on linked lists.`, {
+  r.snap(`Merged ${total} nodes`, `Result: **${fmtList(r.values())}**. One comparison and one pointer write per node: **O(n + m)** time, **O(1)** space.`, {
     tone: "ok", line: "free", hold: 1.6, vars: { n: total },
   });
   return r;

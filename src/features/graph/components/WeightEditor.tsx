@@ -73,12 +73,12 @@ export function WeightEditor({
         initial={{ opacity: 0, scale: 0.9, y: req.below ? -6 : 6 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 420, damping: 30 }}
-        className="relative rounded-xl border border-viz-amber/40 bg-surface/95 p-3 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.8),0_0_24px_-6px_rgba(255,176,0,0.35)] backdrop-blur"
+        className="relative rounded-xl border border-line-strong bg-surface p-3 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.18)]"
         style={{ transformOrigin: req.below ? "50% 0%" : "50% 100%" }}
       >
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-            Weight <span className="font-mono normal-case tracking-normal text-viz-amber">{req.name}</span>
+            Weight <span className="font-mono normal-case tracking-normal text-fg">{req.name}</span>
           </span>
           <button className="rounded-md p-1 text-fg-faint hover:bg-surface-3 hover:text-fg" onClick={onCancel} aria-label="Cancel" title="Cancel (Esc)">
             <X size={14} />
@@ -88,7 +88,7 @@ export function WeightEditor({
           input={input}
           onEnter={submit}
           onRandom={() => input.fill([randWeight()])}
-          hint={`Whole number ${WEIGHT_MIN}…${WEIGHT_MAX} · negatives allowed`}
+          hint={`${WEIGHT_MIN} to ${WEIGHT_MAX}`}
         />
         <div className="mt-2 flex items-center gap-1.5">
           <button className={chip} onClick={() => nudge((w) => w - 1)} title="Decrease by 1">−1</button>
@@ -105,7 +105,7 @@ export function WeightEditor({
         <span
           aria-hidden
           className={cn(
-            "absolute left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-viz-amber/40 bg-surface",
+            "absolute left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-line-strong bg-surface",
             req.below ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-b border-r",
           )}
         />

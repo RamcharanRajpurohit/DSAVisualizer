@@ -1,6 +1,6 @@
 import type { ComplexityRow, LegendItem } from "@/components/visualizer";
 import { EDGE } from "@/lib/theme";
-import { KEY_STYLE, NODE_STYLE } from "./constants";
+import { INK, KEY_STYLE, NODE_STYLE } from "./constants";
 
 const node = (label: string, s: keyof typeof NODE_STYLE): LegendItem => ({ label, color: NODE_STYLE[s][0], stroke: NODE_STYLE[s][1] });
 const key = (label: string, s: keyof typeof KEY_STYLE): LegendItem => ({ label, color: KEY_STYLE[s][0], stroke: KEY_STYLE[s][1], kind: "dot" });
@@ -16,7 +16,7 @@ export const LEGEND: LegendItem[] = [
   key("Key on the move", "moving"),
   key("Found / placed key", "success"),
   key("Key being removed", "danger"),
-  { label: "Empty slot (ghost)", color: "transparent", stroke: "#8a8a96", kind: "dot" },
+  { label: "Empty slot (ghost)", color: "transparent", stroke: INK.faint, kind: "dot" },
   { label: "Pointer followed", color: EDGE.active, kind: "line" },
 ];
 
@@ -28,5 +28,5 @@ export const COMPLEXITY: ComplexityRow[] = [
 ];
 
 export const COMPLEXITY_NOTE =
-  "Height ≤ log⌈m/2⌉((n+1)/2), and each operation touches one node per level (plus a few siblings when it rebalances). " +
-  "Real databases use orders in the hundreds, so a lookup among billions of keys reads only 3–4 disk pages.";
+  "Levels ≤ log⌈m/2⌉((n+1)/2) + 1, and each operation touches one node per level (plus a few siblings when it rebalances). " +
+  "With orders in the hundreds, a lookup among billions of keys reads only 3–4 disk pages.";

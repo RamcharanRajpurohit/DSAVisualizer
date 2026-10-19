@@ -44,7 +44,7 @@ export const LEGEND: LegendItem[] = [
   { label: "Found / done", color: MARK.success[0], stroke: MARK.success[1] },
   { label: "Deleting", color: MARK.danger[0], stroke: MARK.danger[1] },
   { label: "Visited / passed", color: MARK.visited[0], stroke: MARK.visited[1] },
-  { label: "Unreachable", color: "#2a1010", stroke: "#ff5c5c" },
+  { label: "Unreachable", color: "#FDDEDE", stroke: "#DC2626" },
   { label: "slow / left", color: MARK.left[0], stroke: MARK.left[1] },
   { label: "fast / right", color: MARK.right[0], stroke: MARK.right[1] },
   { label: "next pointer", color: PTR_COLOR.next, kind: "line" },

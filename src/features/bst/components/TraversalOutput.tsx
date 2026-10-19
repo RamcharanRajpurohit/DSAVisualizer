@@ -3,6 +3,7 @@
 import { ListOrdered } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Badge } from "@/components/ui";
+import { TONE_COLOR, VIZ } from "@/lib/theme";
 import { TRAVERSAL_NAME } from "../engine/BSTEngine";
 import type { TraversalInfo } from "../engine/types";
 
@@ -11,15 +12,15 @@ export function TraversalOutput({ info }: { info: TraversalInfo | null }) {
   if (!info) return null;
   const sorted = info.kind === "inorder";
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-3">
+    <section className="rounded-xl border border-line bg-surface p-3">
       <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
         <span className="flex items-center gap-2">
           <ListOrdered size={14} className="text-viz-green" /> {TRAVERSAL_NAME[info.kind]} output
         </span>
         {info.done ? (
-          <Badge color="#2ee68a">{info.keys.length}{sorted ? " · sorted ✓" : " ✓"}</Badge>
+          <Badge color={TONE_COLOR.ok}>{info.keys.length}{sorted ? " · sorted ✓" : " ✓"}</Badge>
         ) : (
-          <Badge color="#39aaff">running…</Badge>
+          <Badge color={TONE_COLOR.info}>running…</Badge>
         )}
       </h3>
       <ol className="flex min-h-9 flex-wrap items-center gap-1.5">
@@ -36,8 +37,13 @@ export function TraversalOutput({ info }: { info: TraversalInfo | null }) {
             >
               {i > 0 && <span className="text-[10px] text-fg-faint">→</span>}
               <span
-                className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 px-1.5 font-mono text-[11.5px] font-bold text-white"
-                style={{ background: "#00a854", borderColor: "#5cffa8", boxShadow: i === info.keys.length - 1 && !info.done ? "0 0 12px #2ee68a" : undefined }}
+                className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 px-1.5 font-mono text-[11.5px] font-bold"
+                style={{
+                  background: VIZ.visited[0],
+                  borderColor: VIZ.visited[1],
+                  color: VIZ.visited[2],
+                  borderWidth: i === info.keys.length - 1 && !info.done ? 3 : undefined,
+                }}
                 title={`#${i + 1}`}
               >
                 {k}

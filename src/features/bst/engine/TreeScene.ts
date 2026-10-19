@@ -29,7 +29,7 @@ import type { TreeNode } from "../model/types";
 import type { CodeId } from "../pseudocode";
 import { backOut, easeInOut, mixColor, parseColor, toward, type Easing, type Point } from "./anim";
 import { Director } from "./director";
-import { BADGE, GLOW, LABEL, LINE, MUTED_TEXT, NODE, type LabelTone, type LineStyle, type NodeStyle } from "./theme";
+import { BADGE, LABEL, LINE, MUTED_TEXT, NODE, SHADOW, STROKE, type LabelTone, type LineStyle, type NodeStyle } from "./theme";
 import type { CodeFocus, EngineCallbacks, EngineOptions, StatusInfo, Vars } from "./types";
 
 export type KonvaLib = typeof KonvaNS;
@@ -98,7 +98,8 @@ export abstract class TreeScene {
   private tweenSeq = 0;
   private focus: CodeFocus = { main: null, sub: null };
   private readonly ro: ResizeObserver;
-  private destroyed = false;
+  protected destroyed = false;
+  private current: Promise<boolean> | null = null;
   private readonly pointers = new Map<number, Point>();
   private readonly unlisten: (() => void)[] = [];
 
@@ -382,8 +383,8 @@ export abstract class TreeScene {
     const [fill, stroke, tc] = NODE.base;
     const group = new K.Group();
     const circle = new K.Circle({
-      radius: R, fill, stroke, strokeWidth: 2.5,
-      shadowColor: "#000000", shadowBlur: 8, shadowOpacity: 0.45, shadowOffsetX: 0, shadowOffsetY: 3,
+      radius: R, fill, stroke, strokeWidth: STROKE.base,
+      shadowColor: SHADOW.color, shadowBlur: SHADOW.blur, shadowOpacity: SHADOW.opacity, shadowOffsetX: 0, shadowOffsetY: SHADOW.offsetY,
     });
     const str = String(value);
     const text = new K.Text({
@@ -490,7 +491,7 @@ export abstract class TreeScene {
     const lbl = new K.Label({ x, y, opacity: 0, listening: false });
     lbl.add(new K.Tag({
       fill: bg, pointerDirection: dir, pointerWidth: 10, pointerHeight: 7, cornerRadius: 6,
-      shadowColor: "#000000", shadowBlur: 8, shadowOpacity: 0.45,
+      shadowColor: SHADOW.color, shadowBlur: SHADOW.blur, shadowOpacity: SHADOW.opacity, shadowOffsetY: SHADOW.offsetY,
     }));
     lbl.add(new K.Text({ text, padding: 6, fontSize: 13, fontStyle: "bold", fontFamily: this.font, fill: fg }));
     this.fxGroup.add(lbl);
@@ -517,7 +518,7 @@ export abstract class TreeScene {
     const arrow = new this.K.Arrow({
       points: [p0.x, p0.y, c1.x, c1.y, c2.x, c2.y, p3.x, p3.y], bezier: true,
       stroke: color, fill: color, strokeWidth: 2.5, dash: [7, 6], pointerLength: 10, pointerWidth: 10,
-      opacity: 0, listening: false, shadowColor: color, shadowBlur: 10, shadowOpacity: 0.6,
+      opacity: 0, listening: false,
     });
     this.fxGroup.add(arrow);
     void this.tween(arrow, { opacity: 0.95 }, 0.25);
@@ -529,11 +530,8 @@ export abstract class TreeScene {
   protected styleView(v: NodeView | undefined, style: NodeStyle, s = 0.25): Promise<unknown> {
     if (!v) return Promise.resolve();
     const [fill, stroke, text] = NODE[style];
-    const glow = GLOW[style];
-    const attrs: TweenAttrs = {
-      fill, stroke, strokeWidth: style === "base" ? 2.5 : 3.5,
-      shadowColor: glow ?? "#000000", shadowBlur: glow ? 18 : 8, shadowOpacity: glow ? 0.85 : 0.45, shadowOffsetY: glow ? 0 : 3,
-    };
+    // No glow on paper: a highlighted node is drawn with a heavier outline.
+    const attrs: TweenAttrs = { fill, stroke, strokeWidth: style === "base" ? STROKE.base : STROKE.emphasis };
     if (s === 0 || this.director.instant) {
       v.circle.setAttrs(attrs);
       v.text.fill(text);
@@ -579,8 +577,8 @@ export abstract class TreeScene {
     const v = this.nodeViews.get(n.id);
     if (!v) return;
     for (let r = 0; r < 2; r++) {
-      await this.tween(v.circle, { strokeWidth: 7 }, 0.12);
-      await this.tween(v.circle, { strokeWidth: 3.5 }, 0.12);
+      await this.tween(v.circle, { strokeWidth: 6 }, 0.12);
+      await this.tween(v.circle, { strokeWidth: STROKE.emphasis }, 0.12);
     }
   }
 
@@ -687,6 +685,27 @@ export abstract class TreeScene {
     });
   }
 
+  /** Called after every operation, once the view is back in sync (BSTEngine records undo history here). */
+  protected onRunEnd(label: string, mutated: boolean): void {
+    void label;
+    void mutated;
+  }
+
+  /** Finish the running operation instantly; resolves once the engine is idle again. */
+  async interrupt(): Promise<void> {
+    const p = this.current;
+    if (!p) return;
+    this.director.skip();
+    await p;
+  }
+
+  /** Drop callouts, arrows, the traversal output strip and any floating node. */
+  protected clearOverlays() {
+    this.fxGroup.destroyChildren();
+    this.outGroup.destroyChildren();
+    this.floating.clear();
+  }
+
   /**
    * Run one user operation: lock, animate, then always resync the view with the data.
    * `mutates` clears the previous traversal output (it no longer describes the tree).
@@ -697,7 +716,7 @@ export abstract class TreeScene {
     this.outGroup.destroyChildren();
     if (mutates) this.cb.traversal(null);
     this.subCode(null);
-    return (async () => {
+    const job = (async () => {
       try {
         await fn();
       } catch (err) {
@@ -709,10 +728,14 @@ export abstract class TreeScene {
         await this.resetStyles(0.25);
         await this.morph(0.3);
         this.subCode(null);
+        this.current = null;
+        if (!this.destroyed) this.onRunEnd(label, mutates);
         this.director.end();
       }
       return true;
     })();
+    this.current = job;
+    return job;
   }
 
   // ───────────────────────────── traversal output strip ─────────────────────────────
@@ -727,11 +750,11 @@ export abstract class TreeScene {
     const K = this.K;
     const g = new K.Group();
     const str = String(n.key);
-    const [fill, stroke] = NODE.success;
-    g.add(new K.Circle({ radius: 16, fill, stroke, strokeWidth: 2, shadowColor: stroke, shadowBlur: 10, shadowOpacity: 0.55 }));
+    const [fill, stroke, ink] = NODE.success;
+    g.add(new K.Circle({ radius: 16, fill, stroke, strokeWidth: STROKE.base }));
     g.add(new K.Text({
       x: -22, y: -16, width: 44, height: 32, text: str, align: "center", verticalAlign: "middle",
-      fontSize: Math.min(13, fontFor(str)), fontStyle: "bold", fontFamily: this.font, fill: "#ffffff",
+      fontSize: Math.min(13, fontFor(str)), fontStyle: "bold", fontFamily: this.font, fill: ink,
     }));
     this.outGroup.add(g);
     const nv = this.view(n);

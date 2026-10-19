@@ -28,13 +28,13 @@ const INSERT = listing([
   ["down", "    x ← x.child[i]"],
   ["place", "  insert k into x at i"],
   ["overflow", "  while x.n > maxKeys:  // overflow"],
-  ["median", "    m ← middle key of x"],
-  ["divide", "    right ← keys after m (+kids)"],
-  ["keepLeft", "    x keeps keys before m"],
+  ["median", "    med ← middle key of x"],
+  ["divide", "    right ← keys after med (+kids)"],
+  ["keepLeft", "    x keeps keys before med"],
   ["isRoot", "    if x is the root:"],
-  ["newRoot", "      T.root ← [m] over (x, right)"],
+  ["newRoot", "      T.root ← [med] over (x, right)"],
   ["grow", "      return            // taller"],
-  ["toParent", "    push m into parent p, link right"],
+  ["toParent", "    push med into parent p, link right"],
   ["climb", "    x ← p               // may overflow"],
 ] as const);
 

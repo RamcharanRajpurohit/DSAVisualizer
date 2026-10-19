@@ -5,7 +5,7 @@ import { AnimatePresence, MotionConfig, motion, type Transition } from "motion/r
 import { useId } from "react";
 import { CanvasHint } from "@/components/visualizer";
 import { useElementSize } from "@/lib/hooks/useElementSize";
-import { MONO_FONT, TONE_COLOR, TONE_LABEL, type Tone, type Triple } from "@/lib/theme";
+import { MONO_FONT, TONE_COLOR, TONE_LABEL, VIZ, type Tone, type Triple } from "@/lib/theme";
 import { clamp } from "@/lib/utils";
 import { EDGE_STYLE, MARK_STYLE, POINTER_COLOR, REMOVED_STYLE, SORTED_STYLE, type EdgeStyle } from "../constants";
 import { parentOf } from "../engine/recorder";
@@ -45,9 +45,13 @@ export function HeapCanvas(props: HeapCanvasProps) {
 
 /** Paint order: the most important highlight is drawn last (on top while keys cross mid-swap). */
 const Z: Record<Mark | "base", number> = { base: 0, ok: 1, compare: 2, best: 3, new: 4, removed: 4, violation: 5, current: 6 };
-const GLOW: ReadonlySet<Mark | "base"> = new Set<Mark | "base">(["current", "violation", "best", "new", "removed"]);
+/** Marks that get an extra outline ring (ink-on-paper emphasis — no glows). */
+const EMPHASIS: ReadonlySet<Mark | "base"> = new Set<Mark | "base">(["current", "violation", "best", "new", "removed"]);
 const MARKER_TONES: readonly Tone[] = ["info", "ok", "warn", "danger", "merge", "muted"];
-const FAINT = "#6c6c7a";
+// Paper-theme ink tones (see THEME.md): faint labels, ink outlines, the canvas well colour for text halos.
+const FAINT = "#8C8478";
+const INK = "#1A1A1A";
+const WELL = "#FBF8F2";
 
 interface NodeEntry {
   item: HeapItem;
@@ -86,13 +90,13 @@ function Scene({
   nodes.sort((a, b) => Z[a.mark] - Z[b.mark]);
 
   // ── tree edges, keyed by the child index ──
-  const edges: { c: number; x1: number; y1: number; x2: number; y2: number; st: EdgeStyle; glow: boolean }[] = [];
+  const edges: { c: number; x1: number; y1: number; x2: number; y2: number; st: EdgeStyle }[] = [];
   for (let c = 1; c < n; c++) {
     const a = nodeXY(L, parentOf(c));
     const b = nodeXY(L, c);
     const em = step.edges[c];
     const st = locked(c) ? EDGE_STYLE.locked : em ? EDGE_STYLE[em] : step.bad.includes(c) ? EDGE_STYLE.bad : EDGE_STYLE.base;
-    edges.push({ c, x1: a.x, y1: a.y, x2: b.x, y2: b.y, st, glow: !!em && !locked(c) });
+    edges.push({ c, x1: a.x, y1: a.y, x2: b.x, y2: b.y, st });
   }
 
   // ── array-side relation arcs (or, while hovering, the hovered key's family) ──
@@ -133,9 +137,6 @@ function Scene({
   return (
     <svg width={W} height={H} className="absolute inset-0" style={{ fontFamily: MONO_FONT }}>
       <defs>
-        <filter id={`${uid}-glow`} x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation={5} />
-        </filter>
         {MARKER_TONES.map((t) => (
           <marker key={t} id={`${uid}-arr-${t}`} viewBox="0 0 8 8" refX={6.5} refY={4} markerWidth={7} markerHeight={7} orient="auto">
             <path d="M0,0 L8,4 L0,8 z" fill={TONE_COLOR[t]} />
@@ -159,7 +160,6 @@ function Scene({
               animate={{ stroke: e.st.stroke, strokeWidth: e.st.width, opacity: e.st.opacity }}
               exit={{ opacity: 0 }}
               transition={fade}
-              style={{ filter: e.glow ? `drop-shadow(0 0 5px ${e.st.stroke})` : undefined }}
             />
           ))}
         </AnimatePresence>
@@ -182,7 +182,7 @@ function Scene({
       <g>
         <AnimatePresence initial={false}>
           {nodes.map((nd) => {
-            const glow = GLOW.has(nd.mark) && nd.index >= 0;
+            const ring = EMPHASIS.has(nd.mark) && nd.index >= 0;
             const hovered = nd.item.id === hoverId;
             return (
               <motion.g
@@ -197,14 +197,14 @@ function Scene({
                 style={{ cursor: nd.index >= 0 ? "pointer" : "default" }}
               >
                 <motion.circle
-                  r={L.r + 7}
-                  fill={nd.style[1]}
-                  filter={`url(#${uid}-glow)`}
+                  r={L.r + 4.5}
+                  fill="none"
+                  strokeWidth={1.5}
                   initial={false}
-                  animate={{ opacity: glow ? [0.35, 0.75, 0.35] : 0 }}
-                  transition={glow ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : fade}
+                  animate={{ stroke: nd.style[1], opacity: ring ? 0.55 : 0 }}
+                  transition={fade}
                 />
-                <circle r={L.r} cy={2.5} fill="rgba(0,0,0,0.45)" />
+                <circle r={L.r} cy={1.5} fill="rgba(0,0,0,0.08)" />
                 <motion.circle
                   r={L.r}
                   strokeWidth={2.5}
@@ -212,7 +212,7 @@ function Scene({
                   animate={{ fill: nd.style[0], stroke: nd.style[1] }}
                   transition={fade}
                 />
-                {hovered && <circle r={L.r + 4.5} fill="none" stroke="#ffffff" strokeOpacity={0.75} strokeWidth={1.5} strokeDasharray="3 3" />}
+                {hovered && <circle r={L.r + 8} fill="none" stroke={INK} strokeOpacity={0.45} strokeWidth={1.25} strokeDasharray="3 3" />}
                 <motion.text
                   textAnchor="middle"
                   dominantBaseline="central"
@@ -284,7 +284,7 @@ function Scene({
             const st = styleAt(i);
             const { x: cx, y: cy } = cellXY(L, i);
             const dir = step.swap ? (step.swap[0] === it.id ? -1 : step.swap[1] === it.id ? 1 : 0) : 0;
-            const glow = GLOW.has(markAt(i));
+            const ring = EMPHASIS.has(markAt(i));
             return (
               <motion.g
                 key={it.id}
@@ -303,11 +303,11 @@ function Scene({
                 style={{ cursor: "pointer" }}
               >
                 <motion.rect
-                  x={-s / 2 - 3} y={-s / 2 - 3} width={s + 6} height={s + 6} rx={cellR + 3}
-                  fill={st[1]}
-                  filter={`url(#${uid}-glow)`}
+                  x={-s / 2 - 3.5} y={-s / 2 - 3.5} width={s + 7} height={s + 7} rx={cellR + 3}
+                  fill="none"
+                  strokeWidth={1.5}
                   initial={false}
-                  animate={{ opacity: glow ? 0.45 : 0 }}
+                  animate={{ stroke: st[1], opacity: ring ? 0.55 : 0 }}
                   transition={fade}
                 />
                 <motion.rect
@@ -318,7 +318,7 @@ function Scene({
                   transition={fade}
                 />
                 {it.id === hoverId && (
-                  <rect x={-s / 2 - 3} y={-s / 2 - 3} width={s + 6} height={s + 6} rx={cellR + 2} fill="none" stroke="#fff" strokeOpacity={0.75} strokeWidth={1.5} strokeDasharray="3 3" />
+                  <rect x={-s / 2 - 6} y={-s / 2 - 6} width={s + 12} height={s + 12} rx={cellR + 4} fill="none" stroke={INK} strokeOpacity={0.45} strokeWidth={1.25} strokeDasharray="3 3" />
                 )}
                 <motion.text
                   textAnchor="middle"
@@ -357,7 +357,7 @@ function Scene({
                 exit={{ opacity: 0 }}
                 transition={{ x: pos, y: pos, opacity: fade }}
               >
-                <rect x={-w / 2} y={-8} width={w} height={15} rx={4} fill={`${color}26`} stroke={color} strokeWidth={1} />
+                <rect x={-w / 2} y={-8} width={w} height={15} rx={4} fill={WELL} stroke={color} strokeWidth={1} />
                 <text textAnchor="middle" dominantBaseline="central" y={-0.5} fontSize={10} fontWeight={700} fill={color}>
                   {name}
                 </text>
@@ -403,7 +403,7 @@ function Scene({
                 />
                 <text
                   x={(x1 + x2) / 2} y={labelY} textAnchor="middle" fontSize={10} fontWeight={600} fill={color}
-                  stroke="#0b0b10" strokeWidth={3} paintOrder="stroke"
+                  stroke={WELL} strokeWidth={3} paintOrder="stroke"
                 >
                   {a.label}
                 </text>
@@ -433,19 +433,14 @@ function Scene({
   );
 }
 
+/** Corner note during heap sort only (kind / n / root are already in the page header). */
 function Hud({ step, L }: { step: HeapStep; L: HeapLayout }) {
-  const n = step.sorting ? step.size : step.arr.length;
-  const h = n <= 1 ? 0 : Math.floor(Math.log2(n));
+  const sorted = step.arr.length - step.size;
+  if (!step.sorting || sorted <= 0) return null;
   return (
-    <g pointerEvents="none">
-      <text x={L.pad} y={22} fontSize={11} fontWeight={700} letterSpacing={1.2} fill={step.kind === "max" ? TONE_COLOR.warn : TONE_COLOR.info}>
-        {step.kind.toUpperCase()}-HEAP
-      </text>
-      <text x={L.pad} y={38} fontSize={10.5} fill={FAINT}>
-        n = {n} · height {h}
-        {step.sorting && step.arr.length > step.size ? ` · sorted ${step.arr.length - step.size}` : ""}
-      </text>
-    </g>
+    <text x={L.pad} y={22} fontSize={10.5} fill={FAINT} pointerEvents="none">
+      heap {step.size} · sorted {sorted}
+    </text>
   );
 }
 
@@ -465,7 +460,7 @@ function LevelGutter({ step, L, n }: { step: HeapStep; L: HeapLayout; n: number 
         const color = note ? TONE_COLOR.info : FAINT;
         return (
           <g key={d} opacity={live ? 1 : 0.35}>
-            <line x1={L.treeLeft - 4} x2={L.W - L.pad} y1={y} y2={y} stroke="#ffffff" strokeOpacity={0.04} strokeDasharray="2 6" />
+            <line x1={L.treeLeft - 4} x2={L.W - L.pad} y1={y} y2={y} stroke={INK} strokeOpacity={0.07} strokeDasharray="2 6" />
             <text x={L.pad} y={y - 3} fontSize={10.5} fontWeight={600} fill={color}>
               {lines[0]}
             </text>
@@ -484,8 +479,8 @@ function Formula({ text, L, muted }: { text: string; L: HeapLayout; muted: boole
   const w = Math.min(L.W - 12, text.length * fs * 0.62 + 24);
   return (
     <motion.g key={text} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} pointerEvents="none">
-      <rect x={L.W / 2 - w / 2} y={L.formulaY - 15} width={w} height={22} rx={11} fill="#0f1b27" stroke={muted ? "#34343e" : "#1f4a6e"} />
-      <text x={L.W / 2} y={L.formulaY - 4} textAnchor="middle" dominantBaseline="central" fontSize={fs} fill={muted ? "#a3a3b2" : "#cfe8ff"}>
+      <rect x={L.W / 2 - w / 2} y={L.formulaY - 15} width={w} height={22} rx={11} fill={WELL} stroke={muted ? "rgba(26,26,26,0.2)" : VIZ.compare[1]} strokeOpacity={muted ? 1 : 0.6} />
+      <text x={L.W / 2} y={L.formulaY - 4} textAnchor="middle" dominantBaseline="central" fontSize={fs} fill={muted ? "#4B463F" : VIZ.compare[2]}>
         {text}
       </text>
     </motion.g>
@@ -503,7 +498,7 @@ function CalloutTag({
   const px = clamp(x - bx, 8, w - 8);
   return (
     <motion.g initial={{ opacity: 0, x: bx, y: by + 6 }} animate={{ opacity: 1, x: bx, y: by }} exit={{ opacity: 0 }} transition={{ x: pos, y: pos, opacity: fade }}>
-      <g style={{ filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.5))" }}>
+      <g style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.12))" }}>
         <rect width={w} height={h} rx={6} fill={bg} />
         <path d={`M ${px - 5} ${h - 0.5} L ${px} ${h + 6} L ${px + 5} ${h - 0.5} Z`} fill={bg} />
       </g>

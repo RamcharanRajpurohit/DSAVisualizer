@@ -21,8 +21,9 @@ import {
   BTree, describeNode, fmtKeys,
   type BKey, type BNode, type Located, type PathStep, type ReplaceStrategy, type TreeProps, type TreeStats,
 } from "../model/btree";
+import { snapshotOf, type Snapshot } from "../model/shape";
 import { CODE, type OpKind } from "../pseudocode";
-import { GEO, GLOW, KEY_STYLE, MAX_KEYS, NODE_STYLE, type KeyStyle, type NodeStyle } from "../constants";
+import { GEO, INK, KEY_STYLE, MAX_KEYS, NODE_STYLE, type KeyStyle, type NodeStyle } from "../constants";
 
 type KonvaModule = typeof Konva;
 type Attrs = Konva.NodeConfig;
@@ -41,7 +42,7 @@ export interface EngineStep {
   vars: Vars;
 }
 
-export type HistoryOp = OpKind | "build" | "clear" | "order";
+export type HistoryOp = OpKind | "build" | "clear" | "order" | "undo" | "redo" | "load";
 
 export interface HistoryEntry {
   id: number;
@@ -59,6 +60,8 @@ export interface EngineCallbacks {
   onGate(waiting: boolean): void;
   onPaused(paused: boolean): void;
   onHistory(entry: HistoryEntry): void;
+  /** An operation finished and the tree is settled (`label` names the operation). */
+  onSettled?(label: string): void;
 }
 
 export interface EngineOptions {
@@ -79,7 +82,6 @@ interface Timer { pause(): void; resume(): void; flush(): void }
 class Aborted extends Error {}
 
 const EDGE_OPACITY = 0.9;
-const BLACK = "#000000";
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 export class BTreeEngine {
@@ -124,6 +126,7 @@ export class BTreeEngine {
   private stepNo = 0;
   private vars: Vars = {};
   private historyId = 0;
+  private idleWaiters: (() => void)[] = [];
 
   constructor(K: KonvaModule, container: HTMLDivElement, cb: EngineCallbacks, opts: EngineOptions) {
     this.K = K;
@@ -174,6 +177,14 @@ export class BTreeEngine {
   get isBusy() { return this.busy; }
   get order() { return this.tree.order; }
   values() { return this.tree.inorder(); }
+
+  /** Exact structure of the (settled) tree, for undo / redo and share links. */
+  snapshot(): Snapshot { return snapshotOf(this.tree); }
+
+  /** Resolves when no operation is running (immediately when idle). */
+  idle(): Promise<void> {
+    return this.busy && !this.dead ? new Promise((r) => this.idleWaiters.push(r)) : Promise.resolve();
+  }
 
   setRate(rate: number) { this.rate = rate; }
   setStrategy(s: ReplaceStrategy) { this.strategy = s; }
@@ -248,18 +259,17 @@ export class BTreeEngine {
   delete(values: readonly number[]) { return this.batch("delete", values, (v) => this.doDelete(v)); }
 
   /** Replace the tree with `values`, inserted silently, then let everything grow into place. */
-  build(values: readonly number[], title: string, detail?: string) {
+  build(values: readonly number[], title: string, detail?: string, order = this.tree.order) {
     return this.run(title, async () => {
       const T = this.tree;
-      T.reset(T.order);
+      T.reset(order);
       let added = 0;
       for (const v of values) if (T.insert(v)) added++;
       const st = T.stats();
       const dup = values.length - added;
       this.say(title,
         (detail ? `${detail}\n` : "") +
-        `${plural(added, "key")} in an order-${T.order} B-tree${dup ? ` (${plural(dup, "duplicate")} skipped)` : ""}: ` +
-        `${plural(st.nodes, "node")}, height ${st.height}. Every leaf sits on the same level.`, "ok");
+        `${plural(added, "key")}, ${plural(st.nodes, "node")}, height ${st.height}${dup ? ` (${plural(dup, "duplicate")} skipped)` : ""}.`, "ok");
       this.log("build", undefined, `${title} · ${plural(added, "key")}`, "info");
       await this.morph(0.9);
     });
@@ -269,7 +279,7 @@ export class BTreeEngine {
     return this.run("Clear", async () => {
       this.tree.reset();
       this.say("Tree cleared",
-        `Empty B-tree of order ${this.tree.order}. Type a key and press **Insert** — or just press Insert for a random one.`, "info");
+        `Empty order-${this.tree.order} B-tree. Press **Insert** to add a key.`, "info");
       this.log("clear", undefined, "Cleared the tree", "muted");
       await this.morph(0.5);
     });
@@ -283,10 +293,27 @@ export class BTreeEngine {
       T.reset(order);
       keys.forEach((k) => T.insertKey(k));
       this.say(`Order ${order}`,
-        `Each node now holds at most **${T.maxKeys}** keys (${order} children); every node except the root keeps at least **${T.minKeys}**.` +
-        (keys.length ? ` The ${plural(keys.length, "existing key")} were re-inserted — height is now ${T.stats().height}.` : ""), "ok");
+        `Max **${T.maxKeys}** keys per node, min **${T.minKeys}** for non-root nodes.` +
+        (keys.length ? ` Keys re-inserted — height ${T.stats().height}.` : ""), "ok");
       this.log("order", order, `Order → ${order}${keys.length ? ` · rebuilt ${plural(keys.length, "key")}` : ""}`, "info");
       await this.morph(0.9);
+    });
+  }
+
+  /**
+   * Jump straight to an exact structure (undo / redo, a shared link, a lesson example). Keys with
+   * the same value keep their shapes, so they glide quickly to their places instead of replaying
+   * the operation.
+   */
+  restore(snap: Snapshot, title: string, detail: string, op: HistoryOp = "load", logText = title) {
+    return this.run(title, async () => {
+      this.tree.loadShape(snap.order, snap.shape);
+      const st = this.tree.stats();
+      this.say(title,
+        `${detail}${detail ? "\n" : ""}${plural(st.keys, "key")} in an order-${snap.order} B-tree · ${plural(st.nodes, "node")}, height ${st.height}.`,
+        op === "undo" || op === "redo" ? "info" : "ok");
+      this.log(op, undefined, logText, op === "load" ? "info" : "muted");
+      await this.morph(0.45);
     });
   }
 
@@ -304,6 +331,13 @@ export class BTreeEngine {
     waiters.forEach((w) => w());
     // Destroying the stage fires "destroy" on every node, which resolves their pending tweens.
     this.stage.destroy();
+    this.flushIdle();
+  }
+
+  private flushIdle() {
+    const waiters = this.idleWaiters;
+    this.idleWaiters = [];
+    waiters.forEach((w) => w());
   }
 
   // ───────────────────────────── run loop ─────────────────────────────
@@ -356,6 +390,8 @@ export class BTreeEngine {
     this.cb.onGate(false);
     this.cb.onBusy(false);
     this.emitStats();
+    this.cb.onSettled?.(label);
+    this.flushIdle();
     return true;
   }
 
@@ -603,8 +639,8 @@ export class BTreeEngine {
     const circle = new K.Circle({
       radius: R, strokeWidth: 2,
       fill: ghost ? "rgba(0,0,0,0)" : fill,
-      stroke: ghost ? "#8a8a96" : stroke,
-      shadowColor: BLACK, shadowBlur: ghost ? 0 : 6, shadowOpacity: 0.35, shadowEnabled: !ghost,
+      stroke: ghost ? INK.faint : stroke,
+      shadowColor: INK.shadow, shadowBlur: 2, shadowOffsetY: 1, shadowOpacity: 0.1, shadowEnabled: !ghost,
       ...(ghost ? { dash: [4, 4] } : {}),
     });
     const str = ghost ? "" : String(label);
@@ -630,8 +666,8 @@ export class BTreeEngine {
     const group = new this.K.Group({ x, y, opacity });
     const [fill, stroke] = NODE_STYLE.base;
     const rect = new this.K.Rect({
-      width: w, height: GEO.nodeH, cornerRadius: 10, strokeWidth: 2, fill, stroke,
-      shadowColor: BLACK, shadowBlur: 12, shadowOffsetX: 0, shadowOffsetY: 4, shadowOpacity: 0.45,
+      width: w, height: GEO.nodeH, cornerRadius: 10, strokeWidth: 1.5, fill, stroke,
+      shadowColor: INK.shadow, shadowBlur: 3, shadowOffsetX: 0, shadowOffsetY: 1, shadowOpacity: 0.08,
     });
     group.add(rect);
     this.nodeGroup.add(group);
@@ -642,8 +678,7 @@ export class BTreeEngine {
 
   private makeEdge(points: number[]) {
     const line = new this.K.Line({
-      points, bezier: true, stroke: EDGE.base, strokeWidth: 2.5, lineCap: "round", opacity: EDGE_OPACITY,
-      shadowColor: EDGE.active, shadowBlur: 0, shadowOpacity: 0, listening: false,
+      points, bezier: true, stroke: EDGE.base, strokeWidth: 2, lineCap: "round", opacity: EDGE_OPACITY, listening: false,
     });
     this.edgeGroup.add(line);
     return line;
@@ -655,7 +690,7 @@ export class BTreeEngine {
     const lbl = new this.K.Label({ x, y, opacity: 0, listening: false });
     lbl.add(new this.K.Tag({
       fill: bg, pointerDirection: dir, pointerWidth: 10, pointerLength: 7, cornerRadius: 6,
-      shadowColor: bg, shadowBlur: 12, shadowOpacity: 0.55,
+      shadowColor: INK.shadow, shadowBlur: 3, shadowOffsetY: 1, shadowOpacity: 0.12,
     }));
     lbl.add(new this.K.Text({ text, padding: 6, fontSize: 13, fontStyle: "bold", fontFamily: this.font, fill: fg }));
     this.fxGroup.add(lbl);
@@ -676,11 +711,8 @@ export class BTreeEngine {
 
   private rectStyle(rect: Konva.Rect, style: NodeStyle, s = 0.25) {
     const [fill, stroke] = NODE_STYLE[style];
-    const glow = style === "base" ? undefined : GLOW[style];
-    const attrs: Attrs = {
-      fill, stroke, strokeWidth: style === "base" ? 2 : 3,
-      shadowColor: glow ?? BLACK, shadowBlur: glow ? 22 : 12, shadowOpacity: glow ? 0.5 : 0.45, shadowOffsetY: glow ? 0 : 4,
-    };
+    // No glows on paper: a state shows as a tint plus a heavier outline.
+    const attrs: Attrs = { fill, stroke, strokeWidth: style === "base" ? 1.5 : 2.5 };
     if (s === 0) {
       rect.setAttrs(attrs);
       return Promise.resolve();
@@ -696,8 +728,7 @@ export class BTreeEngine {
   private keyViewStyle(v: KeyView | undefined, style: KeyStyle, s = 0.25): Promise<unknown> {
     if (!v || v.ghost) return Promise.resolve();
     const [fill, stroke, text] = KEY_STYLE[style];
-    const glow = style === "base" ? undefined : GLOW[style];
-    const attrs: Attrs = { fill, stroke, shadowColor: glow ?? BLACK, shadowBlur: glow ? 16 : 6, shadowOpacity: glow ? 0.85 : 0.35 };
+    const attrs: Attrs = { fill, stroke, strokeWidth: style === "base" ? 2 : 2.5 };
     if (s === 0) {
       v.circle.setAttrs(attrs);
       v.text.fill(text);
@@ -712,14 +743,14 @@ export class BTreeEngine {
 
   private edgeStyle(child: BNode, on: boolean, s = 0.2) {
     const line = this.edgeViews.get(child.id);
-    return this.tween(line, { stroke: on ? EDGE.active : EDGE.base, strokeWidth: on ? 4 : 2.5, shadowBlur: on ? 10 : 0, shadowOpacity: on ? 0.9 : 0 }, s);
+    return this.tween(line, { stroke: on ? EDGE.active : EDGE.base, strokeWidth: on ? 3.5 : 2 }, s);
   }
 
   private resetStyles(s = 0.3) {
     const jobs: Promise<unknown>[] = [];
     this.nodeViews.forEach((v) => jobs.push(this.rectStyle(v.rect, "base", s)));
     this.keyViews.forEach((v) => jobs.push(this.keyViewStyle(v, "base", s)));
-    this.edgeViews.forEach((l) => jobs.push(this.tween(l, { stroke: EDGE.base, strokeWidth: 2.5, shadowBlur: 0, shadowOpacity: 0 }, s)));
+    this.edgeViews.forEach((l) => jobs.push(this.tween(l, { stroke: EDGE.base, strokeWidth: 2 }, s)));
     return Promise.all(jobs);
   }
 
@@ -736,8 +767,8 @@ export class BTreeEngine {
     const v = this.nodeViews.get(node.id);
     if (!v) return;
     for (let r = 0; r < 2; r++) {
-      await this.tween(v.rect, { strokeWidth: 6 }, 0.12);
-      await this.tween(v.rect, { strokeWidth: 3 }, 0.12);
+      await this.tween(v.rect, { strokeWidth: 5 }, 0.12);
+      await this.tween(v.rect, { strokeWidth: 2.5 }, 0.12);
     }
   }
 
@@ -900,7 +931,7 @@ export class BTreeEngine {
       return;
     }
 
-    this.say(title, `Every insertion ends in a leaf. Walk down from the root, comparing **${v}** with each node's keys to pick the one subtree whose range contains it.`, "info", ["start", "loop"], { k: v, max: T.maxKeys });
+    this.say(title, `Every insertion ends in a leaf: walk down, following the one subtree whose range contains **${v}**.`, "info", ["start", "loop"], { k: v, max: T.maxKeys });
     await this.tween(probe.group, { y: start.y - 40, scaleX: 1, scaleY: 1 }, 0.4, this.K.Easings.BackEaseOut);
     await this.hold(0.3);
     const res = await this.descend(v, probe, title);
@@ -943,7 +974,7 @@ export class BTreeEngine {
     const height = T.stats().height;
     this.say(`✓ Inserted ${v}`,
       splits
-        ? `${plural(splits, "split")} kept every node within ${T.maxKeys} keys${grew ? " and the tree grew one level taller — at the root, so all leaves stay level" : ""}.`
+        ? `${plural(splits, "split")} kept every node within ${T.maxKeys} keys${grew ? "; the root split, so the tree grew one level" : ""}.`
         : "No split was needed — the leaf had room.",
       "ok", splits ? (grew ? ["newRoot", "grow"] : "overflow") : "place", { height });
     this.log("insert", v, `Inserted ${v}${splits ? ` · ${plural(splits, "split")}` : ""}${grew ? " · new root" : ""}`, "ok");
@@ -971,8 +1002,7 @@ export class BTreeEngine {
 
     // 1 — pick the median, colour the two halves
     this.say("Split · 1 · pick the median",
-      `The middle key **${med.v}** will move up. ${fmtKeys(leftKeys)} stays here and ${fmtKeys(rightKeys)} moves to a new node — ` +
-      "both halves keep at least the minimum number of keys.", "warn", "median", { m: med.v });
+      `The middle key **${med.v}** moves up. ${fmtKeys(leftKeys)} stays, ${fmtKeys(rightKeys)} moves to a new node — both keep the minimum.`, "warn", "median", { med: med.v });
     await Promise.all([
       ...leftKeys.map((k) => this.keyStyle(k, "left")),
       ...rightKeys.map((k) => this.keyStyle(k, "right")),
@@ -1023,7 +1053,7 @@ export class BTreeEngine {
     }
     this.floating.delete(med.id);
     this.say("Split · 4 · re-link",
-      newRoot ? `**${med.v}** becomes the new root with the two halves as its children — the tree grows one level taller, and every leaf moves down together.`
+      newRoot ? `**${med.v}** becomes the new root over the two halves — the tree grows one level and all leaves move down together.`
               : `**${med.v}** slots into the parent, which now points to both halves.`,
       "ok", newRoot ? ["newRoot", "grow"] : ["toParent", "climb"]);
     await this.morph(0.85);
@@ -1063,7 +1093,7 @@ export class BTreeEngine {
       await this.nodeStyle(res.node, "danger");
       await this.shake(probe.group);
       this.say(`✗ ${v} not found`,
-        `Reached leaf ${describeNode(res.node)} and ${v} is not in it. A leaf has no children to try, so ${v} is nowhere in the tree.`,
+        `Reached leaf ${describeNode(res.node)} without meeting ${v} — a leaf has no children to try, so ${v} is not in the tree.`,
         "danger", ["leaf", "miss"], { i: res.idx });
       this.log("search", v, `${v} not found · ${plural(res.path.length + 1, "node")} visited`, "danger");
       await this.tween(probe.group, { opacity: 0 }, 0.4);
@@ -1130,7 +1160,7 @@ export class BTreeEngine {
 
     this.say(`✓ Deleted ${v}`,
       fixes.length
-        ? `Repairs: ${fixes.join(" → ")}${shrank ? " → root collapsed (the tree got one level shorter)" : ""}. Every node is back within its key limits.`
+        ? `Repairs: ${fixes.join(" → ")}${shrank ? " → root collapsed (one level shorter)" : ""}. Every node is back within its limits.`
         : `No node dropped below the minimum of ${plural(T.minKeys, "key")}, so no rebalancing was needed.`,
       "ok", shrank ? ["shrink", "newRoot"] : fixes.length ? "under" : node.leaf ? "leafDel" : "replace");
     this.log("delete", v, `Deleted ${v} · ${how}${fixes.length ? ` · ${fixes.join(", ")}` : ""}${shrank ? " · shrank" : ""}`, "ok");
@@ -1143,10 +1173,10 @@ export class BTreeEngine {
     const { side, reason } = T.chooseReplacement(node, idx, this.strategy);
     const pred = side === "predecessor";
     const lineTag = pred ? "pred" : "succ";
-    const why = reason === "spare" ? " Its leaf has a spare key, so taking it causes no underflow."
-      : reason === "neither" ? " Both candidate leaves are at the minimum, so either choice needs a repair — use the predecessor." : "";
+    const why = reason === "spare" ? " Its leaf can spare a key, so no repair follows."
+      : reason === "neither" ? " Neither leaf can spare a key, so use the predecessor." : "";
     this.say(`${target.v} is in an internal node`,
-      `It separates two subtrees, so it can't just vanish. Replace it with its in-order **${side}**: the ${pred ? "largest key in its left" : "smallest key in its right"} subtree.${why}`,
+      `It separates two subtrees, so it is replaced by its in-order **${side}** (${pred ? "max of the left" : "min of the right"} subtree).${why}`,
       "warn", ["internal", lineTag], { case: side });
     await this.hold(0.6);
 
@@ -1181,7 +1211,7 @@ export class BTreeEngine {
     await this.hold(0.3);
 
     this.say(`Step 3 · the ${side} moves up`,
-      `**${r.v}** leaves its leaf and fills the empty slot — every key on its left is still smaller and every key on its right still larger, so the order is preserved.`,
+      `**${r.v}** fills the empty slot — still larger than everything on its left and smaller than everything on its right.`,
       "warn", ["replace", "toLeaf"]);
     T.promote(node, idx, leaf, side);
     this.keyViews.get(r.id)?.group.moveToTop();
@@ -1238,8 +1268,7 @@ export class BTreeEngine {
     const sep = parent.keys[i - 1], donor = sib.keys[sib.keys.length - 1];
 
     this.say("Borrow from the left sibling",
-      `${fmtKeys(sib.keys)} has ${sib.keys.length} keys — more than the minimum — so it can lend one. ` +
-      `Keys **rotate through the parent** to keep everything in order: ${sep.v} comes down, ${donor.v} goes up.`,
+      `${fmtKeys(sib.keys)} has a spare key to lend. Keys **rotate through the parent**: ${sep.v} comes down, ${donor.v} goes up.`,
       "warn", ["canL", "borrowL"], { L: fmtKeys(sib.keys), sep: sep.v });
     await Promise.all([this.nodeStyle(sib, "donor"), this.keyStyle(sep, "moving"), this.keyStyle(donor, "moving")]);
     const lbl = this.nodeLabel(sib, "can lend", "warn");
@@ -1272,8 +1301,7 @@ export class BTreeEngine {
     const sep = parent.keys[i], donor = sib.keys[0];
 
     this.say("Borrow from the right sibling",
-      `${fmtKeys(sib.keys)} has ${sib.keys.length} keys — more than the minimum — so it can lend one. ` +
-      `Keys **rotate through the parent**: ${sep.v} comes down, ${donor.v} goes up.`,
+      `${fmtKeys(sib.keys)} has a spare key to lend. Keys **rotate through the parent**: ${sep.v} comes down, ${donor.v} goes up.`,
       "warn", ["canR", "borrowR"], { R: fmtKeys(sib.keys), sep: sep.v });
     await Promise.all([this.nodeStyle(sib, "donor"), this.keyStyle(sep, "moving"), this.keyStyle(donor, "moving")]);
     const lbl = this.nodeLabel(sib, "can lend", "warn");
@@ -1308,8 +1336,8 @@ export class BTreeEngine {
     const nL = L.keys.length, total = nL + 1 + R.keys.length;
 
     this.say("Merge needed",
-      `The sibling ${fmtKeys(lender.keys)} has only ${plural(lender.keys.length, "key")} (the minimum), so it cannot lend. ` +
-      `Instead the two nodes and their separator **${sep.v}** merge into one node of ${total} keys (max ${T.maxKeys}).`,
+      `The sibling ${fmtKeys(lender.keys)} is at the minimum and cannot lend. ` +
+      `The two nodes and their separator **${sep.v}** merge into one node of ${total} keys (max ${T.maxKeys}).`,
       "merge", ["canL", "canR", "merge"], { sep: sep.v });
     await Promise.all([this.nodeStyle(lender, "donor"), this.keyStyle(sep, "moving")]);
     const lbl = this.nodeLabel(lender, "at minimum — can't lend", "warn");
@@ -1373,8 +1401,7 @@ export class BTreeEngine {
     const T = this.tree;
     const old = T.root;
     this.say("Shrink the tree",
-      "The root has no keys left, so its only child becomes the new root. This is the **only** way a B-tree gets shorter — " +
-      "every root-to-leaf path loses one level at once, so all leaves stay level.", "merge", ["shrink", "newRoot"]);
+      "The empty root hands over to its only child. This is the **only** way a B-tree gets shorter — all leaves rise together.", "merge", ["shrink", "newRoot"]);
     await this.nodeStyle(old, "danger");
     const lbl = this.nodeLabel(old, "empty root", "danger");
     await this.hold(0.6);

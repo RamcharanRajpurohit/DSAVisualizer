@@ -1,6 +1,7 @@
 import type { WatchValue } from "@/lib/player/types";
 import type { Tone } from "@/lib/theme";
 import type { TraversalKind, TreeStats } from "../model/types";
+import type { HistoryInfo } from "../model/history";
 import type { CodeId } from "../pseudocode";
 
 export interface StatusInfo {
@@ -47,6 +48,8 @@ export interface EngineCallbacks {
   code(c: CodeFocus): void;
   vars(v: Vars | undefined): void;
   traversal(t: TraversalInfo | null): void;
+  /** Undo / redo availability after every recorded operation. */
+  history(h: HistoryInfo): void;
 }
 
 export interface EngineOptions {

@@ -171,7 +171,7 @@ export class HeapRecorder {
       if (i === 0) {
         this.snap(
           `${x.v} reached the root`,
-          `Index 0 has no parent (\`while i > 0\` fails), so the climb stops. **${x.v}** is the new ${W.topWord}: it sits in a[0], where peek() reads it in O(1).`,
+          `Index 0 has no parent, so the climb stops. **${x.v}** is the new ${W.topWord}.`,
           {
             tone: "ok", line: this.line("suLoop"), marks: { 0: "ok" }, ptrs: { i: 0 },
             callouts: [{ key: "verdict", at: 0, text: `new ${W.top}`, tone: "ok" }],
@@ -185,7 +185,7 @@ export class HeapRecorder {
       if (this.beats(x.v, y.v)) {
         this.snap(
           `${x.v} ${W.gt} parent ${y.v} — out of order`,
-          `The parent of index ${i} lives at ⌊(${i} − 1) / 2⌋ = **${p}**. In a ${this.kind}-heap ${W.prop}, but **${x.v}** ${W.gt} **${y.v}** — the child beats its parent, so this edge breaks the heap property.`,
+          `The parent of index ${i} is ⌊(${i} − 1) / 2⌋ = **${p}**. **${x.v}** ${W.gt} **${y.v}**: the child beats its parent, so the heap property is broken here.`,
           {
             tone: "danger", line: this.line("suParent", "suCheck"),
             marks: { [i]: "violation", [p]: "violation" }, edges: { [i]: "violation" },
@@ -197,7 +197,7 @@ export class HeapRecorder {
         this.setVars({ i: p, parent: p > 0 ? parentOf(p) : null });
         this.snap(
           `Swap: ${x.v} ↑  ${y.v} ↓`,
-          `${x.v} moves up into slot ${p} and ${y.v} drops to slot ${i}. ${y.v} is safe down there — it was already ${W.ge} everything in that subtree. Repeat the check one level higher (i ← ${p}).`,
+          `${y.v} is safe in slot ${i}: it was already ${W.ge} everything below. Repeat one level higher (i ← ${p}).`,
           {
             tone: "warn", line: this.line("suSwap", "suMove"),
             marks: { [p]: "current", [i]: "ok" }, edges: { [i]: "swap" }, ptrs: { i: p }, swap: [x.id, y.id],
@@ -207,7 +207,7 @@ export class HeapRecorder {
       } else {
         this.snap(
           `${y.v} ${W.ge} ${x.v} — in order, stop`,
-          `Parent index ⌊(${i} − 1) / 2⌋ = **${p}** holds **${y.v}**, which is ${W.ge} **${x.v}**, so this edge satisfies the heap property. Everything above it was already in order, so sift-up is finished.`,
+          `Parent a[${p}] = **${y.v}** is ${W.ge} **${x.v}**, so this edge is in order. Everything above already was — sift-up is done.`,
           {
             tone: "ok", line: this.line("suParent", "suCheck"),
             marks: { [i]: "ok", [p]: "ok" }, edges: { [i]: "ok" },
@@ -235,7 +235,7 @@ export class HeapRecorder {
       if (l >= n) {
         this.snap(
           i === start ? `${x.v} has no children — nothing to do` : `${x.v} reached a leaf — stop`,
-          `left(${i}) = 2·${i} + 1 = ${l} ≥ n = ${n}, so slot ${i} has no children (\`while 2i + 1 < n\` fails). Nothing below can be out of order — sift-down is finished.`,
+          `left(${i}) = ${l} ≥ n = ${n}, so slot ${i} has no children. Nothing below can be out of order.`,
           {
             tone: "ok", line: this.line("sdLoop"), marks: { [i]: "ok" }, ptrs: { i },
             formula: `left(${i}) = 2·${i} + 1 = ${l} ≥ n = ${n}`, hold: 0.7,
@@ -256,14 +256,14 @@ export class HeapRecorder {
       if (hasR) kidArcs.push({ from: i, to: r, label: "2i+2", tone: "info" });
       const pickLines = hasR ? (c === r ? ["sdPickL", "sdPickR", "sdPickR2"] : ["sdPickL", "sdPickR"]) : ["sdPickL"];
       const pickWhy = hasR
-        ? `Of the two children, **${cv.v}** is ${W.better} (${lv} vs ${this.a[r].v}). Only that one may move up: being ${W.ge} its sibling, it can parent both subtrees.`
-        : `Slot ${i} has only a left child (2i+2 = ${r} ≥ n), so **${cv.v}** is the only candidate.`;
+        ? `**${cv.v}** is the ${W.better} child — only it can move up and parent both subtrees.`
+        : `Only a left child (2i+2 = ${r} ≥ n), so **${cv.v}** is the candidate.`;
 
       if (this.detailed) {
         this.setVars({ [W.best]: c });
         this.snap(
           hasR ? `Children of ${x.v}: ${lv} and ${this.a[r].v}` : `Only child of ${x.v}: ${lv}`,
-          `${x.v} is at index ${i}, so its children sit at 2i+1 = **${l}**${hasR ? ` and 2i+2 = **${r}**` : ""} — pure index arithmetic, no pointers. ${pickWhy}`,
+          `Children of index ${i} sit at 2i+1 = **${l}**${hasR ? ` and 2i+2 = **${r}**` : ""}. ${pickWhy}`,
           {
             line: this.line("sdLoop", "sdKids", ...pickLines),
             marks: { [i]: "current", [c]: "best", ...(hasR ? { [other]: "compare" } : {}) },
@@ -281,7 +281,7 @@ export class HeapRecorder {
       if (this.beats(cv.v, x.v)) {
         this.snap(
           `${x.v} ${W.lt} child ${cv.v} — out of order`,
-          `${this.detailed ? "" : `${pickWhy} `}The ${W.better} child **${cv.v}** beats its parent **${x.v}** (${cv.v} ${W.gt} ${x.v}), so the heap property is broken here: swap them and keep sinking.`,
+          `${this.detailed ? "" : `${pickWhy} `}**${cv.v}** ${W.gt} **${x.v}**: the child beats its parent, so swap them.`,
           {
             tone: "danger", line: this.line(...(this.detailed ? [] : ["sdKids", ...pickLines]), "sdCheck"),
             marks: { [i]: "violation", [c]: "violation", ...(!this.detailed && hasR ? { [other]: "compare" } : {}) },
@@ -294,7 +294,7 @@ export class HeapRecorder {
         this.exchange(i, c);
         this.snap(
           `Swap: ${cv.v} ↑  ${x.v} ↓`,
-          `${cv.v} moves up to slot ${i} — it is ${W.ge} ${x.v} and ${W.ge} its old sibling, so slot ${i} is now correct. ${x.v} continues sinking from slot ${c} (i ← ${c}).`,
+          `${cv.v} is ${W.ge} ${x.v} and its old sibling, so slot ${i} is now correct. ${x.v} keeps sinking from slot ${c}.`,
           {
             tone: "warn", line: this.line("sdSwap", "sdMove"),
             marks: { [i]: "ok", [c]: "current" }, edges: { [c]: "swap" }, ptrs: { i: c }, swap: [cv.id, x.id],
@@ -304,7 +304,7 @@ export class HeapRecorder {
       } else {
         this.snap(
           `${x.v} ${W.ge} ${cv.v} — in order, stop`,
-          `${this.detailed ? "" : `${pickWhy} `}**${x.v}** is ${W.ge} its ${W.better} child **${cv.v}**, so it is ${W.ge} both children. Both subtrees below were already heaps, so the whole subtree at slot ${i} is now a valid heap — stop.`,
+          `${this.detailed ? "" : `${pickWhy} `}**${x.v}** ${W.ge} its ${W.better} child **${cv.v}**, so the subtree at slot ${i} is a valid heap — stop.`,
           {
             tone: "ok", line: this.line(...(this.detailed ? [] : ["sdKids", ...pickLines]), "sdCheck"),
             marks: { [i]: "ok", [c]: "ok" }, edges: { [c]: "ok" },

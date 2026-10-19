@@ -15,10 +15,12 @@
  *   • insertCodeId / deleteCodeId / treeName / shapeNote  — labels and pseudocode listings
  */
 import { plural } from "@/lib/utils";
+import { TreeHistory, type TreeSnapshot } from "../model/history";
+import { buildExact, preorderKeys } from "../model/share";
 import {
-  bstInsertSilent, hOf, keysInOrder, minPossibleHeight, promoteSuccessor, replaceChild, size, update,
+  bstInsertSilent, cloneTree, collect, hOf, keysInOrder, minPossibleHeight, promoteSuccessor, replaceChild, size, update,
 } from "../model/tree";
-import type { Side, TraversalKind, TreeNode } from "../model/types";
+import type { NodeFactory, Side, TraversalKind, TreeNode } from "../model/types";
 import { LN, type CodeId } from "../pseudocode";
 import { backOut } from "./anim";
 import { HOLE_STROKE } from "./theme";
@@ -60,20 +62,47 @@ const RECURSION_ORDER: Record<Exclude<TraversalKind, "levelorder">, readonly ("l
   postorder: ["left", "right", "visit"],
 };
 
+export type ScenarioStep =
+  | { op: "insert" | "delete" | "search"; values: readonly number[] }
+  | { op: "traverse"; kind: TraversalKind };
+
+/** A scripted example (lesson "Try it" buttons, AVL demos): optionally load a tree, then animate steps. */
+export interface Scenario {
+  title: string;
+  /** Status shown while the starting tree is on screen. */
+  intro?: string;
+  /** Starting tree (inserted with this tree's own rules); omit to use the tree on screen. */
+  base?: readonly number[];
+  steps: readonly ScenarioStep[];
+}
+
+export interface StartOptions {
+  initial: readonly number[];
+  /** Rebuild the exact shape with plain BST inserts (a shared pre-order list) instead of this tree's own insert. */
+  exact?: boolean;
+  /** Undo-history label of the opening state. */
+  label?: string;
+  ready?: EngineOptions["ready"];
+}
+
 export class BSTEngine extends TreeScene {
+  private readonly history = new TreeHistory(100);
+
   /**
    * Show the opening tree. Called by the host right after construction (not from the constructor,
    * so subclass overrides such as AVLEngine.insertSilent are fully set up).
    */
-  start(opts: Pick<EngineOptions, "initial" | "ready"> = {}): void {
-    if (this.busy || !opts.initial?.length) return;
+  start(opts: StartOptions): void {
+    if (this.busy) return;
     // Built silently and placed instantly: the page opens with a tree already on screen.
     this.reset();
-    opts.initial.forEach((v) => this.insertSilent(v));
+    this.rebuild(opts.initial, opts.exact ?? false);
     this.rotations = 0;
     void this.morph(0);
     const ready = opts.ready;
     this.status(ready?.title ?? `Built a tree from ${plural(opts.initial.length, "key")}`, ready?.detail ?? this.shapeNote(), ready?.tone ?? "info");
+    this.history.reset(this.snapshot(opts.label ?? "Opening tree"));
+    this.emitHistory();
   }
 
   // ───────────────────────────── overridable labels / seams ─────────────────────────────
@@ -83,8 +112,8 @@ export class BSTEngine extends TreeScene {
   protected deleteCodeId(): CodeId { return "bst-delete"; }
 
   /** Plain BST insert used for silent (non-animated) building. AVLEngine rebalances here. */
-  protected insertSilent(v: number): void {
-    this.root = bstInsertSilent(this.root, v, this.make);
+  protected insertSilent(v: number, make: NodeFactory = this.make): void {
+    this.root = bstInsertSilent(this.root, v, make);
   }
 
   /** One line about the tree's shape after an operation. */
@@ -94,10 +123,8 @@ export class BSTEngine extends TreeScene {
     const h = hOf(this.root);
     const best = minPossibleHeight(n);
     let s = `Height **${h}** for ${plural(n, "node")}`;
-    if (h > best + 1) {
-      s += ` — the best possible is ${best}. ${h === n && n > 2 ? "The tree has degenerated into a **linked list**: searching it is O(n)." : "The tree is lopsided, so some searches take longer than they need to."}`;
-      s += " An AVL tree would rotate to stay near the minimum.";
-    } else s += ".";
+    if (h > best + 1) s += h === n && n > 2 ? " — a **linked list**, so search is O(n)." : ` — the best possible is ${best}.`;
+    else s += ".";
     return s;
   }
 
@@ -119,44 +146,27 @@ export class BSTEngine extends TreeScene {
 
   keys(): number[] { return keysInOrder(this.root); }
 
+  /** The last completed state (stable even mid-animation) as a fresh tree, for quizzes. */
+  stableTree(): TreeNode | null {
+    const cur = this.history.current;
+    return cur ? buildExact(cur.keys) : cloneTree(this.root);
+  }
+
+  /** Pre-order keys of the last completed state — a share link rebuilds this exact shape. */
+  shareKeys(): readonly number[] {
+    return this.history.current?.keys ?? preorderKeys(this.root);
+  }
+
   insert(values: readonly number[]): Promise<boolean> {
-    const many = values.length > 1;
-    return this.run(many ? `Insert ${values.length} keys` : `Insert ${values[0]}`, async () => {
-      let added = 0;
-      for (let i = 0; i < values.length; i++) {
-        if (many) this.director.setOp(`Insert ${values[i]} · ${i + 1}/${values.length}`);
-        if (await this.insertSteps(values[i])) added++;
-        if (i < values.length - 1) await this.resetStyles(0.2);
-      }
-      if (many) {
-        const skipped = values.length - added;
-        this.status(`✓ Inserted ${plural(added, "key")}`,
-          this.shapeNote() + (skipped ? `\n${plural(skipped, "duplicate")} skipped — keys are unique.` : ""), "ok");
-      }
-    }, true);
+    return this.run(values.length > 1 ? `Insert ${values.length} keys` : `Insert ${values[0]}`, () => this.opSteps("insert", values), true);
   }
 
   search(values: readonly number[]): Promise<boolean> {
-    return this.run(values.length > 1 ? `Search ${values.length} keys` : `Search ${values[0]}`, async () => {
-      for (let i = 0; i < values.length; i++) {
-        if (values.length > 1) this.director.setOp(`Search ${values[i]} · ${i + 1}/${values.length}`);
-        await this.searchSteps(values[i]);
-        if (i < values.length - 1) await this.resetStyles(0.2);
-      }
-    });
+    return this.run(values.length > 1 ? `Search ${values.length} keys` : `Search ${values[0]}`, () => this.opSteps("search", values));
   }
 
   remove(values: readonly number[]): Promise<boolean> {
-    const many = values.length > 1;
-    return this.run(many ? `Delete ${values.length} keys` : `Delete ${values[0]}`, async () => {
-      let removed = 0;
-      for (let i = 0; i < values.length; i++) {
-        if (many) this.director.setOp(`Delete ${values[i]} · ${i + 1}/${values.length}`);
-        if (await this.deleteSteps(values[i])) removed++;
-        if (i < values.length - 1) await this.resetStyles(0.2);
-      }
-      if (many) this.status(`✓ Deleted ${plural(removed, "key")}`, this.shapeNote(), "ok");
-    }, true);
+    return this.run(values.length > 1 ? `Delete ${values.length} keys` : `Delete ${values[0]}`, () => this.opSteps("delete", values), true);
   }
 
   traverse(kind: TraversalKind): Promise<boolean> {
@@ -165,9 +175,8 @@ export class BSTEngine extends TreeScene {
 
   /** Replace the tree with `values` built silently, then glide it into place. */
   preload(values: readonly number[], done?: StatusInfo): Promise<boolean> {
-    return this.run("Build tree", async () => {
-      this.reset();
-      values.forEach((v) => this.insertSilent(v));
+    return this.run(done?.title ?? "Build tree", async () => {
+      this.rebuild(values, false);
       this.rotations = 0;
       this.status(done?.title ?? `Built a tree from ${plural(values.length, "key")}`, done?.detail ?? this.shapeNote(), done?.tone ?? "ok");
       await this.morph(0.9);
@@ -176,10 +185,28 @@ export class BSTEngine extends TreeScene {
 
   /** Insert `values` one by one with full animation, starting from an empty tree. */
   playSequence(values: readonly number[]): Promise<boolean> {
-    if (this.busy) return Promise.resolve(false);
-    this.reset();
-    this.rotations = 0;
-    return this.insert(values);
+    return this.scenario({ title: `Insert ${values.length} keys`, base: [], steps: [{ op: "insert", values }] });
+  }
+
+  /** Load a starting tree (keeping the views of keys that stay), then animate the steps. */
+  scenario(sc: Scenario): Promise<boolean> {
+    const mutates = !!sc.base || sc.steps.some((s) => s.op === "insert" || s.op === "delete");
+    return this.run(sc.title, async () => {
+      if (sc.base) {
+        this.rebuild(sc.base, false);
+        this.rotations = 0;
+        this.vars(undefined);
+        if (sc.intro) this.status(sc.title, sc.intro, "merge");
+        await this.morph(0.8);
+        if (sc.base.length) await this.beat(sc.intro ? 1.4 : 0.4);
+      }
+      for (let i = 0; i < sc.steps.length; i++) {
+        const st = sc.steps[i];
+        if (i > 0) await this.resetStyles(0.2);
+        if (st.op === "traverse") await this.traverseSteps(st.kind);
+        else await this.opSteps(st.op, st.values);
+      }
+    }, mutates);
   }
 
   clear(): boolean {
@@ -189,8 +216,104 @@ export class BSTEngine extends TreeScene {
     this.emitStats();
     this.cb.traversal(null);
     this.cb.vars(undefined);
-    this.status("Tree cleared", `Empty ${this.treeName()} — insert a key, or pick a preset.`);
+    this.status("Tree cleared", `Empty ${this.treeName()} — insert a key or pick a preset.`);
+    this.record("Clear");
     return true;
+  }
+
+  // ───────────────────────────── undo / redo ─────────────────────────────
+
+  /** Revert the last whole operation (instant rebuild + a short glide). False when busy or nothing to undo. */
+  undo(): boolean {
+    if (this.busy) return false;
+    const label = this.history.info().undoLabel;
+    const s = this.history.undo();
+    if (!s) return false;
+    this.restore(s, `Undo · ${label}`);
+    return true;
+  }
+
+  redo(): boolean {
+    if (this.busy) return false;
+    const s = this.history.redo();
+    if (!s) return false;
+    this.restore(s, `Redo · ${s.label}`);
+    return true;
+  }
+
+  private restore(s: TreeSnapshot, title: string) {
+    this.clearOverlays();
+    this.rebuild(s.keys, true);
+    this.rotations = s.rotations;
+    void this.resetStyles(0);
+    // ~0.35 s of real time whatever the speed setting.
+    void this.morph(0.35 * this.director.rate);
+    this.cb.traversal(null);
+    this.vars(undefined);
+    this.subCode(null);
+    this.status(title, this.shapeNote(), "info");
+    this.emitHistory();
+  }
+
+  protected override onRunEnd(label: string, mutated: boolean): void {
+    if (mutated) this.record(label);
+  }
+
+  private record(label: string) {
+    this.history.push(this.snapshot(label));
+    this.emitHistory();
+  }
+
+  private snapshot(label: string): TreeSnapshot {
+    return { keys: preorderKeys(this.root), rotations: this.rotations, label };
+  }
+
+  private emitHistory() {
+    if (!this.destroyed) this.cb.history(this.history.info());
+  }
+
+  /**
+   * Rebuild the tree from `keys` — `exact`: plain BST inserts of a pre-order list (exact shape);
+   * otherwise this tree's own silent insert. Nodes whose key survives are reused, so their views
+   * glide to the new layout instead of being redrawn.
+   */
+  protected rebuild(keys: readonly number[], exact: boolean): void {
+    const old = new Map(collect(this.root).map((n) => [n.key, n] as const));
+    const make: NodeFactory = (key) => {
+      const n = old.get(key);
+      if (!n) return this.make(key);
+      old.delete(key);
+      n.left = null;
+      n.right = null;
+      n.h = 1;
+      n.bf = 0;
+      return n;
+    };
+    this.root = null;
+    for (const k of keys) {
+      if (exact) this.root = bstInsertSilent(this.root, k, make);
+      else this.insertSilent(k, make);
+    }
+    collect(this.root).forEach((n) => this.paintMeta(n));
+  }
+
+  /** Animate one operation for each value in turn. */
+  protected async opSteps(op: "insert" | "delete" | "search", values: readonly number[]): Promise<void> {
+    const many = values.length > 1;
+    const Op = op === "insert" ? "Insert" : op === "delete" ? "Delete" : "Search";
+    let changed = 0;
+    for (let i = 0; i < values.length; i++) {
+      if (many) this.director.setOp(`${Op} ${values[i]} · ${i + 1}/${values.length}`);
+      const v = values[i];
+      const ok = op === "insert" ? await this.insertSteps(v) : op === "delete" ? await this.deleteSteps(v) : await this.searchSteps(v);
+      if (ok) changed++;
+      if (i < values.length - 1) await this.resetStyles(0.2);
+    }
+    if (!many || op === "search") return;
+    const skipped = values.length - changed;
+    if (op === "insert") {
+      this.status(`✓ Inserted ${plural(changed, "key")}`, this.shapeNote() + (skipped ? ` ${plural(skipped, "duplicate")} skipped.` : ""), "ok");
+    } else this.status(`✓ Deleted ${plural(changed, "key")}`, this.shapeNote(), "ok");
   }
 
   // ───────────────────────────── walking down the tree ─────────────────────────────
@@ -349,8 +472,8 @@ export class BSTEngine extends TreeScene {
         this.code(C, [L.one, L.child]);
         this.vars({ key: v, case: "one child", child: child.key, parent: parent?.key ?? "—" });
         this.status(`${v} has one child`,
-          `**Case 2.** Remove ${v} and let its only child **${child.key}** — with its whole subtree — move up into the gap.` +
-          (parent ? ` Every key in that subtree is already on the correct side of ${parent.key}.` : " It becomes the new root."), "danger");
+          `**Case 2.** Its only child **${child.key}** (with its subtree) moves up into the gap` +
+          (parent ? ` — every key there is already on the correct side of ${parent.key}.` : " and becomes the new root."), "danger");
         await this.subtreeStyle(child, "left");
       } else {
         this.code(C, L.leaf);
@@ -378,7 +501,7 @@ export class BSTEngine extends TreeScene {
     this.code(C, L.two);
     this.vars({ key: z.key, case: "two children" });
     this.status(`${z.key} has two children`,
-      "**Case 3.** It can't just disappear. Replace it with its **in-order successor** — the smallest key in its right subtree — so everything on the left stays smaller and everything on the right stays larger.", "warn");
+      "**Case 3.** Replace it with its **in-order successor**, the smallest key in its right subtree — that keeps the left side smaller and the right side larger.", "warn");
     await this.beat(0.8);
 
     const below: TreeNode[] = []; // nodes between z and the successor
@@ -421,7 +544,7 @@ export class BSTEngine extends TreeScene {
       zv.circle.dash([5, 4]);
       zv.circle.dashEnabled(true);
       await Promise.all([
-        this.tween(zv.circle, { fill: "rgba(0,0,0,0)", stroke: HOLE_STROKE, strokeWidth: 2, shadowOpacity: 0 }, 0.4),
+        this.tween(zv.circle, { fill: "rgba(255,253,248,0)", stroke: HOLE_STROKE, strokeWidth: 2, shadowOpacity: 0 }, 0.4),
         this.tween(zv.text, { opacity: 0 }, 0.4),
       ]);
     }
@@ -468,7 +591,7 @@ export class BSTEngine extends TreeScene {
       probe.group.destroy();
       await this.pulse(nv);
       this.status(`✓ Found ${v}`,
-        `Found at depth ${path.length} after **${plural(path.length + 1, "comparison")}** — out of ${plural(total, "node")} we only looked at ${path.length + 1}.`, "ok");
+        `**${plural(path.length + 1, "comparison")}** out of ${plural(total, "node")} — each one skipped a whole subtree.`, "ok");
     } else {
       this.code(C, L.missing);
       void this.styleView(probe, "danger");

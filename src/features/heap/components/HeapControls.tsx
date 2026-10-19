@@ -59,7 +59,6 @@ function presetValues(id: string): number[] {
 export function HeapControls(p: HeapControlsProps) {
   const { kind, heap } = p;
   const n = heap.length;
-  const top = kind === "max" ? "Max" : "Min";
   const full = n >= CAPACITY;
   const empty = n === 0;
 
@@ -126,70 +125,67 @@ export function HeapControls(p: HeapControlsProps) {
 
   return (
     <>
-      <Section title="Heap type" icon={<Pyramid />}>
-        <Segmented
-          options={[
-            { value: "max", label: "Max-heap", title: "Every parent ≥ its children — the root is the largest key" },
-            { value: "min", label: "Min-heap", title: "Every parent ≤ its children — the root is the smallest key" },
-          ]}
-          value={kind}
-          onChange={p.onKind}
-        />
-        <p className="text-xs leading-relaxed text-fg-faint">
-          {kind === "max" ? "Parent ≥ children, so a[0] is the largest key." : "Parent ≤ children, so a[0] is the smallest key."}{" "}
-          Switching re-orders the same keys with an animated build-heap.
-        </p>
-      </Section>
-
-      <Section title="Operations" icon={<Plus />}>
-        <ValueInput
-          input={valueBox}
-          label="Insert value(s)"
-          onEnter={insert}
-          onRandom={() => valueBox.fill([randomValue(existing)])}
-          disabled={full}
-          hint={full ? `Full: ${CAPACITY} keys = 5 complete levels` : "Empty box → random key · “5, 12, 8” inserts three"}
-        />
+      <Section
+        title="Heap"
+        icon={<Pyramid />}
+        action={
+          <Segmented
+            size="sm"
+            options={[
+              { value: "max", label: "Max", title: "Max-heap: every parent ≥ its children (switching rebuilds the heap)" },
+              { value: "min", label: "Min", title: "Min-heap: every parent ≤ its children (switching rebuilds the heap)" },
+            ]}
+            value={kind}
+            onChange={p.onKind}
+          />
+        }
+      >
+        <div title="Empty box inserts a random key · “5, 12, 8” inserts three">
+          <ValueInput
+            input={valueBox}
+            label="Value"
+            onEnter={insert}
+            onRandom={() => valueBox.fill([randomValue(existing)])}
+            disabled={full}
+            hint={full ? `Full (${CAPACITY} keys)` : ""}
+          />
+        </div>
         <Button variant="primary" icon={<Plus size={15} />} onClick={insert} disabled={full} title={full ? "The heap is full" : "Append at a[n], then sift up"}>
           Insert
         </Button>
         <Row>
-          <Button variant="danger" icon={<ArrowUpFromLine size={15} />} onClick={p.onExtract} disabled={empty} title={empty ? "The heap is empty" : `Remove and return the ${kind}`}>
-            Extract {top.toLowerCase()}
+          <Button size="sm" icon={<ArrowUpFromLine size={14} />} onClick={p.onExtract} disabled={empty} title={empty ? "The heap is empty" : `Remove and return the ${kind}`}>
+            Extract {kind}
           </Button>
-          <Button icon={<Eye size={15} />} onClick={p.onPeek} disabled={empty} title={empty ? "The heap is empty" : `Read the ${kind} in O(1)`}>
+          <Button size="sm" icon={<Eye size={14} />} onClick={p.onPeek} disabled={empty} title={empty ? "The heap is empty" : `Read the ${kind} in O(1)`}>
             Peek
           </Button>
         </Row>
-        <Button icon={<ArrowDownWideNarrow size={15} />} onClick={p.onSortHeap} disabled={n < 2} title={n < 2 ? "Needs at least 2 keys" : "Heap-sort the keys currently in the heap"}>
-          Heap-sort this heap
-        </Button>
       </Section>
 
       <Section title="By index" icon={<MousePointerClick />}>
         <Row>
-          <ValueInput input={indexBox} label="Index k" onEnter={del} disabled={empty} hint={empty ? "—" : `0 … ${n - 1}`} placeholder="k" />
-          <ValueInput input={keyBox} label="New key" onEnter={update} disabled={empty} hint="for update" placeholder="key" />
+          <div title="Click a node or array cell to pick k · empty = random index">
+            <ValueInput input={indexBox} label="Index k" onEnter={del} disabled={empty} hint={empty ? "" : `0 … ${n - 1}`} placeholder="k" />
+          </div>
+          <div title="Empty box = random key">
+            <ValueInput input={keyBox} label="New key" onEnter={update} disabled={empty} hint="" placeholder="key" />
+          </div>
         </Row>
         <Row>
-          <Button variant="danger" size="sm" icon={<Trash2 size={14} />} onClick={del} disabled={empty} title={empty ? "The heap is empty" : "Remove a[k]: swap with the last key, then sift up or down"}>
-            Delete a[k]
+          <Button size="sm" icon={<Trash2 size={14} />} onClick={del} disabled={empty} title={empty ? "The heap is empty" : "Remove a[k]: swap with the last key, then sift up or down"}>
+            Delete
           </Button>
-          <Button size="sm" icon={<Pencil size={14} />} onClick={update} disabled={empty} title={empty ? "The heap is empty" : "Change a[k], then sift up or down"}>
-            Update key
+          <Button size="sm" icon={<Pencil size={14} />} onClick={update} disabled={empty} title={empty ? "The heap is empty" : "Set a[k] to the new key, then sift up or down"}>
+            Update
           </Button>
         </Row>
-        <p className="text-[11px] leading-relaxed text-fg-faint">Click a node or array cell to pick k. Empty boxes use a random index / key.</p>
       </Section>
 
-      <Section title="Build or sort an array" icon={<ListOrdered />}>
-        <ValueInput
-          input={listBox}
-          label="Array"
-          onEnter={build}
-          onRandom={() => listBox.fill(randomValues(RANDOM_COUNT))}
-          hint={`Empty box → ${RANDOM_COUNT} random values · up to ${CAPACITY}`}
-        />
+      <Section title="From an array" icon={<ListOrdered />}>
+        <div title={`Empty box uses ${RANDOM_COUNT} random values · up to ${CAPACITY}`}>
+          <ValueInput input={listBox} label="Array" onEnter={build} onRandom={() => listBox.fill(randomValues(RANDOM_COUNT))} hint="" />
+        </div>
         <div className="flex flex-wrap gap-1.5">
           {PRESETS.map((pr) => (
             <button
@@ -207,7 +203,7 @@ export function HeapControls(p: HeapControlsProps) {
           <Button variant="primary" size="sm" icon={<Hammer size={14} />} onClick={build} title="Floyd's bottom-up build-heap, O(n)">
             Build heap
           </Button>
-          <Button variant="success" size="sm" icon={<ArrowDownWideNarrow size={14} />} onClick={sort} title="Build a heap, then repeatedly move the root to the end">
+          <Button size="sm" icon={<ArrowDownWideNarrow size={14} />} onClick={sort} title="Build a heap, then repeatedly move the root to the end">
             Heap sort
           </Button>
         </Row>
@@ -222,14 +218,17 @@ export function HeapControls(p: HeapControlsProps) {
               </option>
             ))}
           </Select>
-          <Button icon={<Shuffle size={15} />} onClick={() => p.onRandomFill(fillSize)} title="Instantly create a random valid heap">
-            Random fill
+          <Button size="sm" icon={<Shuffle size={14} />} onClick={() => p.onRandomFill(fillSize)} title="Instantly create a random valid heap">
+            Random
           </Button>
         </Row>
-        <Button variant="ghost" icon={<Eraser size={15} />} onClick={p.onClear} disabled={empty} title={empty ? "Already empty" : "Remove every key"}>
-          Clear heap
+        <Button size="sm" icon={<ArrowDownWideNarrow size={14} />} onClick={p.onSortHeap} disabled={n < 2} title={n < 2 ? "Needs at least 2 keys" : "Heap-sort the keys currently in the heap"}>
+          Sort this heap
         </Button>
-        <Toggle checked={p.detailed} onChange={p.onDetailed} label="Detailed sift-down steps" />
+        <Toggle checked={p.detailed} onChange={p.onDetailed} label="Detailed steps" />
+        <Button variant="ghost" size="sm" icon={<Eraser size={14} />} onClick={p.onClear} disabled={empty} title={empty ? "Already empty" : "Remove every key"}>
+          Clear
+        </Button>
       </Section>
     </>
   );

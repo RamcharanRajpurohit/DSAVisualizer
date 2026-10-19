@@ -55,7 +55,7 @@ export function ListCanvas({ step, lineSlots, pitchKind, animSec }: ListCanvasPr
 
       {empty && (
         <CanvasHint>
-          The list is empty — <code className="mx-1 font-mono text-viz-green">head</code> is NULL. Insert a value (press Enter in the value box) or pick a preset.
+          Empty list — <code className="mx-1 font-mono text-viz-green">head</code> is NULL. Insert a value or load an example.
         </CanvasHint>
       )}
 
@@ -69,15 +69,15 @@ export function ListCanvas({ step, lineSlots, pitchKind, animSec }: ListCanvasPr
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.18 }}
-              className="max-w-full truncate rounded-lg border bg-bg-elev/90 px-3 py-1.5 text-[13px] font-semibold backdrop-blur"
-              style={{ fontFamily: MONO_FONT, color: TONE_COLOR[step.tone ?? "info"], borderColor: `${TONE_COLOR[step.tone ?? "info"]}55`, boxShadow: `0 0 18px -6px ${TONE_COLOR[step.tone ?? "info"]}` }}
+              className="max-w-full truncate rounded-lg border bg-bg-elev px-3 py-1.5 text-[13px] font-semibold"
+              style={{ fontFamily: MONO_FONT, color: TONE_COLOR[step.tone ?? "info"], borderColor: `${TONE_COLOR[step.tone ?? "info"]}55`, boxShadow: "0 1px 2px rgba(0,0,0,.06)" }}
             >
               {step.callout}
             </motion.div>
           )}
         </AnimatePresence>
         {scene && scene.leaked > 0 && (
-          <div className="ml-auto shrink-0 rounded-lg border border-viz-red/40 bg-[#2a1010]/90 px-2.5 py-1.5 text-[11px] font-semibold text-viz-red">
+          <div className="ml-auto shrink-0 rounded-lg border border-viz-red/40 bg-[#FDDEDE] px-2.5 py-1.5 text-[11px] font-semibold text-viz-red">
             {scene.leaked} unreachable node{scene.leaked === 1 ? "" : "s"}
           </div>
         )}

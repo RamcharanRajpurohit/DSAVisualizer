@@ -54,8 +54,7 @@ export function runBellmanFord(G: Graph, s: string): GraphStep[] {
   R.row(1, "", []);
   R.snap(
     "Start Bellman-Ford",
-    `All distances start at ∞ except ${L(s)} = 0. Relax **every** edge in a fixed order, and repeat that pass up to ${passes} times (nodes − 1) — a shortest path never needs more edges than that.` +
-      (G.directed ? "" : "\nIn an undirected graph each edge is tried in both directions."),
+    `All distances start at ∞ except ${L(s)} = 0. Relax **every** edge${G.directed ? "" : " (both ways)"}, up to ${passes} passes — a shortest path never needs more than nodes − 1 edges.`,
     "info",
     { line: 2, vars: { s: L(s), pass: 0, u: null, v: null, w: null, "dist[u] + w": null, "dist[v]": null, changed: null } },
   );

@@ -5,17 +5,24 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui";
 import {
   CanvasHint,
+  CodePanel,
   ComplexityCard,
   Legend,
   PlaybackControls,
-  PseudocodePanel,
+  QuizCard,
   StatusCard,
+  StepTimeline,
   VariablesPanel,
   VisualizerLayout,
   useValueInput,
+  type Shortcut,
 } from "@/components/visualizer";
+import type { LessonActions } from "@/lib/lesson";
+import { useUrlParams } from "@/lib/share";
+import { TONE_COLOR } from "@/lib/theme";
 import { randInt } from "@/lib/utils";
-import { ALGOS } from "./algorithms";
+import { ALGOS, needsWarning } from "./algorithms";
+import { GRAPH_CODE } from "./code/implementations";
 import { AlgorithmPanel } from "./components/AlgorithmPanel";
 import { EditTools } from "./components/EditTools";
 import { GraphSettings } from "./components/GraphSettings";
@@ -23,7 +30,14 @@ import { legendFor } from "./components/legend";
 import { RepresentationPanel } from "./components/RepresentationPanel";
 import { enginePlayer, useGraphEngine } from "./components/useGraphEngine";
 import { WeightEditor } from "./components/WeightEditor";
-import { MAX_GEN_NODES, MIN_NODES } from "./layout";
+import type { GraphView } from "./engine/GraphEngine";
+import { LETTERS } from "./graphModel";
+import {
+  CYCLE_DEMO, DEFAULT_GRAPH, MAX_GEN_NODES, MIN_NODES, NEG_CYCLE_DEMO, NEG_DEMO, SCC_DEMO, TOPO_DEMO, randomSpec, type GraphSpec,
+} from "./layout";
+import { GRAPH_LESSONS, type GraphLessonAction, type LessonTopic } from "./lessons";
+import { graphQuiz } from "./quiz";
+import { encodeGraphShare, parseAlgo } from "./share";
 import type { AlgoKey, PresetKind, ReprMode, Tool } from "./types";
 
 const TOOL_KEYS: Record<string, Tool> = { v: "move", n: "node", e: "edge", d: "delete" };
@@ -33,12 +47,48 @@ const PRESET_ALGO: Partial<Record<PresetKind, AlgoKey>> = { dag: "topo", scc: "s
 
 const DEFAULT_COUNT = 7;
 
+const SHORTCUTS: readonly Shortcut[] = [
+  { keys: ["Enter"], label: "Run the selected algorithm" },
+  { keys: ["Esc"], label: "Stop / cancel the current edit" },
+  { keys: ["V", "N", "E", "D"], label: "Move · Node · Edge · Delete tool" },
+  { keys: ["Ctrl", "Scroll"], label: "Zoom the canvas" },
+];
+
+/** Is `spec` exactly the graph on screen (same letters, direction, weights and edges)? */
+function showing(v: GraphView | null, spec: GraphSpec): boolean {
+  if (!v || v.nodes.length !== spec.n || v.edges.length !== spec.edges.length) return false;
+  if (v.directed !== !!spec.directed || (spec.weighted !== undefined && v.weighted !== spec.weighted)) return false;
+  const label = new Map(v.nodes.map((n) => [n.id, n.label]));
+  const have = new Set(v.edges.map((e) => `${label.get(e.u)}${label.get(e.v)}${e.w}`));
+  const letters = spec.labels ?? LETTERS;
+  return (
+    v.nodes.every((n) => letters.slice(0, spec.n).includes(n.label)) &&
+    spec.edges.every(([a, b, w]) => {
+      const [x, y] = [letters[a], letters[b]];
+      return w === undefined
+        ? v.edges.some((e) => (label.get(e.u) === x && label.get(e.v) === y) || (!v.directed && label.get(e.u) === y && label.get(e.v) === x))
+        : have.has(`${x}${y}${w}`) || (!v.directed && have.has(`${y}${x}${w}`));
+    })
+  );
+}
+
 export function GraphVisualizer() {
   const { hostRef, engine, view } = useGraphEngine();
   const [algo, setAlgo] = useState<AlgoKey>("dijkstra");
   const [preset, setPreset] = useState<PresetKind>("random");
   const [repr, setRepr] = useState<ReprMode>("matrix");
+  /** The lesson stays on its topic while its "Try it" buttons switch algorithms. */
+  const [lessonPin, setLessonPin] = useState<LessonTopic | null>(null);
   const countInput = useValueInput({ mode: "single", min: MIN_NODES, max: MAX_GEN_NODES });
+
+  // Shared link: the engine rebuilds the graph from the URL itself; restore the algorithm once here.
+  const params = useUrlParams();
+  const [restored, setRestored] = useState(false);
+  if (params && !restored) {
+    setRestored(true);
+    const a = parseAlgo(params.get("a"));
+    if (a) setAlgo(a);
+  }
 
   const shown = ALGOS[view?.algoKey ?? algo];
   const step = view?.step ?? null;
@@ -47,9 +97,14 @@ export function GraphVisualizer() {
   const directed = view?.directed ?? false;
   const weighted = view?.weighted ?? true;
   const hasNeg = weighted && edges.some((e) => e.w < 0);
-  const pendingLabel = view?.pending ? (nodes.find((n) => n.id === view.pending)?.label ?? null) : null;
   const disabled = !engine;
   const player = enginePlayer(engine, view);
+  const topic: LessonTopic = lessonPin ?? algo;
+
+  const chooseAlgo = (k: AlgoKey) => {
+    setAlgo(k);
+    setLessonPin(null);
+  };
 
   const generate = (kind: PresetKind = preset) => {
     if (!engine) return;
@@ -64,9 +119,90 @@ export function GraphVisualizer() {
   const loadPreset = (p: PresetKind) => {
     setPreset(p);
     const a = PRESET_ALGO[p];
-    if (a) setAlgo(a);
+    if (a) chooseAlgo(a);
     generate(p);
   };
+
+  // ── lesson "Try it" actions ──
+  const runFromA = (k: AlgoKey) => {
+    const a = engine?.getView()?.nodes.find((n) => n.label === "A");
+    if (a && ALGOS[k].start) engine?.setStart(a.id);
+    engine?.run(k);
+  };
+  /** Run `k` on `spec` — instantly if that graph is already on screen, else build it first. */
+  const demo = (k: AlgoKey, spec: GraphSpec) => {
+    if (!engine) return;
+    setAlgo(k);
+    if (spec === NEG_DEMO) setPreset("negative");
+    if (showing(engine.getView(), spec)) runFromA(k);
+    else engine.loadAndRun(spec, k);
+  };
+  /** Run `k` on the current graph when it fits, else on `fallback`. */
+  const here = (k: AlgoKey, fallback: GraphSpec) => {
+    const v = engine?.getView();
+    const mst = k === "kruskal" || k === "prim";
+    const fits = !!v && v.nodes.length > 1 && !needsWarning(ALGOS[k], v.directed) && (!mst || (v.weighted && v.edges.length > 0));
+    if (!fits || !engine) return demo(k, fallback);
+    setAlgo(k);
+    engine.run(k);
+  };
+  const fresh = (k: AlgoKey, kind: PresetKind, n: number) => {
+    if (!engine) return;
+    setPreset(kind);
+    setAlgo(k);
+    engine.loadAndRun(randomSpec(kind, n, kind !== "random"), k);
+  };
+  const openLesson = (t: LessonTopic) => {
+    setLessonPin(t);
+    if (t !== "basics") setAlgo(t);
+  };
+
+  const actions: Record<GraphLessonAction, () => void> = {
+    basics: () => openLesson("basics"),
+    "lesson.bfs": () => openLesson("bfs"),
+    "lesson.dijkstra": () => openLesson("dijkstra"),
+    "lesson.kruskal": () => openLesson("kruskal"),
+    "lesson.topo": () => openLesson("topo"),
+    "lesson.scc": () => openLesson("scc"),
+    generate: () => {
+      setPreset("random");
+      engine?.generate("random", DEFAULT_COUNT);
+    },
+    "directed.on": () => engine?.setDirected(true),
+    "directed.off": () => engine?.setDirected(false),
+    "weights.off": () => engine?.setWeighted(false),
+    "weights.on": () => engine?.setWeighted(true),
+    "repr.list": () => setRepr("list"),
+    "repr.matrix": () => setRepr("matrix"),
+    "tool.node": () => engine?.setTool("node"),
+    "tool.edge": () => engine?.setTool("edge"),
+    "load.dag": () => engine?.load(TOPO_DEMO),
+    "bfs.run": () => demo("bfs", DEFAULT_GRAPH),
+    "bfs.unweighted": () => demo("bfs", { ...DEFAULT_GRAPH, weighted: false }),
+    "bfs.random": () => fresh("bfs", "random", 8),
+    "dfs.run": () => demo("dfs", DEFAULT_GRAPH),
+    "dfs.cycle": () => demo("dfs", CYCLE_DEMO),
+    "dijkstra.run": () => demo("dijkstra", DEFAULT_GRAPH),
+    "dijkstra.neg": () => demo("dijkstra", NEG_DEMO),
+    "bellman.neg": () => demo("bellmanFord", NEG_DEMO),
+    "bellman.cycle": () => demo("bellmanFord", NEG_CYCLE_DEMO),
+    "kruskal.default": () => demo("kruskal", DEFAULT_GRAPH),
+    "kruskal.here": () => here("kruskal", DEFAULT_GRAPH),
+    "prim.default": () => demo("prim", DEFAULT_GRAPH),
+    "prim.here": () => here("prim", DEFAULT_GRAPH),
+    "topo.demo": () => demo("topo", TOPO_DEMO),
+    "topo.dag": () => fresh("topo", "dag", 8),
+    "topo.cycle": () => demo("topo", CYCLE_DEMO),
+    "scc.demo": () => demo("scc", SCC_DEMO),
+    "scc.clusters": () => fresh("scc", "scc", 9),
+  };
+  // Keep the open lesson on its topic, whatever algorithm its buttons switch to.
+  const lessonActions: LessonActions = Object.fromEntries(
+    Object.entries(actions).map(([k, fn]) => [k, () => {
+      if (!k.startsWith("lesson.") && k !== "basics") setLessonPin(topic);
+      fn();
+    }]),
+  );
 
   useEffect(() => {
     if (!engine) return;
@@ -120,10 +256,22 @@ export function GraphVisualizer() {
     return () => window.removeEventListener("keydown", onKey);
   }, [engine, algo]);
 
-  // The side columns are flex containers that may shrink their children; one non-shrinking wrapper
-  // keeps every card at its natural height (the column scrolls instead).
   const controls = (
     <div className="flex flex-col gap-3">
+      <AlgorithmPanel
+        algo={algo}
+        runningAlgo={view?.algoKey ?? null}
+        nodes={nodes}
+        startId={view?.startId ?? null}
+        directed={directed}
+        hasNeg={hasNeg}
+        disabled={disabled}
+        onAlgo={chooseAlgo}
+        onStart={(id) => engine?.setStart(id)}
+        onRun={() => engine?.run(algo)}
+        onDirected={(v) => engine?.setDirected(v)}
+        onLoadPreset={loadPreset}
+      />
       <GraphSettings
         directed={directed}
         weighted={weighted}
@@ -139,59 +287,63 @@ export function GraphVisualizer() {
         onArrange={() => void engine?.arrange()}
         onClear={() => engine?.clear()}
       />
-      <EditTools tool={view?.tool ?? "move"} pendingLabel={pendingLabel} disabled={disabled} onTool={(t) => engine?.setTool(t)} />
-      <AlgorithmPanel
-        algo={algo}
-        runningAlgo={view?.algoKey ?? null}
-        nodes={nodes}
-        startId={view?.startId ?? null}
-        directed={directed}
-        hasNeg={hasNeg}
-        disabled={disabled}
-        onAlgo={setAlgo}
-        onStart={(id) => engine?.setStart(id)}
-        onRun={() => engine?.run(algo)}
-        onDirected={(v) => engine?.setDirected(v)}
-        onLoadPreset={loadPreset}
-      />
+      <EditTools tool={view?.tool ?? "move"} disabled={disabled} onTool={(t) => engine?.setTool(t)} />
     </div>
   );
 
   const insight = (
     <div className="flex flex-col gap-3">
       <StatusCard title={view?.status.title ?? "Loading…"} detail={view?.status.detail} tone={view?.status.tone ?? "info"} />
-      <PseudocodePanel title={`Pseudocode · ${shown.name}`} code={shown.code} active={step?.line} />
+      <CodePanel title={`Code · ${shown.name}`} code={shown.code} active={step?.line} implementations={GRAPH_CODE[shown.key]} />
       <VariablesPanel vars={step?.vars} />
-      <Legend items={legendFor(shown.key)} />
+      <StepTimeline
+        steps={view?.steps ?? []}
+        index={view?.index ?? 0}
+        onSeek={(i) => {
+          engine?.pause();
+          engine?.seek(i);
+        }}
+      />
       <RepresentationPanel nodes={nodes} edges={edges} directed={directed} weighted={weighted} step={step} mode={repr} onMode={setRepr} />
+      <Legend items={legendFor(shown.key)} />
       <ComplexityCard title={`Complexity · ${shown.name}`} rows={shown.complexity} note={shown.complexityNote} />
+      <QuizCard
+        generate={() =>
+          view ? graphQuiz({ nodes, edges, directed, weighted, startId: view.startId }, algo) : null
+        }
+        emptyText="Add a few nodes first, then ask for a question."
+      />
     </div>
   );
 
   return (
     <VisualizerLayout
       title="Graph Algorithms"
-      subtitle="Build a graph or generate one, then watch traversals, shortest paths, spanning trees, topological order and SCCs unfold step by step."
+      subtitle="Traversals, shortest paths, spanning trees, topological order and SCCs — step by step."
       headerExtra={
         <>
-          <Badge color="#39aaff">{shown.name}</Badge>
-          <Badge color="#ff7ac6">{shown.time}</Badge>
+          <Badge color={TONE_COLOR.info}>{shown.name}</Badge>
+          <Badge color={TONE_COLOR.merge}>{shown.time}</Badge>
         </>
       }
       controls={controls}
       insight={insight}
+      lesson={GRAPH_LESSONS[topic]}
+      lessonActions={lessonActions}
+      share={() => (engine ? encodeGraphShare(engine.exportGraph(), algo) : { a: algo })}
+      shortcuts={SHORTCUTS}
       playback={
         <PlaybackControls
           player={player}
           label={view?.algoKey ? ALGOS[view.algoKey].name : undefined}
-          emptyText="Press Run (Enter) to record the selected algorithm — then play, step or scrub through it"
+          emptyText="Press Run (Enter) to record the selected algorithm"
           onStop={() => engine?.stop()}
         />
       }
     >
       <div ref={hostRef} className="absolute inset-0" />
       {!view && <CanvasHint>Loading canvas…</CanvasHint>}
-      {view && !nodes.length && <CanvasHint>Empty graph — press Generate, or pick the Node tool (N) and click here</CanvasHint>}
+      {view && !nodes.length && <CanvasHint>Empty graph — Generate one, or add nodes with N</CanvasHint>}
       {view?.weightEdit && engine && (
         <WeightEditor
           key={view.weightEdit.edgeId}
@@ -204,7 +356,7 @@ export function GraphVisualizer() {
         <button
           type="button"
           onClick={() => engine?.resetView()}
-          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface/90 px-2.5 py-1.5 text-xs text-fg-dim backdrop-blur transition hover:bg-surface-3 hover:text-fg"
+          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-xs text-fg-dim transition hover:bg-surface-2 hover:text-fg"
           title="Reset zoom and pan (or double-click empty space)"
         >
           <Scan size={13} /> Reset view

@@ -152,7 +152,7 @@ export function record(state: ListState, req: OpRequest): Recording {
       const b = [...req.b].sort((x, y) => x - y);
       const r = recordMerge(state, a, b);
       if (!sorted(req.a) || !sorted(req.b)) {
-        r.steps[0] = { ...r.steps[0], detail: `${r.steps[0].detail}\n(Your input wasn't in order, so it was sorted first — merging only works on sorted lists.)` };
+        r.steps[0] = { ...r.steps[0], detail: `${r.steps[0].detail}\n(Input sorted first.)` };
       }
       return done(r, "merge", "Merge two sorted lists");
     }
@@ -167,7 +167,7 @@ export function record(state: ListState, req: OpRequest): Recording {
       doBugDemo(r, index, req.value);
       // Rewind: show the untouched list again.
       const back = new Rec(state, c);
-      back.snap("That's why the order matters", "Rewound to the original list. The safe order is:\n1. `new.next = curr.next` — the new node grabs the rest of the list.\n2. `curr.next = new` — only then hook it in.\nWith that order the rest of the list is reachable at every moment.", {
+      back.snap("That's why the order matters", "Rewound. Safe order: `new.next = curr.next`, then `curr.next = new` — the rest of the list stays reachable.", {
         tone: "ok", line: ["fix1", "fix2"], hold: 1.6,
       });
       return { op: "bug", label: "Bug demo: wrong pointer order", steps: [...r.steps, ...back.steps], final: state };

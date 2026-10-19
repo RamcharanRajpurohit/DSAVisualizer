@@ -19,7 +19,7 @@
  *   6. update the heights of z and y
  */
 import { avlInsertSilent, classify, collect, fmtBf, hOf, replaceChild, rotate, update } from "../model/tree";
-import type { Side, TreeNode } from "../model/types";
+import type { NodeFactory, Side, TreeNode } from "../model/types";
 import { AVL_DEMOS, type DemoId } from "../constants";
 import { LN, type CodeId, type RetraceLines } from "../pseudocode";
 import type { Point } from "./anim";
@@ -37,14 +37,14 @@ export class AVLEngine extends BSTEngine {
 
   protected override shapeNote(): string {
     if (!this.root) return "The tree is now empty.";
-    return `Height **${hOf(this.root)}** and every balance factor is between −1 and +1, so search stays O(log n).`;
+    return `Height **${hOf(this.root)}**, every balance factor within −1…+1.`;
   }
 
   // ───────────────────── overridden Template-Method seams ─────────────────────
 
   /** Like the parent's plain insert, but rebalances so the height stays ≤ ~1.44·log₂(n). */
-  protected override insertSilent(v: number): void {
-    this.root = avlInsertSilent(this.root, v, this.make);
+  protected override insertSilent(v: number, make: NodeFactory = this.make): void {
+    this.root = avlInsertSilent(this.root, v, make);
   }
 
   /** The parent attached the new leaf; walk back up and rebalance. */
@@ -63,17 +63,7 @@ export class AVLEngine extends BSTEngine {
 
   demo(id: DemoId): Promise<boolean> {
     const D = AVL_DEMOS[id];
-    return this.run(`Demo · ${D.title}`, async () => {
-      this.reset();
-      D.base.forEach((v) => this.insertSilent(v));
-      this.rotations = 0;
-      this.vars(undefined);
-      this.status(`Demo · ${D.title}`, D.intro, "merge");
-      await this.morph(0.8);
-      await this.beat(1.6);
-      if (D.op === "insert") await this.insertSteps(D.value);
-      else await this.deleteSteps(D.value);
-    }, true);
+    return this.scenario({ title: `Demo · ${D.title}`, intro: D.intro, base: D.base, steps: [{ op: D.op, values: [D.value] }] });
   }
 
   // ───────────────────── REBALANCING ─────────────────────
@@ -83,7 +73,7 @@ export class AVLEngine extends BSTEngine {
     if (!chain.length) return;
     this.code(C, L.loop);
     this.status("Retrace to the root",
-      "Walk back up the path. At each node recompute **height = 1 + max(h(left), h(right))** and **balance = h(left) − h(right)**. Any node outside −1…+1 gets rotated.");
+      "Walk back up, recomputing each node's **height** and **balance** h(left) − h(right). A node outside −1…+1 gets rotated.");
     await this.beat(0.5);
 
     for (let i = chain.length - 1; i >= 0; i--) {
@@ -117,7 +107,7 @@ export class AVLEngine extends BSTEngine {
         this.code(C, L.stop);
         if (i > 0) {
           this.status(`Subtree height unchanged (${top.h})`,
-            `The subtree rooted at ${top.key} is exactly as tall as before, so nothing above it can change — **stop retracing** early.`, "ok");
+            `${top.key}'s subtree is as tall as before, so nothing above can change — **stop** early.`, "ok");
           await this.beat(0.7);
         }
         break;
@@ -173,9 +163,9 @@ export class AVLEngine extends BSTEngine {
     this.subCode(RC, [RL.pivot, RL.t2]);
     this.vars({ z: z.key, y: y.key, T2: t2?.key ?? "∅", dir: Dir.toLowerCase() });
     this.status(`${tag} · ${Dir} rotation at ${z.key}`,
-      `**${y.key}** (the pivot) moves up into ${z.key}'s place and **${z.key}** drops down to become its ${inner} child.` +
-      (t2 ? ` ${y.key}'s ${inner} subtree **T2 (${t2.key})** is handed over to become ${z.key}'s new ${outer} child.`
-        : ` ${y.key} has no ${inner} subtree, so nothing else changes hands.`), "warn");
+      `Pivot **${y.key}** rises into ${z.key}'s place; **${z.key}** drops to its ${inner}.` +
+      (t2 ? ` ${y.key}'s ${inner} subtree **T2 (${t2.key})** becomes ${z.key}'s ${outer} child.`
+        : ` ${y.key} has no ${inner} subtree to hand over.`), "warn");
     await Promise.all([this.nodeStyle(z, "danger"), this.nodeStyle(y, "moving"), t2 ? this.subtreeStyle(t2, "merge") : null]);
     const labels = [this.nodeLabel(z, "z", "danger"), this.nodeLabel(y, "pivot y", "warn")];
     if (t2) labels.push(this.nodeLabel(t2, "T2", "merge"));
@@ -211,7 +201,7 @@ export class AVLEngine extends BSTEngine {
     this.subCode(RC, [RL.link, RL.hang]);
     this.status(`${tag} · Rotate`,
       `${y.key} swings up, ${z.key} swings down to the ${inner}` + (t2 ? `, and T2 re-hangs under ${z.key}` : "") +
-      ". Notice the left-to-right order of the keys never changes — only the parent/child links do.", "warn");
+      ". The keys' left-to-right order never changes.", "warn");
     const arrows = [
       tz ? this.pathArrow(pz, tz, bz, ARROW.z) : null,
       ty ? this.pathArrow(py, ty, by, ARROW.y) : null,

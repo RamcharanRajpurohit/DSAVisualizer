@@ -1,13 +1,13 @@
 /*
  * Workspace grid for every visualizer page.
- *   ≥1280px  controls | canvas + playback | insight      (three columns, full height)
+ *   ≥1280px  controls | canvas + playback | insight      (three columns, full height; narrow sides)
  *   ≥1024px  canvas + playback | controls then insight   (two columns)
  *   smaller  everything stacked
  */
 .layout {
   display: grid;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     "head"
@@ -17,7 +17,7 @@
 }
 
 .head { grid-area: head; }
-.stage { grid-area: stage; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+.stage { grid-area: stage; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
 .controls { grid-area: controls; }
 .insight { grid-area: insight; }
 
@@ -33,7 +33,7 @@
 .side {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -45,7 +45,7 @@
 @media (min-width: 1024px) {
   .layout {
     height: calc(100dvh - var(--navbar-h));
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr) 300px;
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
       "head head"
@@ -58,11 +58,18 @@
 
 @media (min-width: 1280px) {
   .layout {
-    grid-template-columns: 300px minmax(0, 1fr) 340px;
+    grid-template-columns: 264px minmax(0, 1fr) 312px;
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "head head head"
       "controls stage insight";
+  }
+}
+
+/* Big screens: a little more room for the side panels, the canvas still gets the most. */
+@media (min-width: 1680px) {
+  .layout {
+    grid-template-columns: 288px minmax(0, 1fr) 336px;
   }
 }
 
