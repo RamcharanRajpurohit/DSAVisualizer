@@ -3,7 +3,6 @@
 import { GraduationCap, Keyboard, Maximize2, Minimize2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Lesson, LessonActions } from "@/lib/lesson";
-import { usePreference } from "@/lib/prefs";
 import type { ShareParams } from "@/lib/share";
 import { cn } from "@/lib/utils";
 import { LearnPanel } from "./LearnPanel";
@@ -25,7 +24,7 @@ export interface VisualizerLayoutProps {
   /** The drawing surface. Fills the canvas box (position: relative). */
   children: ReactNode;
   canvasClassName?: string;
-  /** Guided lesson shown over the canvas (opens automatically on the first visit). */
+  /** Guided lesson shown over the canvas when the visitor clicks Learn. */
   lesson?: Lesson;
   /** Handlers for the lesson's "Try it" buttons. */
   lessonActions?: LessonActions;
@@ -36,7 +35,7 @@ export interface VisualizerLayoutProps {
 }
 
 const toolBtn =
-  "flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface-2 px-2.5 text-xs font-medium text-fg-dim transition hover:bg-surface-3 hover:text-fg";
+  "flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 text-xs font-medium text-fg-dim transition hover:bg-surface-2 hover:text-fg";
 
 export function VisualizerLayout({
   title, subtitle, headerExtra, controls, insight, playback, children, canvasClassName,
@@ -45,14 +44,10 @@ export function VisualizerLayout({
   const [focus, setFocus] = useState(false);
   const [help, setHelp] = useState(false);
 
-  // First visit: open the lesson automatically, like VisuAlgo's e-Lecture mode.
-  const [seen, setSeen, known] = usePreference<boolean>(`lesson.seen.${lesson?.id ?? "none"}`, false);
-  const [openState, setOpenState] = useState<boolean | null>(null);
-  const learnOpen = !!lesson && (openState ?? (known && !seen));
-  const closeLearn = () => {
-    setOpenState(false);
-    setSeen(true);
-  };
+  // Lessons open only when asked for (progressive disclosure — no pop-ups).
+  const [learnState, setLearnOpen] = useState(false);
+  const learnOpen = !!lesson && learnState;
+  const closeLearn = () => setLearnOpen(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -74,25 +69,29 @@ export function VisualizerLayout({
     <div className={cn(styles.layout, focus && styles.focus)}>
       <header className={cn(styles.head, "flex flex-wrap items-end justify-between gap-3 px-1")}>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-fg md:text-2xl">{title}</h1>
-          {subtitle && !focus && <p className="mt-0.5 max-w-3xl text-sm text-fg-dim">{subtitle}</p>}
+          <h1 className="font-serif text-3xl leading-tight text-fg md:text-[34px]">{title}</h1>
+          {subtitle && !focus && <p className="mt-0.5 max-w-2xl truncate text-sm text-fg-faint">{subtitle}</p>}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {headerExtra}
           <div className="flex items-center gap-1.5">
             {lesson && (
               <button
-                className={cn(toolBtn, learnOpen && "border-viz-purple/50 bg-viz-purple/15 text-fg")}
-                onClick={() => (learnOpen ? closeLearn() : setOpenState(true))}
+                className={cn(toolBtn, learnOpen && "border-fg bg-fg text-bg-elev hover:bg-[#333] hover:text-bg-elev")}
+                onClick={() => setLearnOpen(!learnOpen)}
                 title="Guided lesson with try-it buttons"
               >
                 <GraduationCap size={14} /> Learn
               </button>
             )}
             {share && <ShareButton getParams={share} />}
-            <button className={toolBtn} onClick={() => setFocus((f) => !f)} title={focus ? "Show the side panels" : "Hide the side panels"}>
+            <button
+              className={cn(toolBtn, "px-2")}
+              onClick={() => setFocus((f) => !f)}
+              title={focus ? "Show side panels" : "Focus on the canvas"}
+              aria-label={focus ? "Show side panels" : "Focus on the canvas"}
+            >
               {focus ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-              <span className="hidden sm:inline">{focus ? "Exit focus" : "Focus"}</span>
             </button>
             <button className={cn(toolBtn, "px-2")} onClick={() => setHelp(true)} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
               <Keyboard size={14} />

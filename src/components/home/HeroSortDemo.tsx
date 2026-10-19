@@ -48,7 +48,7 @@ export function HeroSortDemo() {
             layout
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
             className="relative w-6 rounded-t-md border-2 sm:w-8"
-            style={{ height: `${VALUES[id] * 1.9}px`, background: fill, borderColor: stroke, boxShadow: `0 0 18px -6px ${stroke}` }}
+            style={{ height: `${VALUES[id] * 1.9}px`, background: fill, borderColor: stroke }}
           >
             <span className="absolute -top-5 left-1/2 -translate-x-1/2 font-mono text-[10px] text-fg-dim">{VALUES[id]}</span>
           </motion.div>

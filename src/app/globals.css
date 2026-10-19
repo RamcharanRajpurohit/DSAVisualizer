@@ -1,38 +1,40 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. The visualizer palette (--viz-*) mirrors src/lib/theme.ts so that
- * canvas (Konva) drawings, SVG drawings and HTML panels all speak the same colours.
+ * Design tokens — "ink on paper": a warm, editorial light theme (inspired by ishanrajpurohit.com).
+ * Colour is reserved for meaning in the visualizations; the chrome stays paper and ink.
+ * The visualizer palette (--viz-*) mirrors src/lib/theme.ts so Konva, SVG and HTML all match.
  */
 :root {
-  --bg: #07070a;
-  --bg-elev: #0f0f14;
-  --surface: #15151c;
-  --surface-2: #1c1c25;
-  --surface-3: #262631;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #ececf1;
-  --text-dim: #a3a3b2;
-  --text-faint: #6c6c7a;
+  --bg: #efe8dd;
+  --bg-elev: #fbf8f2;
+  --surface: #f7f2ea;
+  --surface-2: #eae3d7;
+  --surface-3: #dfd6c7;
+  --border: rgba(26, 26, 26, 0.1);
+  --border-strong: rgba(26, 26, 26, 0.2);
+  --text: #1a1a1a;
+  --text-dim: #4b463f;
+  --text-faint: #8c8478;
 
-  --brand: #00f2ff;
-  --brand-alt: #8a2be2;
+  /* "brand" is ink; the one accent is a calm green */
+  --brand: #1a1a1a;
+  --brand-alt: #2f9e58;
 
-  --viz-base: #454552;
-  --viz-base-stroke: #6c6c78;
-  --viz-blue: #39aaff;
-  --viz-blue-deep: #0b6fb8;
-  --viz-amber: #ffb000;
-  --viz-amber-soft: #ffd466;
-  --viz-green: #2ee68a;
-  --viz-green-deep: #00a854;
-  --viz-red: #ff5c5c;
-  --viz-red-deep: #d93636;
-  --viz-purple: #c08bff;
-  --viz-purple-deep: #7a45b8;
-  --viz-pink: #ff7ac6;
-  --viz-edge: #5c5c6a;
+  --viz-base: #fffdf8;
+  --viz-base-stroke: #2a2a2a;
+  --viz-blue: #2563eb;
+  --viz-blue-deep: #1e40af;
+  --viz-amber: #d97706;
+  --viz-amber-soft: #ffe7bf;
+  --viz-green: #16a34a;
+  --viz-green-deep: #15803d;
+  --viz-red: #dc2626;
+  --viz-red-deep: #b91c1c;
+  --viz-purple: #7c3aed;
+  --viz-purple-deep: #5b21b6;
+  --viz-pink: #db2777;
+  --viz-edge: #3d3a35;
 
   --navbar-h: 60px;
 }
@@ -62,6 +64,7 @@
   --color-viz-purple-deep: var(--viz-purple-deep);
   --color-viz-pink: var(--viz-pink);
   --font-sans: var(--font-inter);
+  --font-serif: var(--font-instrument-serif);
   --font-mono: var(--font-jetbrains);
 }
 
@@ -70,24 +73,20 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: var(--font-inter), "Segoe UI", system-ui, sans-serif;
-  background-image:
-    radial-gradient(circle at 8% 12%, rgba(0, 242, 255, 0.07) 0%, transparent 28%),
-    radial-gradient(circle at 92% 88%, rgba(138, 43, 226, 0.08) 0%, transparent 30%);
-  background-attachment: fixed;
+  font-family: var(--font-inter), "Helvetica Neue", system-ui, sans-serif;
 }
 
 ::selection {
-  background: rgba(57, 170, 255, 0.35);
+  background: rgba(47, 158, 88, 0.25);
 }
 
-/* Thin, dark scrollbars for the side panels. */
+/* Thin scrollbars for the side panels. */
 .scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--surface-3) transparent;
@@ -101,11 +100,9 @@ body {
   border-radius: 8px;
 }
 
+/* Kept for compatibility: no gradients in the paper theme, just ink. */
 .text-gradient {
-  background: linear-gradient(45deg, var(--brand), var(--brand-alt));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text);
 }
 
 /* Native range input styled to match the theme. */
@@ -124,17 +121,17 @@ input[type="range"].range::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--viz-blue);
-  border: 2px solid #fff;
+  background: var(--text);
+  border: 2px solid var(--bg-elev);
   cursor: pointer;
-  box-shadow: 0 0 0 4px rgba(57, 170, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
 }
 input[type="range"].range::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--viz-blue);
-  border: 2px solid #fff;
+  background: var(--text);
+  border: 2px solid var(--bg-elev);
   cursor: pointer;
 }
 input[type="range"].range:disabled {
@@ -143,8 +140,8 @@ input[type="range"].range:disabled {
 
 /* Dotted grid behind every visualization canvas. */
 .canvas-grid {
-  background-color: #0b0b10;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-color: var(--bg-elev);
+  background-image: radial-gradient(rgba(26, 26, 26, 0.11) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 

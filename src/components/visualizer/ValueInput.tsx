@@ -3,6 +3,7 @@
 import { Dices, CornerDownLeft } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { RANGE_TEXT, VALUE_MAX, VALUE_MIN } from "@/config/input";
+import { emitMascot } from "@/lib/mascot-bus";
 import { cn } from "@/lib/utils";
 
 /**
@@ -46,11 +47,21 @@ export function useValueInput({
   mode = "single", maxCount = mode === "single" ? 1 : 20, minCount = 1, min = VALUE_MIN, max = VALUE_MAX, initialText = "",
 }: ValueInputOptions = {}): ValueInputState {
   const [text, setTextState] = useState(initialText);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<string | null>(null);
 
-  const setText = useCallback((t: string) => { setTextState(t); setError(null); }, []);
-  const clear = useCallback(() => { setTextState(""); setError(null); }, []);
-  const fill = useCallback((values: readonly number[]) => { setTextState(values.join(", ")); setError(null); }, []);
+  // Errors also go to the mascot, which reacts and repeats the message.
+  const setError = useCallback((message: string | null) => {
+    setErrorState(message);
+    if (message) emitMascot({ type: "input-error", message });
+  }, []);
+
+  const setText = useCallback((t: string) => {
+    setTextState(t);
+    setErrorState(null);
+    emitMascot({ type: "typing" });
+  }, []);
+  const clear = useCallback(() => { setTextState(""); setErrorState(null); }, []);
+  const fill = useCallback((values: readonly number[]) => { setTextState(values.join(", ")); setErrorState(null); }, []);
 
   const read = useCallback<ValueInputState["read"]>((fallback) => {
     const t = text.trim();
@@ -84,11 +95,11 @@ export function useValueInput({
     }
     setError(null);
     return tokens.map(Number);
-  }, [text, mode, min, max, maxCount, minCount]);
+  }, [text, mode, min, max, maxCount, minCount, setError]);
 
   return useMemo(
     () => ({ text, setText, error, setError, read, fill, clear, mode, min, max, maxCount }),
-    [text, setText, error, read, fill, clear, mode, min, max, maxCount],
+    [text, setText, error, setError, read, fill, clear, mode, min, max, maxCount],
   );
 }
 
@@ -100,7 +111,7 @@ export interface ValueInputProps {
   onRandom?: () => void;
   label?: string;
   placeholder?: string;
-  /** Extra hint under the box; defaults to the accepted range. */
+  /** Optional hint under the box (the accepted range is shown as a tooltip). */
   hint?: string;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -132,13 +143,14 @@ export function ValueInput({ input, onEnter, onRandom, label, placeholder, hint,
             if (e.key === "Enter" && onEnter) { e.preventDefault(); onEnter(); }
           }}
           aria-invalid={!!input.error}
+          title={defaultHint}
           className={cn(
             "h-9 w-full rounded-lg border bg-bg-elev pl-3 text-sm text-fg placeholder:text-fg-faint transition-colors",
             "focus:outline-none focus:ring-2 disabled:opacity-50",
             onRandom ? "pr-16" : "pr-8",
             input.error
               ? "border-viz-red/70 focus:border-viz-red focus:ring-viz-red/25"
-              : "border-line-strong focus:border-viz-blue/70 focus:ring-viz-blue/25",
+              : "border-line-strong focus:border-fg/40 focus:ring-fg/10",
           )}
         />
         <div className="absolute inset-y-0 right-1 flex items-center gap-0.5">
@@ -161,7 +173,8 @@ export function ValueInput({ input, onEnter, onRandom, label, placeholder, hint,
           )}
         </div>
       </div>
-      <span className={cn("text-[11px]", input.error ? "text-viz-red" : "text-fg-faint")}>{input.error ?? hint ?? defaultHint}</span>
+      {/* Minimal UI: the accepted range lives in the tooltip; only errors (or an explicit hint) show here. */}
+      {(input.error || hint) && <span className={cn("text-[11px]", input.error ? "text-viz-red" : "text-fg-faint")}>{input.error ?? hint}</span>}
     </div>
   );
 }

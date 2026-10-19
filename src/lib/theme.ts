@@ -1,8 +1,9 @@
 /**
- * Shared visualizer palette. Keep in sync with the --viz-* tokens in app/globals.css.
+ * Shared visualizer palette — "ink on paper". Keep in sync with the --viz-* tokens in app/globals.css.
  *
- * Each state is a [fill, stroke, text] triple so a node, key, bar or chip looks the
- * same whether it is drawn with Konva, SVG or HTML.
+ * Each state is a [fill, stroke, text] triple so a node, key, bar or chip looks the same whether it
+ * is drawn with Konva, SVG or HTML: paper-white shapes with ink outlines, and soft tints with a
+ * strong outline for states — like a diagram drawn on paper.
  */
 export type Tone = "info" | "ok" | "warn" | "danger" | "merge" | "muted";
 
@@ -23,46 +24,57 @@ export type VizState =
 export type Triple = readonly [fill: string, stroke: string, text: string];
 
 export const VIZ: Record<VizState, Triple> = {
-  base: ["#454552", "#6c6c78", "#ececec"],
-  compare: ["#0b6fb8", "#5ab4ff", "#ffffff"],
-  active: ["#ffb000", "#ffd466", "#1a1a1a"],
-  moving: ["#ffb000", "#ffd466", "#1a1a1a"],
-  visited: ["#00a854", "#5cffa8", "#ffffff"],
-  success: ["#00a854", "#5cffa8", "#ffffff"],
-  danger: ["#d93636", "#ff8a8a", "#ffffff"],
-  merge: ["#7a45b8", "#d2adff", "#ffffff"],
-  pivot: ["#c2185b", "#ff7ac6", "#ffffff"],
-  left: ["#1e6fb8", "#7cc4ff", "#ffffff"],
-  right: ["#7b3a9c", "#dba4ec", "#ffffff"],
-  dim: ["#1d1d24", "#34343e", "#6c6c78"],
+  base: ["#fffdf8", "#2a2a2a", "#1a1a1a"],
+  compare: ["#dce8ff", "#2563eb", "#1e3a8a"],
+  active: ["#ffe7bf", "#d97706", "#7c2d12"],
+  moving: ["#ffe7bf", "#d97706", "#7c2d12"],
+  visited: ["#d9f2e1", "#16a34a", "#14532d"],
+  success: ["#d9f2e1", "#16a34a", "#14532d"],
+  danger: ["#fddede", "#dc2626", "#7f1d1d"],
+  merge: ["#ece1fd", "#7c3aed", "#4c1d95"],
+  pivot: ["#fce0ec", "#db2777", "#831843"],
+  left: ["#ddebff", "#3b82f6", "#1e3a8a"],
+  right: ["#f1e2fc", "#9333ea", "#581c87"],
+  dim: ["#ece6dc", "#c9c0b2", "#9a9184"],
 };
 
-/** Accent colour per tone, used for status titles, labels and badges. */
+/** Accent colour per tone, used for status titles, labels and badges (readable on paper). */
 export const TONE_COLOR: Record<Tone, string> = {
-  info: "#39aaff",
-  ok: "#2ee68a",
-  warn: "#ffb000",
-  danger: "#ff5c5c",
-  merge: "#c08bff",
-  muted: "#a3a3b2",
+  info: "#1d4ed8",
+  ok: "#15803d",
+  warn: "#b45309",
+  danger: "#b91c1c",
+  merge: "#6d28d9",
+  muted: "#4b463f",
 };
 
 /** Label backgrounds for on-canvas callouts: [background, text]. */
 export const TONE_LABEL: Record<Tone, readonly [string, string]> = {
-  info: ["#0a84d6", "#ffffff"],
-  ok: ["#00c864", "#06140c"],
-  warn: ["#ffb000", "#1a1a1a"],
-  danger: ["#e53935", "#ffffff"],
-  merge: ["#8e5bd6", "#ffffff"],
-  muted: ["#3a3a46", "#ececf1"],
+  info: ["#1d4ed8", "#ffffff"],
+  ok: ["#15803d", "#ffffff"],
+  warn: ["#b45309", "#ffffff"],
+  danger: ["#b91c1c", "#ffffff"],
+  merge: ["#6d28d9", "#ffffff"],
+  muted: ["#1a1a1a", "#fbf8f2"],
 };
 
 export const EDGE = {
-  base: "#5c5c6a",
-  active: "#39aaff",
-  tree: "#2ee68a",
-  frontier: "#ffb000",
-  rejected: "#ff5c5c",
+  base: "#3d3a35",
+  active: "#2563eb",
+  tree: "#16a34a",
+  frontier: "#d97706",
+  rejected: "#dc2626",
+} as const;
+
+/** Paper & ink, for canvas engines that need the chrome colours directly. */
+export const PAPER = {
+  bg: "#efe8dd",
+  card: "#f7f2ea",
+  well: "#fbf8f2",
+  ink: "#1a1a1a",
+  inkDim: "#4b463f",
+  inkFaint: "#8c8478",
+  line: "rgba(26,26,26,0.12)",
 } as const;
 
 export const MONO_FONT = "'JetBrains Mono', Consolas, Monaco, monospace";

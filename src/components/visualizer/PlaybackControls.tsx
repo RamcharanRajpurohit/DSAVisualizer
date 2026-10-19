@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { SPEED_OPTIONS } from "@/lib/player/useStepPlayer";
 import type { PlaybackApi } from "@/lib/player/types";
 import { cn } from "@/lib/utils";
-import { Kbd } from "@/components/ui";
 
 const btn =
   "flex h-9 w-9 items-center justify-center rounded-lg border border-line-strong bg-surface-2 text-fg-dim transition " +
@@ -13,18 +12,19 @@ const btn =
 
 export interface PlaybackControlsProps {
   player: PlaybackApi;
-  /** Label next to the step counter, e.g. the algorithm name. */
+  /** Deprecated: the minimal bar no longer shows a label (kept so existing callers compile). */
   label?: ReactNode;
   /** Shown when there are no steps yet. */
   emptyText?: string;
   onStop?: () => void;
   speeds?: readonly number[];
   className?: string;
+  /** Deprecated: shortcuts live in the "?" dialog now. */
   showShortcuts?: boolean;
 }
 
 export function PlaybackControls({
-  player, label, emptyText = "Run an operation to step through it", onStop, speeds = SPEED_OPTIONS, className, showShortcuts = true,
+  player, emptyText = "Run an operation to step through it", onStop, speeds = SPEED_OPTIONS, className,
 }: PlaybackControlsProps) {
   const { index, total, playing } = player;
   const has = total > 0;
@@ -40,7 +40,7 @@ export function PlaybackControls({
           <ChevronLeft size={16} />
         </button>
         <button
-          className={cn(btn, "w-11 border-transparent bg-gradient-to-r from-[#0b6fb8] to-[#6a2bd0] text-white hover:brightness-110 hover:text-white")}
+          className={cn(btn, "w-11 border-fg bg-fg text-bg-elev hover:bg-[#333] hover:text-bg-elev")}
           onClick={player.toggle}
           disabled={total < 2}
           title="Play / pause (Space)"
@@ -69,6 +69,7 @@ export function PlaybackControls({
           max={last}
           value={has ? index : 0}
           disabled={total < 2}
+          title={has ? undefined : emptyText}
           onChange={(e) => { player.pause(); player.seek(Number(e.target.value)); }}
           aria-label="Scrub through steps"
         />
@@ -83,14 +84,14 @@ export function PlaybackControls({
         </span>
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-elev p-0.5">
+      <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5">
         {speeds.map((s) => (
           <button
             key={s}
             onClick={() => player.setSpeed(s)}
             className={cn(
               "rounded-md px-2 py-1 font-mono text-[11px] transition-colors",
-              player.speed === s ? "bg-surface-3 text-fg" : "text-fg-faint hover:text-fg-dim",
+              player.speed === s ? "bg-bg-elev text-fg shadow-[0_1px_2px_rgba(0,0,0,0.08)]" : "text-fg-dim hover:text-fg",
             )}
             title={`Speed ${s}×`}
           >
@@ -99,14 +100,6 @@ export function PlaybackControls({
         ))}
       </div>
 
-      <div className="flex w-full items-center justify-between gap-2 text-[11px] text-fg-faint">
-        <span className="truncate">{has ? label : emptyText}</span>
-        {showShortcuts && (
-          <span className="hidden items-center gap-1 sm:flex">
-            <Kbd>←</Kbd><Kbd>→</Kbd> step · <Kbd>Space</Kbd> play
-          </span>
-        )}
-      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 const FIELD =
   "h-9 w-full rounded-lg border border-line-strong bg-bg-elev px-3 text-sm text-fg placeholder:text-fg-faint " +
-  "transition-colors focus:border-viz-blue/70 focus:outline-none focus:ring-2 focus:ring-viz-blue/25 disabled:opacity-50";
+  "transition-colors focus:border-fg/40 focus:outline-none focus:ring-2 focus:ring-fg/10 disabled:opacity-50";
 
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(FIELD, className)} {...rest} />;

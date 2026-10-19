@@ -1,4 +1,7 @@
+"use client";
+
 import { Gauge } from "lucide-react";
+import { CollapsibleCard } from "./CollapsibleCard";
 
 export interface ComplexityRow {
   op: string;
@@ -14,10 +17,7 @@ export function ComplexityCard({ rows, title = "Complexity", note }: { rows: rea
   const showAvg = rows.some((r) => r.avg);
   const showSpace = rows.some((r) => r.space);
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-3">
-      <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-        <Gauge size={14} className="text-viz-pink" /> {title}
-      </h3>
+    <CollapsibleCard id="complexity" title={title} icon={<Gauge size={14} className="text-viz-pink" />}>
       <table className="w-full text-left font-mono text-[11.5px]">
         <thead className="text-fg-faint">
           <tr>
@@ -41,6 +41,6 @@ export function ComplexityCard({ rows, title = "Complexity", note }: { rows: rea
         </tbody>
       </table>
       {note && <p className="mt-2 text-[11px] leading-relaxed text-fg-faint">{note}</p>}
-    </section>
+    </CollapsibleCard>
   );
 }

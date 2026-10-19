@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import type { StepBase } from "@/lib/player/types";
 import { TONE_COLOR } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { CollapsibleCard } from "./CollapsibleCard";
 
 /** Every recorded step as a clickable list (like a debugger's log); the current one stays in view. */
 export function StepTimeline({
@@ -24,13 +25,7 @@ export function StepTimeline({
 
   if (!steps.length) return null;
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-3">
-      <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-        <span className="flex items-center gap-2">
-          <ListOrdered size={14} className="text-viz-blue" /> {title}
-        </span>
-        <span className="font-mono font-normal normal-case tracking-normal text-fg-faint">{steps.length}</span>
-      </h3>
+    <CollapsibleCard id="timeline" title={title} icon={<ListOrdered size={14} className="text-viz-blue" />} aside={`${index + 1}/${steps.length}`}>
       <ol ref={boxRef} className="scroll-thin max-h-[220px] overflow-y-auto rounded-lg bg-bg-elev py-1">
         {steps.map((s, i) => (
           <li key={i}>
@@ -48,6 +43,6 @@ export function StepTimeline({
           </li>
         ))}
       </ol>
-    </section>
+    </CollapsibleCard>
   );
 }

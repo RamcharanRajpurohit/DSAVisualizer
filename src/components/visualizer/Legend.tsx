@@ -1,4 +1,5 @@
 import { Palette } from "lucide-react";
+import { CollapsibleCard } from "./CollapsibleCard";
 import { cn } from "@/lib/utils";
 
 export interface LegendItem {
@@ -12,10 +13,7 @@ export interface LegendItem {
 
 export function Legend({ items, title = "Legend", className }: { items: readonly LegendItem[]; title?: string; className?: string }) {
   return (
-    <section className={cn("rounded-xl border border-line bg-surface/90 p-3", className)}>
-      <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-        <Palette size={14} className="text-viz-green" /> {title}
-      </h3>
+    <CollapsibleCard id="legend" title={title} icon={<Palette size={14} className="text-viz-green" />} className={className}>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
         {items.map((it) => (
           <div key={it.label} className="flex items-center gap-2 text-xs text-fg-dim">
@@ -31,6 +29,6 @@ export function Legend({ items, title = "Legend", className }: { items: readonly
           </div>
         ))}
       </div>
-    </section>
+    </CollapsibleCard>
   );
 }

@@ -5,12 +5,11 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "success";
 type Size = "sm" | "md" | "icon";
 
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    "bg-gradient-to-r from-[#0b6fb8] to-[#6a2bd0] text-white border-transparent hover:brightness-115 shadow-[0_4px_18px_-6px_rgba(57,170,255,0.6)]",
-  secondary: "bg-surface-2 text-fg border-line-strong hover:bg-surface-3 hover:border-white/25",
+  primary: "bg-fg text-bg-elev border-fg hover:bg-[#333] shadow-[0_1px_2px_rgba(0,0,0,0.12)]",
+  secondary: "bg-surface text-fg border-line-strong hover:bg-surface-2",
   ghost: "bg-transparent text-fg-dim border-transparent hover:bg-surface-2 hover:text-fg",
-  danger: "bg-[#3a1515] text-[#ff8a8a] border-[#ff5c5c]/30 hover:bg-[#4a1b1b]",
-  success: "bg-[#0f3a25] text-[#5cffa8] border-[#2ee68a]/30 hover:bg-[#124a2e]",
+  danger: "bg-transparent text-viz-red-deep border-viz-red/35 hover:bg-viz-red/5",
+  success: "bg-transparent text-viz-green-deep border-viz-green/35 hover:bg-viz-green/5",
 };
 
 const SIZES: Record<Size, string> = {
@@ -39,7 +38,7 @@ export function Button({
       type={type}
       className={cn(
         "inline-flex select-none items-center justify-center whitespace-nowrap rounded-lg border font-medium transition-all",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-viz-blue/60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/25",
         "disabled:pointer-events-none disabled:opacity-40 active:scale-[0.97]",
         VARIANTS[variant],
         SIZES[size],

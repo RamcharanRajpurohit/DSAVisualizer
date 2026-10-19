@@ -19,7 +19,7 @@ const COMMON: readonly Shortcut[] = [
 
 export function ShortcutsDialog({ extra = [], onClose }: { extra?: readonly Shortcut[]; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#1a1a1a]/25 p-4 backdrop-blur-[2px]" onClick={onClose}>
       <div
         className="w-full max-w-md rounded-2xl border border-line-strong bg-surface p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}

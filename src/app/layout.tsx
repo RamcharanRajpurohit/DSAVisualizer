@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { SITE } from "@/config/site";
+import { MascotLoader } from "@/features/mascot/MascotLoader";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
+const serif = Instrument_Serif({ variable: "--font-instrument-serif", subsets: ["latin"], weight: "400", style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
@@ -22,14 +24,15 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export const viewport: Viewport = { themeColor: "#07070a", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#efe8dd", colorScheme: "light" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains.variable} antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jetbrains.variable} ${serif.variable} antialiased`}>
       <body className="min-h-dvh">
         <Navbar />
         {children}
+        <MascotLoader />
       </body>
     </html>
   );

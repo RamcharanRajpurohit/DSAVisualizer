@@ -13,3 +13,4 @@ export { QuizCard } from "./QuizCard";
 export { StepTimeline } from "./StepTimeline";
 export { ShareButton } from "./ShareButton";
 export { ShortcutsDialog, type Shortcut } from "./ShortcutsDialog";
+export { CollapsibleCard } from "./CollapsibleCard";

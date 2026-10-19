@@ -21,11 +21,12 @@ export function ShareButton({ getParams }: { getParams: () => ShareParams }) {
   return (
     <button
       onClick={share}
-      className="flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface-2 px-2.5 text-xs font-medium text-fg-dim transition hover:bg-surface-3 hover:text-fg"
+      className="flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2 text-xs font-medium text-fg-dim transition hover:bg-surface-2 hover:text-fg"
       title="Copy a link to this exact setup"
+      aria-label="Copy share link"
     >
-      {copied ? <Check size={14} className="text-viz-green" /> : <Link2 size={14} />}
-      {copied ? "Link copied" : "Share"}
+      {copied ? <Check size={14} className="text-viz-green-deep" /> : <Link2 size={14} />}
+      {copied && "Copied"}
     </button>
   );
 }

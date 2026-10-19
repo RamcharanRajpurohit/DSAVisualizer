@@ -50,14 +50,14 @@ export function PseudoLines({ code, active }: { code: readonly string[]; active?
         return (
           <li
             key={i}
-            className={cn("flex pr-3 transition-colors duration-200", on ? "bg-viz-blue/15 text-fg" : "text-fg-faint")}
+            className={cn("flex pr-3 transition-colors duration-200", on ? "bg-viz-blue/10 text-fg" : "text-fg-dim")}
             style={on ? { boxShadow: "inset 3px 0 0 var(--viz-blue)" } : undefined}
           >
-            <span className={cn("w-8 shrink-0 select-none pr-2.5 text-right tabular-nums", on ? "text-viz-blue" : "text-fg-faint/50")}>
+            <span className={cn("w-8 shrink-0 select-none pr-2.5 text-right tabular-nums", on ? "text-viz-blue" : "text-fg-faint/70")}>
               {i + 1}
             </span>
             {/* Soft-wrap long lines with a hanging indent; leading spaces still indent. */}
-            <span className={cn("min-w-0 whitespace-pre-wrap break-words", on && "text-[#e6f3ff]")} style={{ paddingLeft: "3ch", textIndent: "-3ch" }}>
+            <span className={cn("min-w-0 whitespace-pre-wrap break-words", on && "font-medium text-fg")} style={{ paddingLeft: "3ch", textIndent: "-3ch" }}>
               {text || " "}
             </span>
           </li>

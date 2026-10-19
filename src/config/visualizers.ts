@@ -12,6 +12,9 @@ export interface VisualizerMeta {
   href: `/${string}`;
   title: string;
   short: string;
+  /** One short line for cards. */
+  tagline: string;
+  /** Longer text for search engines / page metadata. */
   description: string;
   category: VisualizerCategory;
   icon: VisualizerIcon;
@@ -24,6 +27,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/sorting",
     title: "Sorting Algorithms",
     short: "Sorting",
+    tagline: "Merge sort's split tree, quick sort's partitions, and six more.",
     description:
       "Bubble, selection, insertion, merge and quick sort, step by step. Merge sort shows the real divide-and-conquer split tree; quick sort shows partitioning with live i / j pointers.",
     category: "Algorithms",
@@ -35,6 +39,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/stack-queue",
     title: "Stack & Queue",
     short: "Stack & Queue",
+    tagline: "LIFO, FIFO, ring buffers — and the stack behind every parser.",
     description:
       "LIFO stacks, FIFO queues, circular queues and deques — plus classic applications like bracket matching and infix → postfix conversion.",
     category: "Linear",
@@ -46,6 +51,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/linked-list",
     title: "Linked List",
     short: "Linked List",
+    tagline: "Every pointer rewired, in the order it happens.",
     description:
       "Singly and doubly linked lists with animated pointer rewiring for insert, delete, search and in-place reversal.",
     category: "Linear",
@@ -57,6 +63,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/heap",
     title: "Binary Heap",
     short: "Heap",
+    tagline: "One array, one tree, and the swaps that keep them in order.",
     description:
       "Min-heap and max-heap shown as a tree and as the array behind it. Watch sift-up, sift-down, build-heap and heap sort swap by swap.",
     category: "Trees",
@@ -68,6 +75,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/bst",
     title: "Binary Search Tree",
     short: "BST",
+    tagline: "Smaller left, larger right — searches, deletes and traversals.",
     description:
       "Insert, delete and search with an animated walk down the tree, plus preorder, inorder, postorder and level-order traversals.",
     category: "Trees",
@@ -79,6 +87,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/avl-tree",
     title: "AVL Tree",
     short: "AVL",
+    tagline: "Watch a tree rebalance itself, one rotation at a time.",
     description:
       "Self-balancing BST. Heights and balance factors update live and every LL, RR, LR and RL rotation is played out node by node.",
     category: "Trees",
@@ -90,6 +99,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/btree",
     title: "B-Tree",
     short: "B-Tree",
+    tagline: "The tree behind databases: splits, merges and borrows.",
     description:
       "Multi-way search tree of any order. Keys keep their identity, so you watch medians rise on a split, separators drop on a merge, and keys borrowed through the parent.",
     category: "Trees",
@@ -101,6 +111,7 @@ export const VISUALIZERS: readonly VisualizerMeta[] = [
     href: "/graph",
     title: "Graph Algorithms",
     short: "Graphs",
+    tagline: "Draw a graph and run BFS, Dijkstra, MSTs and more on it.",
     description:
       "Build your own graph and run BFS, DFS, Dijkstra, Bellman-Ford, Kruskal, Prim, topological sort and SCCs with full step-by-step playback.",
     category: "Graphs",

@@ -26,10 +26,10 @@ export function Navbar() {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 h-[var(--navbar-h)] border-b border-line bg-black/75 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 h-[var(--navbar-h)] border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-full max-w-[1800px] items-center gap-4 px-4">
-        <Link href="/" className="shrink-0 text-lg font-extrabold tracking-wide text-fg" onClick={() => setOpen(false)}>
-          DSA<span className="text-gradient">Visualizer</span>
+        <Link href="/" className="shrink-0 font-serif text-[23px] leading-none text-fg" onClick={() => setOpen(false)}>
+          DSA Visualizer
         </Link>
 
         <div className="scroll-thin ml-auto hidden items-center gap-0.5 overflow-x-auto lg:flex">
@@ -44,7 +44,7 @@ export function Navbar() {
                   active ? "bg-surface-3 text-fg" : "text-fg-dim hover:bg-surface-2 hover:text-fg",
                 )}
               >
-                <VisualizerIcon name={v.icon} size={14} className={active ? "text-brand" : "text-fg-faint"} />
+                <VisualizerIcon name={v.icon} size={14} className={active ? "text-fg" : "text-fg-faint"} />
                 {v.short}
               </Link>
             );
@@ -71,7 +71,7 @@ export function Navbar() {
       </div>
 
       {open && (
-        <div className="absolute inset-x-0 top-[var(--navbar-h)] grid grid-cols-2 gap-1 border-b border-line bg-black/95 p-3 backdrop-blur-xl lg:hidden">
+        <div className="absolute inset-x-0 top-[var(--navbar-h)] grid grid-cols-2 gap-1 border-b border-line bg-bg p-3 lg:hidden">
           {VISUALIZERS.map((v) => (
             <Link
               key={v.slug}
@@ -82,7 +82,7 @@ export function Navbar() {
                 pathname === v.href ? "bg-surface-3 text-fg" : "text-fg-dim hover:bg-surface-2",
               )}
             >
-              <VisualizerIcon name={v.icon} size={16} className="text-brand" />
+              <VisualizerIcon name={v.icon} size={16} className="text-fg-dim" />
               {v.title}
             </Link>
           ))}

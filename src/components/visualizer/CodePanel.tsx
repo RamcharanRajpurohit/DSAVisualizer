@@ -65,7 +65,7 @@ export function CodePanel({ code, active, title = "Code", implementations, class
             className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-fg-faint hover:bg-surface-3 hover:text-fg"
             title="Copy code"
           >
-            {copied ? <Check size={13} className="text-viz-green" /> : <Copy size={13} />}
+            {copied ? <Check size={13} className="text-viz-green-deep" /> : <Copy size={13} />}
             {copied ? "Copied" : "Copy"}
           </button>
         )}
@@ -81,7 +81,7 @@ export function CodePanel({ code, active, title = "Code", implementations, class
               onClick={() => setSaved(t.id)}
               className={cn(
                 "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
-                tab === t.id ? "border-viz-purple/50 bg-viz-purple/15 text-fg" : "border-line text-fg-faint hover:text-fg-dim",
+                tab === t.id ? "border-fg bg-fg text-bg-elev" : "border-line text-fg-dim hover:text-fg",
               )}
             >
               {t.label}

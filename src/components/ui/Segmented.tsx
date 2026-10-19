@@ -21,7 +21,7 @@ export function Segmented<T extends string | number>({
   disabled?: boolean;
 }) {
   return (
-    <div className={cn("flex rounded-lg border border-line bg-bg-elev p-0.5", className)} role="tablist">
+    <div className={cn("flex rounded-lg border border-line bg-surface-2 p-0.5", className)} role="tablist">
       {options.map((o) => (
         <button
           key={String(o.value)}
@@ -34,7 +34,7 @@ export function Segmented<T extends string | number>({
           className={cn(
             "flex-1 rounded-md font-medium transition-colors disabled:opacity-40",
             size === "sm" ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5 text-xs",
-            o.value === value ? "bg-surface-3 text-fg shadow-sm" : "text-fg-faint hover:text-fg-dim",
+            o.value === value ? "bg-bg-elev text-fg shadow-[0_1px_2px_rgba(0,0,0,0.08)]" : "text-fg-dim hover:text-fg",
           )}
         >
           {o.label}

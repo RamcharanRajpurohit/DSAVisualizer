@@ -38,7 +38,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-black/60 p-4 pt-[12vh] backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-[#1a1a1a]/25 p-4 pt-[12vh] backdrop-blur-[2px]" onClick={onClose}>
       <div
         className="w-full max-w-lg overflow-hidden rounded-2xl border border-line-strong bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -69,7 +69,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 onClick={() => go(v.href)}
                 className={cn("flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left", i === sel ? "bg-surface-3" : "hover:bg-surface-2")}
               >
-                <VisualizerIcon name={v.icon} size={18} className="shrink-0 text-brand" />
+                <VisualizerIcon name={v.icon} size={18} className="shrink-0 text-fg-dim" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium text-fg">{v.title}</span>
                   <span className="block truncate text-xs text-fg-faint">{v.topics.join(" · ")}</span>

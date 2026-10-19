@@ -2,9 +2,10 @@
 
 import { ChevronLeft, ChevronRight, GraduationCap, Sparkles, X } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RichText } from "@/components/ui";
 import type { Lesson, LessonActions } from "@/lib/lesson";
+import { emitMascot } from "@/lib/mascot-bus";
 import { cn } from "@/lib/utils";
 
 /** Lesson slides floating over the bottom of the canvas, with "Try it" buttons. */
@@ -13,6 +14,8 @@ export function LearnPanel({
 }: { lesson: Lesson; actions?: LessonActions; onClose: () => void }) {
   const [i, setI] = useState(0);
   const n = lesson.slides.length;
+
+  useEffect(() => emitMascot({ type: "lesson-open" }), []);
   const slide = lesson.slides[Math.min(i, n - 1)];
   if (!slide) return null;
 
@@ -21,12 +24,12 @@ export function LearnPanel({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="absolute inset-x-3 bottom-3 z-20 mx-auto flex max-h-[60%] max-w-[680px] flex-col overflow-hidden rounded-xl border border-viz-purple/40 bg-[#14121c]/95 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-md"
+      className="absolute inset-x-3 bottom-3 z-20 mx-auto flex max-h-[60%] max-w-[680px] flex-col overflow-hidden rounded-xl border border-line-strong bg-surface shadow-[0_18px_40px_-18px_rgba(26,26,26,0.35)]"
       role="dialog"
       aria-label={`${lesson.title} lesson`}
     >
       <header className="flex items-center gap-2 border-b border-line px-3 py-2">
-        <GraduationCap size={16} className="shrink-0 text-viz-purple" />
+        <GraduationCap size={16} className="shrink-0 text-fg-dim" />
         <select
           value={i}
           onChange={(e) => setI(Number(e.target.value))}
@@ -58,7 +61,7 @@ export function LearnPanel({
                 key={t.label}
                 onClick={() => actions?.[t.action]?.()}
                 disabled={!actions?.[t.action]}
-                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0b6fb8] to-[#6a2bd0] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-lg bg-fg px-3 py-1.5 text-xs font-semibold text-bg-elev transition hover:bg-[#333] disabled:opacity-40"
               >
                 <Sparkles size={13} /> {t.label}
               </button>
@@ -80,7 +83,7 @@ export function LearnPanel({
             <button
               key={k}
               onClick={() => setI(k)}
-              className={cn("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-viz-purple" : "w-1.5 bg-surface-3 hover:bg-fg-faint")}
+              className={cn("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-fg" : "w-1.5 bg-surface-3 hover:bg-fg-faint")}
               aria-label={`Slide ${k + 1}`}
             />
           ))}
@@ -93,7 +96,7 @@ export function LearnPanel({
             Next <ChevronRight size={14} />
           </button>
         ) : (
-          <button onClick={onClose} className="rounded-md px-2 py-1 text-xs font-semibold text-viz-green hover:bg-surface-3">
+          <button onClick={onClose} className="rounded-md px-2 py-1 text-xs font-semibold text-viz-green-deep hover:bg-surface-3">
             Start exploring
           </button>
         )}

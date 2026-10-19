@@ -27,11 +27,11 @@ export function highlightLine(line: string, lang: CodeLang): ReactNode[] {
     const [tok, comment, str, num, call, word, directive] = m;
     let cls = "";
     if (comment) cls = "text-fg-faint italic";
-    else if (str) cls = "text-[#a5e07a]";
-    else if (num) cls = "text-[#ffb86c]";
-    else if (directive) cls = "text-[#ff7ac6]";
-    else if (call) cls = KEYWORDS[lang].has(call) ? "text-[#c08bff]" : "text-[#5ab4ff]";
-    else if (word) cls = KEYWORDS[lang].has(word) ? "text-[#c08bff]" : "";
+    else if (str) cls = "text-[#15803d]";
+    else if (num) cls = "text-[#b45309]";
+    else if (directive) cls = "text-[#be185d]";
+    else if (call) cls = KEYWORDS[lang].has(call) ? "text-[#6d28d9]" : "text-[#1d4ed8]";
+    else if (word) cls = KEYWORDS[lang].has(word) ? "text-[#6d28d9]" : "";
     out.push(cls ? <span key={k++} className={cls}>{tok}</span> : tok);
     last = m.index + tok.length;
     if (comment) break;

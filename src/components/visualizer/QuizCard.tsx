@@ -4,7 +4,9 @@ import { CheckCircle2, CircleHelp, RefreshCw, XCircle } from "lucide-react";
 import { useState } from "react";
 import { RichText } from "@/components/ui";
 import type { QuizQuestion } from "@/lib/lesson";
+import { emitMascot } from "@/lib/mascot-bus";
 import { cn } from "@/lib/utils";
+import { CollapsibleCard } from "./CollapsibleCard";
 
 /**
  * "Quiz me" card: asks a question generated from the current state of the visualization.
@@ -29,24 +31,20 @@ export function QuizCard({
     if (!q || picked !== null) return;
     setPicked(k);
     setScore((s) => ({ right: s.right + (k === q.answer ? 1 : 0), total: s.total + 1 }));
+    emitMascot({ type: "quiz", correct: k === q.answer });
   };
 
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-3">
-      <header className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-          <CircleHelp size={14} className="text-viz-amber" /> {title}
-        </h3>
-        {score.total > 0 && (
-          <span className="font-mono text-[11px] text-fg-faint">
-            <span className="text-viz-green">{score.right}</span>/{score.total}
-          </span>
-        )}
-      </header>
+    <CollapsibleCard
+      id="quiz"
+      title={title}
+      icon={<CircleHelp size={14} className="text-viz-amber" />}
+      aside={score.total > 0 ? `${score.right}/${score.total}` : undefined}
+    >
 
       {!q ? (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-fg-faint">{empty ? emptyText : "Test yourself on what's on the canvas right now."}</p>
+          {empty && <p className="text-xs text-fg-faint">{emptyText}</p>}
           <button
             onClick={ask}
             className="flex items-center justify-center gap-1.5 rounded-lg border border-viz-amber/40 bg-viz-amber/10 px-3 py-1.5 text-xs font-semibold text-viz-amber hover:bg-viz-amber/20"
@@ -98,6 +96,6 @@ export function QuizCard({
           )}
         </div>
       )}
-    </section>
+    </CollapsibleCard>
   );
 }
