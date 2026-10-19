@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <article className="mx-auto max-w-3xl px-5 pb-24 pt-14 text-[15.5px] leading-relaxed text-fg-dim sm:px-6">
+    <article className="mx-auto max-w-3xl px-4 pb-24 pt-14 text-[15.5px] leading-relaxed text-fg-dim sm:px-6">
       <JsonLd
         data={{
           "@context": "https://schema.org",

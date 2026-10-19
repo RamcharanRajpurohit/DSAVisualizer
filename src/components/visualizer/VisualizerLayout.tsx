@@ -34,8 +34,9 @@ export interface VisualizerLayoutProps {
   shortcuts?: readonly Shortcut[];
 }
 
+/** Header tools; finger-sized (40px) on touch screens. */
 const toolBtn =
-  "flex h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 text-xs font-medium text-fg-dim transition hover:bg-surface-2 hover:text-fg";
+  "flex h-8 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 text-xs font-medium text-fg-dim transition hover:bg-surface-2 hover:text-fg";
 
 export function VisualizerLayout({
   title, subtitle, headerExtra, controls, insight, playback, children, canvasClassName,
@@ -46,20 +47,35 @@ export function VisualizerLayout({
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLElement>(null);
   const [fullscreen, setFullscreen] = useState<"page" | "canvas" | null>(null);
+  /** Where the Fullscreen API is missing (iPhone Safari), the same target fills the window instead. */
+  const [filled, setFilled] = useState<"page" | "canvas" | null>(null);
+  const expanded = fullscreen ?? filled;
 
   // Browser fullscreen for either the whole workspace ("page") or just the canvas + playback
-  // bar ("canvas"). Falls back to hiding the side panels where the Fullscreen API is missing.
+  // bar ("canvas"); without the API (or when it refuses) the target fills the window.
   const toggleFullscreen = useCallback(async (target: "page" | "canvas") => {
     const el = target === "page" ? rootRef.current : stageRef.current;
     if (!el) return;
+    const fill = () => setFilled((f) => (f === target ? null : target));
+    if (!el.requestFullscreen) return fill();
     try {
       if (document.fullscreenElement === el) await document.exitFullscreen();
-      else if (el.requestFullscreen) await el.requestFullscreen();
-      else setFocus((f) => !f);
+      else await el.requestFullscreen();
     } catch {
-      setFocus((f) => !f);
+      fill();
     }
   }, []);
+
+  // While filling the window, the page behind must not scroll under the visitor's finger.
+  useEffect(() => {
+    if (!filled) return;
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prev;
+    };
+  }, [filled]);
 
   useEffect(() => {
     const onChange = () => {
@@ -88,6 +104,7 @@ export function VisualizerLayout({
         void toggleFullscreen(e.shiftKey ? "page" : "canvas");
       } else if (e.key === "Escape") {
         setHelp(false);
+        setFilled(null);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -95,14 +112,16 @@ export function VisualizerLayout({
   }, [toggleFullscreen]);
 
   return (
-    <div ref={rootRef} className={cn(styles.layout, focus && styles.focus)}>
+    <div ref={rootRef} className={cn(styles.layout, focus && styles.focus, filled === "page" && styles.filled)}>
       {/* One compact row: title + short subtitle on the left, badges and tools on the right. */}
       <header className={cn(styles.head, "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-1")}>
-        <div className="flex min-w-0 flex-1 items-baseline gap-3">
+        {/* Below xl the title keeps its natural width, so the tools wrap under it instead of squeezing it. */}
+        <div className="flex min-w-0 flex-[1_1_auto] items-baseline gap-3 xl:flex-1">
           <h1 className="min-w-0 font-serif text-[23px] leading-tight text-fg sm:text-[26px] md:text-[28px] xl:shrink-0 xl:leading-none">{title}</h1>
           {subtitle && !focus && <p className="hidden min-w-0 truncate text-[13px] text-fg-faint xl:block">{subtitle}</p>}
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        {/* Phones: the badges (also in the Complexity card) give way so the canvas comes first. */}
+        <div className="flex flex-wrap items-center justify-end gap-2 max-sm:[&>span]:hidden">
           {headerExtra}
           <div className="flex items-center gap-1.5">
             {lesson && (
@@ -127,12 +146,18 @@ export function VisualizerLayout({
             <button
               className={cn(toolBtn, "px-2")}
               onClick={() => void toggleFullscreen("page")}
-              title={fullscreen === "page" ? "Exit fullscreen (Shift+F)" : "Whole page fullscreen (Shift+F)"}
-              aria-label={fullscreen === "page" ? "Exit fullscreen" : "Whole page fullscreen"}
+              title={expanded === "page" ? "Exit fullscreen (Shift+F)" : "Whole page fullscreen (Shift+F)"}
+              aria-label={expanded === "page" ? "Exit fullscreen" : "Whole page fullscreen"}
             >
-              {fullscreen === "page" ? <Shrink size={14} /> : <Expand size={14} />}
+              {expanded === "page" ? <Shrink size={14} /> : <Expand size={14} />}
             </button>
-            <button className={cn(toolBtn, "px-2")} onClick={() => setHelp(true)} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+            {/* Phones and touch-only tablets have no keyboard: the shortcuts button would be dead weight there. */}
+            <button
+              className={cn(toolBtn, "px-2 [@media(hover:none)_and_(pointer:coarse)]:hidden")}
+              onClick={() => setHelp(true)}
+              title="Keyboard shortcuts (?)"
+              aria-label="Keyboard shortcuts"
+            >
               <Keyboard size={14} />
             </button>
           </div>
@@ -141,7 +166,7 @@ export function VisualizerLayout({
 
       <aside className={cn(styles.controls, styles.side, "scroll-thin")}>{controls}</aside>
 
-      <section ref={stageRef} className={styles.stage} aria-label={`${title} — interactive visualization`}>
+      <section ref={stageRef} className={cn(styles.stage, filled === "canvas" && styles.filled)} aria-label={`${title} — interactive visualization`}>
         <div className={cn(styles.canvas, "canvas-grid", canvasClassName)} data-viz-canvas>
           {children}
           {learnOpen && lesson && <LearnPanel key={lesson.id} lesson={lesson} actions={lessonActions} onClose={closeLearn} />}
@@ -149,13 +174,13 @@ export function VisualizerLayout({
           <button
             onClick={() => void toggleFullscreen("canvas")}
             className="absolute bottom-2.5 right-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-bg-elev/90 text-fg-dim opacity-70 shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition hover:text-fg hover:opacity-100"
-            title={fullscreen === "canvas" ? "Exit fullscreen (F)" : "Fullscreen canvas (F)"}
-            aria-label={fullscreen === "canvas" ? "Exit canvas fullscreen" : "Fullscreen canvas"}
+            title={expanded === "canvas" ? "Exit fullscreen (F)" : "Fullscreen canvas (F)"}
+            aria-label={expanded === "canvas" ? "Exit canvas fullscreen" : "Fullscreen canvas"}
           >
-            {fullscreen === "canvas" ? <Shrink size={15} /> : <Expand size={15} />}
+            {expanded === "canvas" ? <Shrink size={15} /> : <Expand size={15} />}
           </button>
         </div>
-        {playback}
+        {playback && <div className={styles.playbar}>{playback}</div>}
       </section>
 
       {insight && <aside className={cn(styles.insight, styles.side, "scroll-thin")}>{insight}</aside>}

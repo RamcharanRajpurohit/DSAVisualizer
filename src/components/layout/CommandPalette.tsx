@@ -1,8 +1,9 @@
 "use client";
 
-import { CornerDownLeft, Search } from "lucide-react";
+import { CornerDownLeft, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { VISUALIZERS } from "@/config/visualizers";
 import { cn } from "@/lib/utils";
 import { VisualizerIcon } from "./VisualizerIcon";
@@ -23,6 +24,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const router = useRouter();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(boxRef, open);
 
   const results = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -38,11 +41,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-[#1a1a1a]/25 p-4 pt-[12vh] backdrop-blur-[2px]" onClick={onClose}>
+    // Phones: a full-width sheet from the top edge.
+    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-[#1a1a1a]/25 p-4 pt-[12vh] backdrop-blur-[2px] max-sm:p-0" onClick={onClose}>
       <div
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-line-strong bg-surface shadow-2xl"
+        ref={boxRef}
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-line-strong bg-surface shadow-2xl max-sm:max-w-none max-sm:rounded-t-none max-sm:border-x-0 max-sm:border-t-0"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
         role="dialog"
+        aria-modal="true"
         aria-label="Jump to a visualizer"
       >
         <div className="flex items-center gap-2 border-b border-line px-4">
@@ -55,13 +64,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               if (e.key === "ArrowDown") { e.preventDefault(); setSel((s) => Math.min(results.length - 1, s + 1)); }
               else if (e.key === "ArrowUp") { e.preventDefault(); setSel((s) => Math.max(0, s - 1)); }
               else if (e.key === "Enter" && results[sel]) go(results[sel].href);
-              else if (e.key === "Escape") onClose();
             }}
             placeholder="Search: dijkstra, rotation, heap sort…"
-            className="h-12 flex-1 bg-transparent text-sm text-fg placeholder:text-fg-faint focus:outline-none"
+            className="h-12 min-w-0 flex-1 bg-transparent text-sm text-fg placeholder:text-fg-faint focus:outline-none"
           />
+          <button onClick={onClose} className="-mr-2 shrink-0 rounded-md p-1.5 text-fg-faint hover:bg-surface-3 hover:text-fg" aria-label="Close">
+            <X size={16} />
+          </button>
         </div>
-        <ul className="scroll-thin max-h-[50vh] overflow-y-auto p-2">
+        <ul className="scroll-thin max-h-[50dvh] overflow-y-auto p-2">
           {results.map((v, i) => (
             <li key={v.slug}>
               <button

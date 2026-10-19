@@ -3,6 +3,7 @@
 import { Check, Dices, Pause, Play, RotateCcw, Rows3, Swords, Timer } from "lucide-react";
 import { useCallback } from "react";
 import { Button, Field, Section } from "@/components/ui";
+import { SpeedSelect } from "@/components/visualizer";
 import { cn } from "@/lib/utils";
 import { COMPARE_ALGOS, COMPARE_MAX, COMPARE_MIN, COMPARE_SPEEDS } from "./catalog";
 import { MIN_RACERS, baseRate, type CompareApi } from "./useCompare";
@@ -102,7 +103,8 @@ export function CompareTransport({ api }: { api: CompareApi }) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-elev p-0.5" role="group" aria-label="Race speed">
+      <SpeedSelect value={settings.speed} speeds={COMPARE_SPEEDS} onChange={setSpeed} className="sm:hidden" />
+      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-elev p-0.5 max-sm:hidden" role="group" aria-label="Race speed">
         {COMPARE_SPEEDS.map((s) => (
           <button
             key={s}

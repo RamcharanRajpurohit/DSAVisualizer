@@ -268,8 +268,8 @@ function Scene({
         const top = b.y - L.cs / 2;
         return (
           <motion.g initial={false} animate={{ x: b.x - L.cs / 2, y: top }} transition={pos} pointerEvents="none">
-            <line y1={L.rows === 1 ? L.ptrY - 8 - top : -4} y2={L.cs + 6} stroke={TONE_COLOR.ok} strokeWidth={1.5} strokeDasharray="4 4" />
-            {L.rows === 1 && (
+            <line y1={L.detail ? L.ptrY - 8 - top : -4} y2={L.cs + 6} stroke={TONE_COLOR.ok} strokeWidth={1.5} strokeDasharray="4 4" />
+            {L.detail && (
               <text x={5} y={L.ptrY + 3 - top} fontSize={10} fill={TONE_COLOR.ok}>
                 sorted ▸
               </text>
@@ -344,7 +344,7 @@ function Scene({
       {/* pointer chips */}
       <g pointerEvents="none">
         <AnimatePresence initial={false}>
-          {L.rows === 1 && ptrs.map(({ name, idx, k }) => {
+          {L.detail && ptrs.map(({ name, idx, k }) => {
             const color = POINTER_COLOR[name] ?? TONE_COLOR.muted;
             const w = Math.max(16, name.length * 6.6 + 8);
             const x = cellCX(L, idx);
@@ -371,7 +371,7 @@ function Scene({
       {/* index-relation arcs under the array */}
       <g pointerEvents="none">
         <AnimatePresence initial={false}>
-          {L.rows === 1 && arcs.map((a) => {
+          {L.detail && arcs.map((a) => {
             const x1 = cellCX(L, a.from);
             const x2 = cellCX(L, a.to);
             const y0 = L.arcBase + 3;

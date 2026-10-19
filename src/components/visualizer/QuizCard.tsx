@@ -54,7 +54,7 @@ export function QuizCard({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-[13px] leading-relaxed text-fg">
+          <p className="text-[13px] leading-relaxed text-fg pointer-coarse:text-[15px]">
             <RichText text={q.prompt} />
           </p>
           <div className="grid gap-1.5">

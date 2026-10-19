@@ -33,7 +33,7 @@ export function StatusCard({
           {title ?? "Ready"}
         </div>
         {detail && (
-          <p className="mt-1.5 text-[13px] leading-relaxed text-fg-dim">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-fg-dim pointer-coarse:text-[15px]">
             <RichText text={detail} />
           </p>
         )}

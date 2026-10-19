@@ -138,6 +138,65 @@ input[type="range"].range:disabled {
   opacity: 0.4;
 }
 
+/* Touch screens: a finger-sized hit area and thumb; the track itself stays thin. */
+@media (pointer: coarse) {
+  input[type="range"].range {
+    height: 28px;
+    background: transparent;
+  }
+  input[type="range"].range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-3);
+  }
+  input[type="range"].range::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -8px;
+  }
+  input[type="range"].range::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-3);
+  }
+  input[type="range"].range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* iOS zooms the whole page into any focused field smaller than 16px. */
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  /* Thumb-sized targets (44 × 44, Apple HIG) and no double-tap-to-zoom delay. */
+  :is(button, [role="button"], [role="tab"], [role="switch"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  :is(a, button, input, select, textarea, label, summary, [role="button"], [role="tab"], [role="switch"]) {
+    touch-action: manipulation;
+  }
+  /* Lists of links (footer directory, topic lists, breadcrumbs): finger-sized rows. */
+  li > a:not(.block) {
+    display: inline-block;
+    min-width: 44px;
+    padding-block: 12px;
+  }
+  /* At least 8px between neighbouring targets (rows of icon buttons, chips, speed pickers). */
+  :is(.gap-0\.5, .gap-1, .gap-1\.5):has(> :is(button, a, [role="tab"], [role="switch"])) {
+    gap: 8px;
+  }
+
+  /* Labels, badges and chips read at 12px or more on phones; the drawings keep their own scale. */
+  :is(.text-\[10px\], .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\]):not([data-viz-canvas] *) {
+    font-size: 12px;
+  }
+}
+
 /* Dotted grid behind every visualization canvas. */
 .canvas-grid {
   background-color: var(--bg-elev);

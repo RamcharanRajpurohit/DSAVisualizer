@@ -42,3 +42,27 @@ export function CollapsibleCard({
     </section>
   );
 }
+
+/** Open/closed state for a panel that folds only on phones and tablets (see FoldTitle). */
+export function usePhoneFold(id: string) {
+  const [open, setOpen] = usePreference<boolean>(`card.${id}`, false);
+  return { open, toggle: () => setOpen(!open) };
+}
+
+/**
+ * Title of a panel that is always open on wide screens but starts folded below lg (progressive
+ * disclosure on phones): there the title is the toggle. Pair the body with `!open && "max-lg:hidden"`.
+ */
+export function FoldTitle({
+  open, onToggle, className, children,
+}: { open: boolean; onToggle: () => void; className?: string; children: ReactNode }) {
+  return (
+    <h2 className={cn("flex min-w-0 flex-1 items-center", className)}>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-2 text-left lg:hidden">
+        {children}
+        <ChevronDown size={14} className={cn("ml-auto shrink-0 text-fg-faint transition-transform", open && "rotate-180")} />
+      </button>
+      <span className="hidden min-w-0 items-center gap-2 lg:flex">{children}</span>
+    </h2>
+  );
+}

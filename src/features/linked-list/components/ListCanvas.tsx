@@ -85,7 +85,7 @@ export function ListCanvas({ step, lineSlots, pitchKind, animSec }: ListCanvasPr
 
       {/* the list as seen from head */}
       {strip && strip.label && (
-        <div className="pointer-events-none absolute inset-x-3 bottom-2.5 flex items-center gap-1 overflow-hidden whitespace-nowrap font-mono text-[11px] text-fg-faint">
+        <div className="pointer-events-none absolute bottom-2.5 left-3 right-14 flex items-center gap-1 overflow-hidden whitespace-nowrap font-mono text-[11px] text-fg-faint">
           <span className="mr-1 text-[10px] uppercase tracking-wider">from {strip.label}:</span>
           {strip.values.map((v, i) => (
             <span key={i} className="flex items-center gap-1">

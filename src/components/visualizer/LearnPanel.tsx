@@ -2,8 +2,9 @@
 
 import { ChevronLeft, ChevronRight, GraduationCap, Sparkles, X } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RichText } from "@/components/ui";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { Lesson, LessonActions } from "@/lib/lesson";
 import { emitMascot } from "@/lib/mascot-bus";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,9 @@ export function LearnPanel({
 }: { lesson: Lesson; actions?: LessonActions; onClose: () => void }) {
   const [i, setI] = useState(0);
   const n = lesson.slides.length;
+  // Not modal (the canvas, playback and try-it buttons stay usable): focus moves in and back, no trap.
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, true, false);
 
   useEffect(() => emitMascot({ type: "lesson-open" }), []);
   const slide = lesson.slides[Math.min(i, n - 1)];
@@ -21,10 +25,18 @@ export function LearnPanel({
 
   return (
     <motion.div
+      ref={ref}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="absolute inset-x-3 bottom-3 z-20 mx-auto flex max-h-[60%] max-w-[680px] flex-col overflow-hidden rounded-xl border border-line-strong bg-surface shadow-[0_18px_40px_-18px_rgba(26,26,26,0.35)]"
+      className={cn(
+        "absolute inset-x-3 bottom-3 z-20 mx-auto flex max-h-[max(60%,200px)] max-w-[680px] flex-col overflow-hidden rounded-xl border border-line-strong bg-surface shadow-[0_18px_40px_-18px_rgba(26,26,26,0.35)]",
+        // Phones: a full-width sheet along the bottom of the canvas.
+        "max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0",
+      )}
       role="dialog"
       aria-label={`${lesson.title} lesson`}
     >
@@ -51,7 +63,7 @@ export function LearnPanel({
       </header>
 
       <div className="scroll-thin overflow-y-auto px-4 py-3">
-        <p className="text-[13.5px] leading-relaxed text-fg-dim">
+        <p className="text-[13.5px] leading-relaxed text-fg-dim pointer-coarse:text-[15px]">
           <RichText text={slide.body} />
         </p>
         {slide.tryIt && slide.tryIt.length > 0 && (
@@ -78,7 +90,8 @@ export function LearnPanel({
         >
           <ChevronLeft size={14} /> Back
         </button>
-        <div className="flex gap-1">
+        {/* The dots are too small to tap; on touch screens Back / Next and the slide menu do the job. */}
+        <div className="flex gap-1 pointer-coarse:hidden">
           {lesson.slides.map((_, k) => (
             <button
               key={k}

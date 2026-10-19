@@ -32,6 +32,8 @@ export interface HeapLayout {
   slots: number;
   /** The array wraps onto two rows when one row would make cells too small (phones). */
   rows: number;
+  /** Room for pointer chips, the sorted marker label and index arcs (one array row, tall enough canvas). */
+  detail: boolean;
   perRow: number;
   rowGap: number;
   cs: number;
@@ -60,19 +62,21 @@ export function computeLayout(W: number, H: number, cap: number): HeapLayout {
   const perRow = Math.ceil(slots / rows);
   const rowGap = 16;
   const cs = clamp(Math.floor((W - 2 * pad) / Math.max(perRow, 8)), 12, 48);
-  const arcDepth = rows === 1 ? clamp(cs * 0.8, 16, 34) : 0;
-  const arcBase = H - (rows === 1 ? 22 + arcDepth : 14);
+  // A short canvas (a phone held sideways) drops the pointer row and index arcs so the tree keeps its levels.
+  const detail = rows === 1 && H >= 320;
+  const arcDepth = detail ? clamp(cs * 0.8, 16, 34) : 0;
+  const arcBase = H - (detail ? 22 + arcDepth : 14);
   const cellY = arcBase - rows * cs - (rows - 1) * rowGap;
   const idxY = cellY - 6;
-  const ptrY = rows === 1 ? idxY - 24 : idxY;
-  const formulaY = rows === 1 ? ptrY - 22 : idxY - 18;
+  const ptrY = detail ? idxY - 24 : idxY;
+  const formulaY = detail ? ptrY - 22 : idxY - 18;
   const arrLeft = (W - perRow * cs) / 2;
 
   // Tree above it.
   const treeLeft = pad + gutter;
   const treeW = Math.max(40, W - treeLeft - pad);
   const rW = (treeW / 2 ** depth) * 0.4;
-  const topY = 50; // room for a callout above the root
+  const topY = H >= 320 ? 50 : 36; // room for a callout above the root
   let r = clamp(rW, 9, 24);
   const bottom = formulaY - 36; // index labels under the deepest level + the formula pill
   const avail = Math.max(0, bottom - r - (topY + r));
@@ -83,7 +87,7 @@ export function computeLayout(W: number, H: number, cap: number): HeapLayout {
   return {
     W, H, pad, depth, gutter, treeLeft, treeW, rootY, gap, r,
     nodeFont: clamp(r * 0.72, 8, 15),
-    slots, rows, perRow, rowGap, cs, arrLeft, cellY,
+    slots, rows, detail, perRow, rowGap, cs, arrLeft, cellY,
     cellFont: clamp(cs * 0.36, 8, 14),
     idxY, ptrY, formulaY, arcBase, arcDepth,
   };

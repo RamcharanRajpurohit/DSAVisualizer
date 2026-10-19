@@ -60,7 +60,7 @@ export function TopicArticle({ topic }: { topic: TopicContent }) {
   const updated = new Date(`${topic.updated}T00:00:00Z`);
 
   return (
-    <article className="mx-auto w-full max-w-3xl px-5 pb-24 pt-14 text-[15.5px] leading-relaxed text-fg-dim sm:px-6" aria-labelledby="topic-article-title">
+    <article className="mx-auto w-full max-w-3xl px-4 pb-24 pt-14 text-[15.5px] leading-relaxed text-fg-dim sm:px-6" aria-labelledby="topic-article-title">
       <JsonLd data={topicJsonLd(topic, parent)} />
 
       <nav aria-label="Breadcrumb" className="mb-6 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint">

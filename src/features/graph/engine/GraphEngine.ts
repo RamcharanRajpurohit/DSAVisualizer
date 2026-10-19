@@ -561,7 +561,8 @@ export class GraphEngine {
     const group = new K.Group({ x: n.x, y: n.y, draggable: true });
     const ring = new K.Circle({ radius: R + 7, stroke: GTHEME.startRing, strokeWidth: 2, dash: [5, 4], opacity: 0, listening: false });
     const circle = new K.Circle({
-      radius: R, fill, stroke, strokeWidth: 2.5,
+      // The wide hit stroke gives a finger a fair target.
+      radius: R, fill, stroke, strokeWidth: 2.5, hitStrokeWidth: 20,
       shadowColor: GTHEME.shadow, shadowBlur: 3, shadowOpacity: 0.12, shadowOffset: { x: 0, y: 1 },
     });
     const text = new K.Text({
@@ -615,8 +616,9 @@ export class GraphEngine {
       pointerLength: this.directed ? 11 : 0, pointerWidth: this.directed ? 10 : 0, lineCap: "round", lineJoin: "round", hitStrokeWidth: 16,
     });
     const label = new K.Group({ opacity: this.weighted ? 1 : 0, listening: this.weighted });
+    // The wide hit stroke gives fingers a fair target on a phone, where the graph is drawn small.
     const lbg = new K.Rect({
-      height: 20, cornerRadius: 10, stroke: GTHEME.weightStroke, strokeWidth: 1.5,
+      height: 20, cornerRadius: 10, stroke: GTHEME.weightStroke, strokeWidth: 1.5, hitStrokeWidth: 18,
     });
     const ltext = new K.Text({ height: 20, fontSize: 12, fontStyle: "bold", fontFamily: this.mono, align: "center", verticalAlign: "middle" });
     label.add(lbg, ltext);

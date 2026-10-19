@@ -97,10 +97,10 @@ export default function Home() {
           Step through every comparison, swap, split and rotation — with the code that does it.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/sorting" className="rounded-full bg-fg px-6 py-2.5 text-sm font-medium text-bg-elev transition hover:bg-[#333]">
+          <Link href="/sorting" className="rounded-full bg-fg px-6 py-2.5 text-sm font-medium text-bg-elev transition hover:bg-[#333] pointer-coarse:py-3">
             Start with sorting
           </Link>
-          <Link href="#visualizers" className="rounded-full border border-line-strong px-6 py-2.5 text-sm font-medium text-fg transition hover:bg-surface">
+          <Link href="#visualizers" className="rounded-full border border-line-strong px-6 py-2.5 text-sm font-medium text-fg transition hover:bg-surface pointer-coarse:py-3">
             All visualizers
           </Link>
         </div>
@@ -131,11 +131,11 @@ export default function Home() {
 
       <section className="mt-20" aria-labelledby="topics-title">
         <h2 id="topics-title" className="border-b border-line pb-4 font-serif text-4xl text-fg">Every algorithm, one click away</h2>
-        <div className="mt-6 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-8 lg:grid-cols-4">
           {hubs.map(({ v, topic, children }) => (
             <div key={v.slug}>
               <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint">
-                <Link href={v.href} className="hover:text-fg">{topic?.name ?? v.title}</Link>
+                <Link href={v.href} className="hover:text-fg pointer-coarse:inline-block pointer-coarse:py-3.5">{topic?.name ?? v.title}</Link>
               </h3>
               <ul className="mt-2 space-y-1.5 text-[15px]">
                 <li>

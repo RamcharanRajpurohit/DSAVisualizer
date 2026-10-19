@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { SPEED_OPTIONS } from "@/lib/player/useStepPlayer";
 import type { PlaybackApi } from "@/lib/player/types";
 import { cn } from "@/lib/utils";
+import { SpeedSelect } from "./SpeedSelect";
 
 const btnShape =
   "flex h-9 items-center justify-center rounded-lg border transition disabled:pointer-events-none disabled:opacity-35 active:scale-95";
@@ -85,7 +86,9 @@ export function PlaybackControls({
         </span>
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5">
+      {/* Phones: one speed picker, so the bar takes two rows. */}
+      <SpeedSelect value={player.speed} speeds={speeds} onChange={player.setSpeed} className="sm:hidden" />
+      <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5 max-sm:hidden">
         {speeds.map((s) => (
           <button
             key={s}

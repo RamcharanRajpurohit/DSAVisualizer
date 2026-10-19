@@ -25,6 +25,7 @@
   position: relative;
   flex: 1 1 auto;
   min-height: 62vh;
+  min-height: 62svh; /* the small viewport: mobile browser bars never cut the canvas */
   overflow: hidden;
   border-radius: 14px;
   border: 1px solid var(--border);
@@ -40,6 +41,28 @@
 /* Cards keep their natural height; the column scrolls instead of squashing them. */
 .side > * {
   flex-shrink: 0;
+}
+
+/* Phones: the same 16px side gutter as the rest of the site, and a canvas short enough that the
+   header, the canvas and its (two-row) playback bar fit on one screen — nothing sits on the drawing. */
+@media (max-width: 639px) {
+  .layout {
+    padding: 10px 16px;
+  }
+  .canvas {
+    min-height: max(300px, min(62svh, calc(100svh - var(--navbar-h) - 290px)));
+  }
+}
+
+/* Stacked layout (phones, tablets): the playback bar stays at the bottom of the screen while the
+   canvas is on it, within thumb reach. */
+@media (max-width: 1023px) {
+  .playbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 @media (min-width: 1024px) {
@@ -111,5 +134,24 @@
   background: var(--bg);
 }
 .stage:fullscreen .canvas {
+  min-height: 0;
+}
+
+/* No Fullscreen API (iPhone Safari): the workspace or the canvas fills the window instead. */
+.filled {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  overscroll-behavior: contain;
+}
+.layout.filled {
+  height: 100dvh;
+  overflow-y: auto;
+}
+.stage.filled {
+  padding: 12px;
+}
+.stage.filled .canvas {
   min-height: 0;
 }

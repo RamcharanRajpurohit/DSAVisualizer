@@ -4,6 +4,7 @@ import { Variable } from "lucide-react";
 import { useState } from "react";
 import type { WatchValue } from "@/lib/player/types";
 import { cn } from "@/lib/utils";
+import { FoldTitle, usePhoneFold } from "./CollapsibleCard";
 
 const fmt = (v: WatchValue) =>
   v === null || v === undefined ? "—" : typeof v === "boolean" ? (v ? "true" : "false") : v === Infinity ? "∞" : String(v);
@@ -12,6 +13,7 @@ const fmt = (v: WatchValue) =>
 export function VariablesPanel({ vars, title = "Variables" }: { vars?: Record<string, WatchValue>; title?: string }) {
   const [prevVars, setPrevVars] = useState(vars);
   const [changed, setChanged] = useState<ReadonlySet<string>>(() => new Set());
+  const fold = usePhoneFold("vars");
   const entries = Object.entries(vars ?? {});
 
   // Diff against the previous step's values while rendering (no effect round-trip).
@@ -24,10 +26,14 @@ export function VariablesPanel({ vars, title = "Variables" }: { vars?: Record<st
   if (!entries.length) return null;
   return (
     <section className="rounded-xl border border-line bg-surface/90 p-3">
-      <h2 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-        <Variable size={14} className="text-viz-amber" /> {title}
-      </h2>
-      <div className="grid grid-cols-2 gap-1.5">
+      <FoldTitle
+        open={fold.open}
+        onToggle={fold.toggle}
+        className={cn("mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim", !fold.open && "max-lg:mb-0")}
+      >
+        <Variable size={14} className="shrink-0 text-viz-amber" /> {title}
+      </FoldTitle>
+      <div className={cn("grid grid-cols-2 gap-1.5", !fold.open && "max-lg:hidden")}>
         {entries.map(([k, v]) => (
           <div
             key={k}

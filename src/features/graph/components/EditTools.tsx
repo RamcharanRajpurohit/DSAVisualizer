@@ -36,7 +36,7 @@ export function EditTools({ tool, disabled, onTool }: { tool: Tool; disabled: bo
           >
             {t.icon}
             {t.label}
-            <span aria-hidden className="absolute right-1 top-0.5 font-mono text-[9px] text-fg-faint">{t.key}</span>
+            <span aria-hidden className="absolute right-1 top-0.5 font-mono text-[9px] text-fg-faint pointer-coarse:hidden">{t.key}</span>
           </button>
         ))}
       </div>

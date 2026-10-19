@@ -368,11 +368,12 @@ export function GraphVisualizer({ heading = "Graph Algorithms", algorithm }: Gra
           onCancel={() => engine.closeWeightEdit()}
         />
       )}
+      {/* Beside the canvas fullscreen button (bottom-right corner), not under it. */}
       {view?.viewMoved && (
         <button
           type="button"
           onClick={() => engine?.resetView()}
-          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-xs text-fg-dim transition hover:bg-surface-2 hover:text-fg"
+          className="absolute bottom-3 right-14 z-10 flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-xs text-fg-dim transition hover:bg-surface-2 hover:text-fg pointer-coarse:right-16"
           title="Reset zoom and pan (or double-click empty space)"
         >
           <Scan size={13} /> Reset view

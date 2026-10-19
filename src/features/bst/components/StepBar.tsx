@@ -2,6 +2,7 @@
 
 import { FastForward, Footprints, Pause, Play, StepForward } from "lucide-react";
 import { SPEED_OPTIONS } from "@/lib/player/useStepPlayer";
+import { SpeedSelect } from "@/components/visualizer";
 import { cn } from "@/lib/utils";
 import type { BSTEngine } from "../engine/BSTEngine";
 import type { RunInfo } from "../engine/types";
@@ -69,7 +70,7 @@ export function StepBar({
         )}
       >
         <Footprints size={14} className={run.stepMode ? "text-viz-blue" : ""} />
-        Step mode
+        <span className="max-sm:sr-only">Step mode</span>
         <span className={cn("relative h-4 w-7 rounded-full transition-colors", run.stepMode ? "bg-viz-blue" : "bg-surface-3")}>
           <span className={cn("absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform", run.stepMode && "translate-x-3")} />
         </span>
@@ -83,7 +84,8 @@ export function StepBar({
         {run.op && <span className="truncate font-mono text-fg-faint">· {run.op}</span>}
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-elev p-0.5">
+      <SpeedSelect value={speed} speeds={SPEED_OPTIONS} onChange={onSpeed} className="sm:hidden" />
+      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-elev p-0.5 max-sm:hidden">
         {SPEED_OPTIONS.map((s) => (
           <button
             key={s}

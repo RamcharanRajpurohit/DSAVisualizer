@@ -57,7 +57,7 @@ export function WeightEditor({
   return (
     <div
       ref={boxRef}
-      className="absolute z-20 w-[228px]"
+      className="absolute z-20 w-[228px] pointer-coarse:w-[252px]"
       style={{ left: req.x, top: req.y, transform: req.below ? "translate(-50%, 22px)" : "translate(-50%, calc(-100% - 22px))" }}
       onKeyDown={(e) => {
         if (e.key === "Escape") {

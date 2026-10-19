@@ -149,7 +149,7 @@ export function ValueInput({ input, onEnter, onRandom, label, placeholder, hint,
           className={cn(
             "h-9 w-full rounded-lg border bg-bg-elev pl-3 text-sm text-fg placeholder:text-fg-faint transition-colors",
             "focus:outline-none focus:ring-2 disabled:opacity-50",
-            onRandom ? "pr-16" : "pr-8",
+            onRandom ? "pr-16 pointer-coarse:pr-[76px]" : "pr-8", // room for the 44px dice on touch screens
             input.error
               ? "border-viz-red/70 focus:border-viz-red focus:ring-viz-red/25"
               : "border-line-strong focus:border-fg/40 focus:ring-fg/10",
