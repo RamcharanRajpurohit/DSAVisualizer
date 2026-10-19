@@ -34,6 +34,7 @@ export function Controls({ list, onRun }: ControlsProps) {
   const empty = n === 0;
   const full = n >= MAX_NODES;
   const circ = list.kind === "circular";
+  const dbl = list.kind === "doubly";
 
   const value = useValueInput({ mode: "multi", maxCount: MAX_NODES });
   const index = useValueInput({ mode: "single", min: 0, max: Math.max(0, n) });
@@ -159,7 +160,9 @@ export function Controls({ list, onRun }: ControlsProps) {
 
       <Section title="List type" icon={<Link2 />}>
         <Segmented options={KIND_OPTIONS} value={list.kind} onChange={(k: ListKind) => k !== list.kind && onRun({ op: "kind", kind: k })} />
-        <Toggle label="Tail pointer" checked={list.tailPtr} onChange={(on) => onRun({ op: "tailPtr", on })} />
+        <div title={dbl ? "A doubly linked list always keeps a tail pointer" : undefined}>
+          <Toggle label="Tail pointer" checked={list.tailPtr} disabled={dbl} onChange={(on) => onRun({ op: "tailPtr", on })} />
+        </div>
       </Section>
 
       <Section title="Examples" icon={<Shuffle />}>

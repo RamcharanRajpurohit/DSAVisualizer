@@ -282,7 +282,7 @@ export const GRAPH_LESSONS: Record<LessonTopic, Lesson> = {
       },
       {
         title: "Prim vs Kruskal",
-        body: "Prim keeps one connected tree; Kruskal merges many small ones. Prim suits dense graphs stored as adjacency lists, Kruskal suits edge lists.",
+        body: "Prim keeps one connected tree; Kruskal merges many small ones. Prim's O(V²) array version suits dense graphs; Kruskal suits sparse graphs given as edge lists.",
         tryIt: [t("Prim on this graph", "prim.here"), t("Kruskal on the same graph", "kruskal.here")],
       },
       {

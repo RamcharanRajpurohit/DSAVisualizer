@@ -52,7 +52,7 @@ export const QUICK_LESSON: Lesson = {
     {
       title: "Tips",
       body:
-        "It is **in place** but **not stable**. Recurse into the smaller side first to keep the stack at O(log n). " +
+        "It is **in place** but **not stable**. Recurse into the smaller side and loop over the larger one to keep the stack at O(log n). " +
         "**Quickselect** reuses partition to find the k-th smallest in O(n) on average.",
       tryIt: [
         { label: "Few unique values", action: "fewUnique" },

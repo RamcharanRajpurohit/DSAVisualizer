@@ -65,14 +65,19 @@ const DOUBLY: Lesson = {
       tryIt: [tryIt("Search for a value", "search")],
     },
     {
+      title: "Both ends are O(1)",
+      body: "The list keeps `head` **and** `tail`, so the end is one jump away: `new.prev = tail`, `tail.next = new`, `tail = new`.\nDelete tail steps back with `tail.prev` — no walk either way.",
+      tryIt: [tryIt("Insert at tail", "tailWithTail"), tryIt("Delete tail", "deleteTailO1")],
+    },
+    {
       title: "Insert: four writes",
       body: "Set `new.next` and `new.prev`, then `curr.next.prev`, and `curr.next` last.\nMiss one and the two directions disagree.",
       tryIt: [tryIt("Insert at index 2", "insertAt")],
     },
     {
       title: "Delete without walking back",
-      body: "A node knows its predecessor, so it unlinks itself: `curr.prev.next = curr.next`.\nWith a tail pointer, delete-tail is **O(1)**.",
-      tryIt: [tryIt("Delete tail (tail pointer)", "deleteTailO1"), tryIt("Delete a value", "deleteValue")],
+      body: "A node knows its predecessor, so it unlinks itself: `curr.prev.next = curr.next`.\nOnly finding the node costs O(n); the unlink is **O(1)**.",
+      tryIt: [tryIt("Delete a value", "deleteValue")],
     },
     {
       title: "Reverse by swapping",

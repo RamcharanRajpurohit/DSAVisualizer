@@ -160,7 +160,7 @@ export function scenario(algo: AnySortAlgorithm, which: "worst" | "best", n: num
           values,
           note: {
             title: "Worst case: a wide value range",
-            detail: `k = max − min + 1 = **${k}** counters for only n = ${n} values. The prefix-sum pass walks all k of them, so O(n + k) is dominated by k.`,
+            detail: `k = max − min + 1 = **${k}** counters for only n = ${n} values. The prefix-sum loop runs k − 1 times — the sparse view hides the zero counters it walks over — so O(n + k) is dominated by k.`,
             tone: "danger",
           },
         };

@@ -37,7 +37,7 @@ export const APPS_LESSON: Lesson = {
     {
       title: "Amortized O(n)",
       body: "Each element is pushed once and popped at most once. So the inner while-loops add up to O(n) in total, not O(n²).",
-      tryIt: [{ label: "Decreasing input", action: "ngeDec" }],
+      tryIt: [{ label: "Decreasing, then a big one", action: "ngeDec" }],
     },
     {
       title: "Interview tips",

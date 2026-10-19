@@ -159,7 +159,7 @@ export function AppsMode({ heading, tabs, active, init, shortcuts, bindApi, init
     inRight: () => start("infix", "2^3^2", true),
     pfEval: () => start("postfix", "5 1 2 + 4 * + 3 -", true),
     nge: () => start("nge", "4 5 2 25 7 8", true),
-    ngeDec: () => start("nge", "5 4 3 2 1", true),
+    ngeDec: () => start("nge", "5 4 3 2 1 9", true),
   };
 
   const step = player.step ?? run.steps[0];

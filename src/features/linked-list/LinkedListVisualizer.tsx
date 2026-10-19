@@ -16,7 +16,7 @@ import { ListCanvas } from "./components/ListCanvas";
 import { complexityNote, complexityRows, LEGEND } from "./complexity";
 import { DEFAULT_VALUES, MERGE_DEFAULT, PRESETS } from "./constants";
 import {
-  idle, listFrom, MAX_NODES, record, type ListKind, type ListState, type OpRequest, type Recording,
+  idle, keepsTail, listFrom, MAX_NODES, record, type ListKind, type ListState, type OpRequest, type Recording,
 } from "./engine";
 import { LESSONS, type LessonAction } from "./lessons";
 import { pageStart, type LinkedListPage } from "./pages";
@@ -108,7 +108,7 @@ export function LinkedListVisualizer({ heading = "Linked List", page }: LinkedLi
   // ── lesson "try it" actions: start from the list on screen when it fits, else the default example ──
   const sample = (o: { kind?: ListKind; tailPtr?: boolean; min?: number } = {}): ListState => {
     const kind = o.kind ?? list.kind;
-    const tailPtr = o.tailPtr ?? list.tailPtr;
+    const tailPtr = keepsTail(kind, o.tailPtr ?? list.tailPtr);
     const n = list.nodes.length;
     if (n >= (o.min ?? 4) && n < MAX_NODES) return { ...list, kind, tailPtr };
     return listFrom(DEFAULT_VALUES, kind, tailPtr, list.seq);

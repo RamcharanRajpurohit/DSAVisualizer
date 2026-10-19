@@ -74,7 +74,7 @@ export const AVL_LESSON: Lesson = {
   slides: [
     {
       title: "Why balance?",
-      body: "A plain BST fed sorted keys becomes a list, and search drops to O(n). An AVL tree checks every node after each change and **rotates** to stay short.",
+      body: "A plain BST fed sorted keys becomes a list, and search drops to O(n). An AVL tree re-checks the nodes on the path back to the root after each change and **rotates** to stay short.",
       tryIt: [{ label: "Insert the same sorted keys into AVL", action: "sorted" }],
     },
     {

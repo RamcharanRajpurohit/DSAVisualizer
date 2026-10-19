@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AlgoLab — demo video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #efe8dd; --elev: #fbf8f2; --surface: #f7f2ea; --s2: #eae3d7; --line: rgba(26, 26, 26, .14);
+    --ink: #1a1a1a; --dim: #4b463f; --faint: #655e54; --red: #b91c1c; --green: #2f9e58;
+  }
+  html, body { margin: 0; background: #d9d2c6; }
+  body { display: grid; place-items: center; min-height: 100vh; }
+  body.render { display: block; min-height: 0; background: var(--bg); }
+  #stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .grid { position: absolute; inset: -60px; background-image: radial-gradient(rgba(26, 26, 26, .11) 1.3px, transparent 1.5px); background-size: 30px 30px; }
+  .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 58%, rgba(70, 48, 24, .12)); pointer-events: none; }
+  .serif { font-family: "Instrument Serif", serif; font-weight: 400; }
+  .mono { font-family: "JetBrains Mono", monospace; }
+  .abs { position: absolute; }
+  .fx { will-change: transform, opacity, filter; transform-origin: 50% 50%; }
+  .mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0 .04em .14em; margin-bottom: -.14em; }
+  .mask > span { display: inline-block; }
+
+  /* hook */
+  #kicker { left: 168px; top: 296px; font-size: 19px; letter-spacing: .2em; color: var(--faint); text-transform: uppercase; }
+  #kicker b { color: var(--red); font-weight: 700; }
+  .hookline { left: 160px; font-size: 156px; line-height: 1; letter-spacing: -.01em; white-space: nowrap; }
+  #h1 { top: 350px; }
+  #h2 { top: 520px; }
+  #picture { position: relative; font-style: italic; }
+  #underline { position: absolute; left: -6px; bottom: -18px; width: 104%; height: 40px; overflow: visible; }
+  #hook2 { left: 160px; top: 430px; font-size: 156px; line-height: 1; white-space: nowrap; }
+  #move {
+    display: inline-block; margin-left: .18em; padding: .02em .28em .1em; border-radius: .22em; background: var(--red); color: var(--elev);
+    font-style: italic; box-shadow: 0 18px 40px -18px rgba(185, 28, 28, .55); transform-origin: 30% 70%;
+  }
+
+  /* chrome */
+  #brand { left: 72px; top: 54px; display: flex; align-items: baseline; gap: 14px; }
+  #brand .serif { font-size: 40px; }
+  #brand .mono { font-size: 14px; letter-spacing: .18em; color: var(--faint); }
+  #chapters { right: 72px; top: 62px; display: flex; gap: 34px; font-size: 16px; letter-spacing: .16em; text-transform: uppercase; }
+  #chapters span { position: relative; color: var(--ink); }
+  #chapters i { position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; border-radius: 2px; background: var(--red); transform-origin: 0 50%; }
+
+  /* browser window */
+  #win {
+    left: 600px; top: 176px; width: 1240px; height: 748px; border-radius: 22px; background: var(--elev); overflow: hidden;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 40px 90px -30px rgba(40, 28, 12, .45), 0 0 0 1.5px rgba(26, 26, 26, .16);
+  }
+  #bar { position: absolute; left: 0; right: 0; top: 0; height: 50px; display: flex; align-items: center; gap: 18px; padding: 0 20px; background: var(--surface); border-bottom: 1.5px solid var(--line); }
+  #bar .dots { display: flex; gap: 8px; }
+  #bar .dots i { width: 13px; height: 13px; border-radius: 50%; background: #d8cfc1; box-shadow: inset 0 0 0 1.2px rgba(26, 26, 26, .18); }
+  #url { flex: 1; max-width: 640px; margin: 0 auto; height: 32px; border-radius: 16px; background: var(--elev); box-shadow: inset 0 0 0 1.4px var(--line); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; color: var(--ink); }
+  #url .path { color: var(--faint); }
+  #caret { display: inline-block; width: 2px; height: 18px; margin-left: 1px; background: var(--red); vertical-align: -3px; }
+  #view { position: absolute; left: 0; right: 0; top: 50px; bottom: 0; overflow: hidden; background: var(--bg); }
+  #view img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #edge { position: absolute; top: 0; bottom: 0; width: 5px; margin-left: -2.5px; background: var(--red); box-shadow: 0 0 22px rgba(185, 28, 28, .45); }
+
+  /* scene labels */
+  .label { left: 96px; top: 300px; width: 470px; }
+  .label .k { font-size: 17px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); }
+  .label .k b { color: var(--red); font-weight: 700; margin-right: .5em; }
+  .label .t { margin-top: 18px; font-size: 92px; line-height: .95; letter-spacing: -.01em; }
+  .label .s { margin-top: 16px; font-size: 40px; line-height: 1.1; font-style: italic; color: var(--dim); }
+  .label .chips { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { display: inline-block; padding: 9px 16px; border-radius: 999px; background: var(--elev); box-shadow: inset 0 0 0 1.5px var(--line); font-size: 17px; color: var(--ink); }
+
+  /* Bit */
+  #bit { left: 0; top: 0; width: 120px; height: 138px; transform-origin: 0 0; }
+  #bit svg { width: 120px; height: 138px; overflow: visible; }
+  #bubble {
+    left: 0; top: 0; padding: 12px 18px; border-radius: 18px; background: var(--elev); box-shadow: inset 0 0 0 1.8px var(--ink), 0 12px 24px -14px rgba(0, 0, 0, .35);
+    font-size: 21px; white-space: nowrap; transform-origin: 0% 100%;
+  }
+  #bubble::after { content: ""; position: absolute; left: 22px; bottom: -9px; width: 16px; height: 16px; background: var(--elev); border-right: 1.8px solid var(--ink); border-bottom: 1.8px solid var(--ink); transform: rotate(45deg); }
+  #bubble.r::after { left: auto; right: 22px; }
+  #bubble.side::after { left: -9px; bottom: auto; top: calc(50% - 8px); transform: rotate(135deg); }
+
+  /* features */
+  #fhead { left: 0; right: 0; top: 150px; text-align: center; font-size: 86px; line-height: 1; }
+  #fhead em { color: var(--red); }
+  .card { width: 500px; height: 196px; border-radius: 24px; background: var(--elev); box-shadow: inset 0 0 0 1.5px var(--line), 0 24px 50px -32px rgba(40, 28, 12, .45); padding: 30px 32px; box-sizing: border-box; display: flex; gap: 24px; align-items: flex-start; }
+  .card .ic { flex: none; width: 64px; height: 64px; border-radius: 18px; background: var(--s2); display: grid; place-items: center; }
+  .card .ic svg { width: 34px; height: 34px; }
+  .card h3 { margin: 4px 0 0; font-size: 44px; line-height: 1; font-weight: 400; }
+  .card p { margin: 14px 0 0; font-size: 17px; line-height: 1.4; color: var(--faint); }
+
+  /* end */
+  #wordmark .mask { padding: 0 0 .14em; }
+  #wordmark { left: 0; right: 0; top: 250px; text-align: center; font-size: 260px; line-height: 1; letter-spacing: -.015em; }
+  #tagline { left: 0; right: 0; top: 560px; text-align: center; font-size: 40px; color: var(--dim); }
+  #urlchip { left: 50%; top: 660px; padding: 16px 34px 18px; border-radius: 18px; background: var(--red); color: var(--elev); font-size: 44px; font-weight: 500; transform-origin: 50% 50%; white-space: nowrap; box-shadow: 0 24px 50px -22px rgba(185, 28, 28, .6); }
+  #topics { left: 0; right: 0; top: 820px; text-align: center; font-size: 19px; letter-spacing: .14em; color: var(--faint); text-transform: uppercase; }
+  #free { left: 0; right: 0; top: 862px; text-align: center; font-size: 19px; letter-spacing: .14em; color: var(--ink); text-transform: uppercase; }
+
+  #tc { position: fixed; left: 12px; bottom: 10px; font: 13px/1 "JetBrains Mono", monospace; color: #555; }
+  body.render #tc { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="grid" id="grid"></div>
+
+  <!-- 1 · hook -->
+  <div class="abs mono fx" id="kicker"><b>AlgoLab</b> &nbsp;—&nbsp; DSA visualizer</div>
+  <div class="abs serif hookline fx" id="h1"><span class="mask"><span>Algorithms</span></span> <span class="mask"><span>are</span></span> <span class="mask"><span>hard</span></span></div>
+  <div class="abs serif hookline fx" id="h2"><span class="mask"><span>to</span></span> <span class="mask" style="overflow:visible"><span id="picture">picture.<svg id="underline" viewBox="0 0 400 40" preserveAspectRatio="none"><path id="ul" d="M4 26 C 90 10, 200 34, 300 18 S 380 16, 396 22" fill="none" stroke="#b91c1c" stroke-width="9" stroke-linecap="round"/></svg></span></span></div>
+  <div class="abs serif fx" id="hook2"><span class="mask"><span>So</span></span> <span class="mask"><span>we</span></span> <span class="mask"><span>made</span></span> <span class="mask"><span>them</span></span><span id="move">move.</span></div>
+
+  <!-- 2 · montage chrome -->
+  <div class="abs fx" id="brand"><span class="serif">AlgoLab</span><span class="mono">DSA VISUALIZER</span></div>
+  <div class="abs mono fx" id="chapters"></div>
+
+  <div class="abs fx" id="win">
+    <div id="bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div id="url" class="mono">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#655e54" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        <span>algolab.rajpurohit.me<span class="path" id="path"></span><span id="caret"></span></span>
+      </div>
+      <div style="width:61px"></div>
+    </div>
+    <div id="view">
+      <img id="fa" alt="">
+      <img id="fb" alt="">
+      <div id="edge"></div>
+    </div>
+  </div>
+
+  <div id="labels"></div>
+
+  <!-- 3 · features -->
+  <div class="abs serif fx" id="fhead">Everything you need to <em>get it</em>.</div>
+  <div id="cards"></div>
+
+  <!-- 4 · end card -->
+  <div class="abs serif" id="wordmark"></div>
+  <div class="abs fx" id="tagline">Learn data structures &amp; algorithms by watching them run.</div>
+  <div class="abs mono fx" id="urlchip">algolab.rajpurohit.me</div>
+  <div class="abs mono fx" id="topics">sorting · stacks · queues · linked lists · heaps · BST · AVL · B-trees · graphs</div>
+  <div class="abs mono fx" id="free">free · no sign-up · runs in your browser</div>
+
+  <!-- Bit, the mascot (same drawing as the site) -->
+  <div class="abs fx mono" id="bubble"></div>
+  <div class="abs" id="bit">
+    <svg viewBox="-50 -62 100 115" aria-hidden="true">
+      <defs>
+        <radialGradient id="shine" cx="0.32" cy="0.25" r="0.45"><stop offset="0" stop-color="#fff" stop-opacity="0.16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse id="bshadow" cx="0" cy="47" rx="28" ry="4.5" fill="#1a1a1a" opacity="0.14"/>
+      <g id="bbody">
+        <g id="bant">
+          <path d="M0 -37 Q 2 -46 0 -52" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <circle cx="0" cy="-54" r="4.6" fill="#2f9e58" stroke="#1a1a1a" stroke-width="1.5"/>
+        </g>
+        <path d="M0,-38 C22,-38 39,-22 39,1 C39,24 23,37 0,37 C-23,37 -39,24 -39,1 C-39,-22 -22,-38 0,-38 Z" fill="#1a1a1a" style="filter: drop-shadow(0 5px 8px rgba(26,26,26,.22))"/>
+        <ellipse cx="-10" cy="-18" rx="20" ry="14" fill="url(#shine)"/>
+        <g id="bblush" opacity="0"><ellipse cx="-23" cy="10" rx="5.5" ry="3.2" fill="#ff7ac6"/><ellipse cx="23" cy="10" rx="5.5" ry="3.2" fill="#ff7ac6"/></g>
+        <g id="bface">
+          <g id="beyes">
+            <g id="bopen">
+              <rect x="-16.6" y="-12.5" width="7.2" height="17" rx="3.6" fill="#fbf8f2"/><circle cx="-12" cy="-8.8" r="1.3" fill="#1a1a1a" opacity="0.35"/>
+              <rect x="9.4" y="-12.5" width="7.2" height="17" rx="3.6" fill="#fbf8f2"/><circle cx="14" cy="-8.8" r="1.3" fill="#1a1a1a" opacity="0.35"/>
+            </g>
+            <g id="bhappy" opacity="0">
+              <path transform="translate(-13 -2)" d="M -5.5 2 Q 0 -6 5.5 2" stroke="#fbf8f2" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+              <path transform="translate(13 -2)" d="M -5.5 2 Q 0 -6 5.5 2" stroke="#fbf8f2" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+            </g>
+          </g>
+          <path id="bsmile" transform="translate(0 15)" d="M -6.5 -1 Q 0 5.5 6.5 -1" stroke="#fbf8f2" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <g id="bgrin" opacity="0" transform="translate(0 15)"><path d="M -8 -2 Q 0 11 8 -2 Z" fill="#fbf8f2"/><ellipse cx="0" cy="4.2" rx="3.4" ry="1.8" fill="#ff7ac6"/></g>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="vignette"></div>
+</div>
+<div id="tc"></div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

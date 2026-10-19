@@ -32,6 +32,7 @@ export function codeInsertHead(kind: ListKind, tailPtr: boolean): Code {
   ], { op: "insertHead", kind, tailPtr });
 }
 
+/** Insert at tail. A doubly linked list always keeps `tail`, so only singly / circular lists ever walk here. */
 export function codeInsertTail(kind: ListKind, tailPtr: boolean): Code {
   const circ = kind === "circular";
   const dbl = kind === "doubly";
@@ -46,8 +47,8 @@ export function codeInsertTail(kind: ListKind, tailPtr: boolean): Code {
     circ && ["ring", "  new.next = head  # keep ring"],
     ...(tailPtr
       ? [
-          ["link", "  tail.next = new      # O(1)"] as const,
-          dbl && (["back", "  new.prev = tail"] as const),
+          dbl && (["back", "  new.prev = tail      # O(1)"] as const),
+          ["link", dbl ? "  tail.next = new" : "  tail.next = new      # O(1)"] as const,
           ["tail", "  tail = new"] as const,
         ]
       : [
@@ -55,7 +56,6 @@ export function codeInsertTail(kind: ListKind, tailPtr: boolean): Code {
           ["walk", `  while curr.next != ${end}:`] as const,
           ["step", "    curr = curr.next"] as const,
           ["link", "  curr.next = new"] as const,
-          dbl && (["back", "  new.prev = curr"] as const),
         ]),
   ], { op: "insertTail", kind, tailPtr });
 }
@@ -228,7 +228,8 @@ export function doInsertTail(r: Rec, value: number) {
   r.markAll("base");
   const head = r.head;
   const n = r.size;
-  const id = r.alloc(value, { line: 0, slot: n, lane: 1 });
+  // Drawn just under the last node, so the links to it stay short even when the row wraps.
+  const id = r.alloc(value, { line: 0, slot: Math.max(0, n - 1), lane: 1 });
   r.ptr("new", id);
   r.snap(`Allocate a node for ${value}`, `**new = Node(${value})** — a fresh node at \`${r.addr(id)}\`, not yet connected to the list.`, {
     line: "alloc", vars: { value }, callout: `new = Node(${value})`,
@@ -252,49 +253,55 @@ export function doInsertTail(r: Rec, value: number) {
     r.snap("new.next = head", "In a circular list the new last node must point back to the head. Doing this first means the ring is never broken.", { line: "ring", callout: "new.next = head" });
   }
 
-  let last: string;
   if (r.tailPtr && r.tail) {
-    last = r.tail;
+    // O(1): `tail` already holds the last node — jump straight there, no walk.
+    const last = r.tail;
     r.mark(last, "active");
-    r.snap("tail already points at the last node", `No walk needed: \`tail\` holds the address of **${r.v(last)}** (\`${r.addr(last)}\`). This is the whole point of keeping a tail pointer — insert at tail becomes **O(1)**.`, {
-      line: "link",
-    });
-  } else {
-    last = head;
-    r.ptr("curr", last);
-    r.mark(last, "active");
-    r.snap("curr = head", `There's **no tail pointer**, so the only way to reach the end is to walk all ${n} nodes from the head — **O(n)**. (Turn on "Keep a tail pointer" to see the O(1) version.)`, {
-      line: "curr", callout: "curr = head", vars: { hops: 0 },
-    });
-    let hops = 0;
-    while (!r.isEnd(r.nx(last))) {
-      r.mark(last, "visited");
-      last = r.nx(last)!;
-      hops++;
-      r.ptr("curr", last);
-      r.mark(last, "active");
-      r.snap(`curr = curr.next (${r.v(last)})`, `curr.next wasn't ${r.circ ? "head" : "NULL"}, so we're not at the end yet. Hop ${hops} of ${n - 1}.`, {
-        line: ["walk", "step"], callout: "curr = curr.next", vars: { hops }, hold: 0.7,
+    const jump = `No walk: \`tail\` already holds the last node (**${r.v(last)}**, \`${r.addr(last)}\`), so we go straight there.`;
+    if (r.dbl) {
+      r.setPrev(id, last);
+      r.snap("new.prev = tail", `${jump} The new node points back at it first — that touches only the new node, so it's always safe.`, {
+        line: "back", callout: "new.prev = tail",
       });
     }
-    r.snap(`curr.next == ${r.circ ? "head" : "NULL"} → curr is the last node`, `Reached **${r.v(last)}** after ${hops} hop${hops === 1 ? "" : "s"}.`, { line: "walk", vars: { hops } });
+    r.setNext(last, id);
+    r.snap("tail.next = new", r.circ
+      ? `${r.dbl ? "" : `${jump} `}The old last node now points at **${value}** instead of head; since new.next is already head, the ring stays closed.`
+      : `${r.dbl ? "" : `${jump} `}The old last node's \`next\` was NULL — now it holds the new node's address \`${r.addr(id)}\`.`, {
+      line: "link", callout: "tail.next = new",
+    });
+    r.ptr("tail", id);
+    r.snap("tail = new", "Move `tail` to the new node — it's the last one now, so the next insert at tail is just as quick.", { line: "tail", callout: "tail = new" });
+    settle(r, id, `Inserted ${value} at the tail`, `**O(1)** — ${r.dbl ? "three" : "two"} pointer writes${r.circ ? " (plus the ring link)" : ""}, however long the list is.`);
+    return;
   }
 
+  let last = head;
+  r.ptr("curr", last);
+  r.mark(last, "active");
+  r.snap("curr = head", `There's **no tail pointer**, so the only way to reach the end is to walk all ${n} nodes from the head — **O(n)**. (Turn on "Tail pointer" to see the O(1) version.)`, {
+    line: "curr", callout: "curr = head", vars: { hops: 0 },
+  });
+  let hops = 0;
+  while (!r.isEnd(r.nx(last))) {
+    r.mark(last, "visited");
+    last = r.nx(last)!;
+    hops++;
+    r.ptr("curr", last);
+    r.mark(last, "active");
+    r.snap(`curr = curr.next (${r.v(last)})`, `curr.next wasn't ${r.circ ? "head" : "NULL"}, so we're not at the end yet. Hop ${hops} of ${n - 1}.`, {
+      line: ["walk", "step"], callout: "curr = curr.next", vars: { hops }, hold: 0.7,
+    });
+  }
+  r.snap(`curr.next == ${r.circ ? "head" : "NULL"} → curr is the last node`, `Reached **${r.v(last)}** after ${hops} hop${hops === 1 ? "" : "s"}.`, { line: "walk", vars: { hops } });
+
   r.setNext(last, id);
-  r.snap(`${r.tailPtr ? "tail" : "curr"}.next = new`, r.circ
+  r.snap("curr.next = new", r.circ
     ? `The old last node now points at **${value}** instead of head; since new.next is already head, the ring stays closed.`
     : `The old last node's \`next\` was NULL — now it holds the new node's address \`${r.addr(id)}\`.`, {
-    line: "link", callout: `${r.tailPtr ? "tail" : "curr"}.next = new`,
+    line: "link", callout: "curr.next = new",
   });
-  if (r.dbl) {
-    r.setPrev(id, last);
-    r.snap(`new.prev = ${r.tailPtr ? "tail" : "curr"}`, `Doubly linked: the new node points back at **${r.v(last)}**.`, { line: "back", callout: `new.prev = ${r.tailPtr ? "tail" : "curr"}` });
-  }
-  if (r.tailPtr) {
-    r.ptr("tail", id);
-    r.snap("tail = new", "Keep the tail pointer up to date — the new node is the last one now.", { line: "tail", callout: "tail = new" });
-  }
-  settle(r, id, `Inserted ${value} at the tail`, r.tailPtr ? "**O(1)** thanks to the tail pointer." : `**O(n)** — we walked ${n - 1} hop${n - 1 === 1 ? "" : "s"} to find the end.`);
+  settle(r, id, `Inserted ${value} at the tail`, `**O(n)** — we walked ${n - 1} hop${n - 1 === 1 ? "" : "s"} to find the end.`);
 }
 
 // ───────────────────────────── insert at index ─────────────────────────────

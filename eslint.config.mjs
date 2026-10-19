@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "legacy-rails/**",
+    // Standalone video pipeline (Node + plain browser JS), not part of the app.
+    "video/**",
   ]),
 ]);
 

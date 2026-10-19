@@ -9,7 +9,7 @@ import { codeStruct, describe, KIND_NAME, recordBuild, recordClear, recordKind, 
 import { MAX_NODES, Rec, type Code } from "./rec";
 import type { ListState, OpId, OpRequest, Recording } from "./types";
 
-export { MAX_NODES, listFrom } from "./rec";
+export { keepsTail, MAX_NODES, listFrom } from "./rec";
 export { KIND_NAME } from "./manage";
 export * from "./types";
 
@@ -50,6 +50,9 @@ export function record(state: ListState, req: OpRequest): Recording {
     case "kind":
       return done(recordKind(state, req.kind), "kind", `Convert to ${KIND_NAME[req.kind].toLowerCase()}`);
     case "tailPtr":
+      if (!req.on && state.kind === "doubly") {
+        return invalid(state, "A doubly linked list keeps its tail pointer", "`head` and `tail` together make both ends **O(1)**: insert at tail links `new.prev = tail`, and delete tail steps back with `tail.prev`. Switch to singly or circular to compare a list without one.", undefined, "warn");
+      }
       return done(recordTailPtr(state, req.on), "tailPtr", req.on ? "Add tail pointer" : "Drop tail pointer");
 
     case "insertHead":

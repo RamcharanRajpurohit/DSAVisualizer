@@ -410,7 +410,7 @@ In a plain BST a deletion never restructures anything beyond the three cases. Ba
       "Compute its balance factor bf = height(left) − height(right).",
       "If bf is +2 or −2 the node is unbalanced: name the case — LL, RR, LR or RL — from the direction of its taller child and grandchild.",
       "Fix it with a single rotation (LL, RR) or a double rotation (LR, RL); the subtree is balanced again.",
-      "After an insert one fix is enough and the walk stops; after a delete keep walking up, because more ancestors may need rotations.",
+      "After an insert one fix is enough and the walk stops; after a delete keep walking up while the subtree got shorter, because more ancestors may need rotations.",
     ],
     sections: [
       {
@@ -682,7 +682,7 @@ Searching for **55** reads [40] → [60] → [50] → [55] — four nodes, one p
         body: `
 - **Keys per node:** a BST or AVL node holds one key and two children; a B-tree node holds up to m − 1 keys and m children.
 - **Balance:** a plain BST can degenerate to height n; an AVL tree keeps its height below about 1.44·log₂ n with rotations; a B-tree keeps every leaf at exactly the same depth by splitting and merging, with about log⌈m/2⌉ n levels.
-- **Work per node:** a B-tree does more comparisons inside each node (a binary search over its keys) but visits far fewer nodes — the right trade when visiting a node means a disk read, and still competitive in memory thanks to CPU caches.
+- **Work per node:** a B-tree does more comparisons inside each node (a linear or binary search over its keys) but visits far fewer nodes — the right trade when visiting a node means a disk read, and still competitive in memory thanks to CPU caches.
 - **Growth:** BSTs and AVL trees grow at the leaves; a B-tree grows at the **root**, which is exactly why its leaves always stay level.
 `,
       },

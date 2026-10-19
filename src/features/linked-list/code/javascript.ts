@@ -108,14 +108,13 @@ export const javascript: LangGen = {
           circ && "  newNode.next = this.head; // keep ring",
           tailPtr
             ? [
-                "  this.tail.next = newNode; // O(1)",
-                dbl && "  newNode.prev = this.tail;",
+                dbl && "  newNode.prev = this.tail; // O(1)",
+                dbl ? "  this.tail.next = newNode;" : "  this.tail.next = newNode; // O(1)",
                 "  this.tail = newNode;",
               ]
             : [
                 ...walkToLast("curr", c),
                 "  curr.next = newNode;",
-                dbl && "  newNode.prev = curr;",
               ],
           "}",
         );
@@ -167,7 +166,7 @@ export const javascript: LangGen = {
         );
 
       case "deleteTail":
-        if (dbl && tailPtr) {
+        if (dbl) { // doubly always keeps tail (keepsTail): O(1) via tail.prev
           return L(
             "deleteTail() {",
             EMPTY_ERROR,
@@ -179,18 +178,6 @@ export const javascript: LangGen = {
             "    this.tail.next = null;",
             "  }",
             gc("temp"),
-            "}",
-          );
-        }
-        if (dbl) {
-          return L(
-            "deleteTail() {",
-            EMPTY_ERROR,
-            "  let curr = this.head;",
-            "  while (curr.next !== null) curr = curr.next;",
-            "  if (curr.prev === null) this.head = null;",
-            "  else curr.prev.next = null;",
-            gc("curr"),
             "}",
           );
         }

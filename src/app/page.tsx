@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DemoVideo } from "@/components/home/DemoVideo";
 import { HeroSortDemo } from "@/components/home/HeroSortDemo";
 import { VisualizerCard } from "@/components/home/VisualizerCard";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { absoluteUrl, SITE } from "@/config/site";
+import { TOUR } from "@/config/tour";
 import { VISUALIZERS } from "@/config/visualizers";
 import { childTopics, getTopic } from "@/content/registry";
 
@@ -62,6 +64,22 @@ export default function Home() {
               },
             },
             {
+              "@type": "VideoObject",
+              "@id": `${SITE.url}/#tour`,
+              name: TOUR.title,
+              description: TOUR.description,
+              thumbnailUrl: [absoluteUrl(TOUR.poster)],
+              uploadDate: TOUR.uploadDate,
+              duration: TOUR.duration,
+              contentUrl: absoluteUrl(TOUR.sources[1].src),
+              width: TOUR.width,
+              height: TOUR.height,
+              inLanguage: SITE.language,
+              isFamilyFriendly: true,
+              author: { "@id": `${SITE.url}/#author` },
+              publisher: { "@id": `${SITE.url}/#author` },
+            },
+            {
               "@type": "FAQPage",
               "@id": `${SITE.url}/#faq`,
               mainEntity: HOME_FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
@@ -91,7 +109,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="visualizers" className="mt-16 scroll-mt-24" aria-labelledby="visualizers-title">
+      <section id="tour" className="mt-16 scroll-mt-24" aria-labelledby="tour-title">
+        <div className="mb-5 flex items-end justify-between gap-3 border-b border-line pb-4">
+          <h2 id="tour-title" className="font-serif text-4xl text-fg">The 50-second tour</h2>
+          <span className="font-mono text-xs text-fg-faint">no sound needed</span>
+        </div>
+        <DemoVideo />
+      </section>
+
+      <section id="visualizers" className="mt-20 scroll-mt-24" aria-labelledby="visualizers-title">
         <div className="mb-6 flex items-end justify-between gap-3 border-b border-line pb-4">
           <h2 id="visualizers-title" className="font-serif text-4xl text-fg">Visualizers</h2>
           <span className="font-mono text-xs text-fg-faint">{VISUALIZERS.length} topics</span>

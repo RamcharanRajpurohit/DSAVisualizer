@@ -1,0 +1,11 @@
+{
+  "name": "algolab-video",
+  "private": true,
+  "type": "module",
+  "description": "Product demo video for AlgoLab: footage recorder, HTML composition and frame renderer.",
+  "scripts": {
+    "record": "node record.mjs",
+    "frames": "node build-frames.mjs",
+    "render": "node render.mjs"
+  }
+}

@@ -1,4 +1,4 @@
-import { code, fmtList, listFrom, Rec, type Code } from "./rec";
+import { code, fmtList, keepsTail, listFrom, Rec, type Code } from "./rec";
 import type { ListKind, ListState } from "./types";
 
 export const KIND_NAME: Record<ListKind, string> = {
@@ -112,6 +112,8 @@ export function recordTailPtr(state: ListState, on: boolean): Rec {
 /** Convert the list between kinds, animating the pointer changes. */
 export function recordKind(state: ListState, to: ListKind): Rec {
   const from = state.kind;
+  /** Converting to doubly adds `tail` if the list had none (the prev-walk ends on the last node anyway). */
+  const addTail = !state.tailPtr && keepsTail(to, false);
   const r = new Rec(state, code([
     `convert(${from} → ${to}):`,
     from === "circular" && ["break", "  last.next = NULL  # open ring"],
@@ -120,12 +122,17 @@ export function recordKind(state: ListState, to: ListKind): Rec {
     to === "doubly" && ["loop", "  while curr != NULL:"],
     to === "doubly" && ["setPrev", "    curr.prev = prev"],
     to === "doubly" && ["adv", "    prev = curr; curr = curr.next"],
+    addTail && ["tail", "  tail = prev  # last node"],
     to === "circular" && ["close", "  last.next = head  # close ring"],
-  ], { op: "struct", kind: to, tailPtr: state.tailPtr }));
+  ], { op: "struct", kind: to, tailPtr: keepsTail(to, state.tailPtr) }));
   const ids = r.walk();
   if (from === to) { describe(r); return r; }
   if (!ids.length) {
     r.kind = to;
+    if (addTail) {
+      r.tailPtr = true;
+      r.ptr("tail", null);
+    }
     describe(r, `Switched to a ${KIND_NAME[to].toLowerCase()}`, "The list is empty, so there's nothing to convert.");
     return r;
   }
@@ -158,6 +165,16 @@ export function recordKind(state: ListState, to: ListKind): Rec {
       });
       prev = id;
       r.ptr("prev", prev);
+    }
+    if (addTail) {
+      r.tailPtr = true;
+      r.ptr("tail", prev);
+      r.markAll("base");
+      r.mark(prev, "active");
+      r.ptr("curr", null);
+      r.snap("tail = prev", `The walk ends with \`prev\` on the last node (**${r.v(prev)}**), so a doubly linked list keeps it as \`tail\` for free. Now both ends are **O(1)**: insert at tail and delete tail need no walk.`, {
+        line: "tail", callout: "tail = prev",
+      });
     }
     r.drop("curr", "prev");
     r.markAll("base");

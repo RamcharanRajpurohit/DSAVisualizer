@@ -22,9 +22,7 @@ export function complexityRows(kind: ListKind, tailPtr: boolean): ComplexityRow[
 
 export function complexityNote(kind: ListKind, tailPtr: boolean): string {
   if (kind === "doubly") {
-    return tailPtr
-      ? "Doubly + tail pointer: both ends are O(1) — prev lets delete-tail step back without a walk. Cost: one extra pointer per node."
-      : "Without a tail pointer, reaching the end still needs an O(n) walk.";
+    return "Doubly linked lists keep head and tail, so both ends are O(1) — insert at tail links new.prev = tail, delete tail steps back via tail.prev. Cost: one extra pointer per node.";
   }
   if (kind === "circular") {
     return tailPtr

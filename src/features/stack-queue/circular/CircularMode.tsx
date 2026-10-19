@@ -49,7 +49,7 @@ const COMPLEXITY = {
     { op: "peek", worst: "O(1)", space: "O(1)" },
     { op: "isFull/isEmpty", worst: "O(1)", space: "O(1)" },
   ],
-  note: "No element moves and no slot is wasted: the modulo turns the array's end into its start.",
+  note: "No element moves and freed slots are reused: the modulo turns the array's end into its start.",
 };
 
 const enq = (v: number): CircOp => ({ kind: "enqueue", v });

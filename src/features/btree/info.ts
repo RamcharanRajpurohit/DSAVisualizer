@@ -22,8 +22,8 @@ export const LEGEND: LegendItem[] = [
 
 export const COMPLEXITY: ComplexityRow[] = [
   { op: "Search", best: "O(1)", avg: "O(log n)", worst: "O(log n)", space: "O(1)" },
-  { op: "Insert", best: "O(log n)", avg: "O(log n)", worst: "O(log n)", space: "O(1)" },
-  { op: "Delete", best: "O(log n)", avg: "O(log n)", worst: "O(log n)", space: "O(1)" },
+  { op: "Insert", best: "O(log n)", avg: "O(log n)", worst: "O(log n)", space: "O(log n)" },
+  { op: "Delete", best: "O(log n)", avg: "O(log n)", worst: "O(log n)", space: "O(log n)" },
   { op: "Storage", worst: "O(n)" },
 ];
 

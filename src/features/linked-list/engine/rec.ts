@@ -21,10 +21,13 @@ export function makeNode(seq: number, value: number): ListNode {
   return { id: `n${seq}`, value, addr: addrOf(seq) };
 }
 
+/** Whether a list keeps `tail`: a doubly linked list always does (both ends O(1)); for the others it's optional. */
+export const keepsTail = (kind: ListKind, tailPtr: boolean) => tailPtr || kind === "doubly";
+
 /** A committed list built from plain values. */
 export function listFrom(values: readonly number[], kind: ListKind, tailPtr: boolean, seq = 0): ListState {
   const nodes = values.map((v, i) => makeNode(seq + i, v));
-  return { kind, tailPtr, nodes, seq: seq + values.length };
+  return { kind, tailPtr: keepsTail(kind, tailPtr), nodes, seq: seq + values.length };
 }
 
 // ───────────────────────────── pseudocode ─────────────────────────────

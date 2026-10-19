@@ -61,7 +61,7 @@ An array keeps its elements in one contiguous block, so element \`i\` lives at \
 The three classic variants differ only in which pointers each node carries, but that decides which operations are cheap.
 
 - **Singly linked list** — \`[data | next]\`. The lightest, and forward-only. Deleting a node needs its predecessor, so deleting the tail is O(n) even with a \`tail\` pointer.
-- **Doubly linked list** — \`[prev | data | next]\`. One more pointer per node buys backward traversal and O(1) deletion of any node you hold, including the tail; inserts write four pointers instead of two.
+- **Doubly linked list** — \`[prev | data | next]\`. One more pointer per node buys backward traversal and O(1) deletion of any node you hold; with the usual \`head\` and \`tail\` pointers both ends are O(1). Inserts write four pointers instead of two.
 - **Circular linked list** — the last node points back to the head. A pointer to the last node reaches both ends in O(1), which suits round-robin scheduling; loops stop when they return to the head.
 
 Use singly for a stack, or a queue with a tail pointer; doubly when you remove arbitrary nodes or walk both ways (an LRU cache); circular when the data really is a ring. The List type switch above converts the list on screen so you can compare them.
@@ -194,7 +194,7 @@ Interviewers mostly check the empty list, the one-node list, and the head and ta
         body: `
 In a singly linked list every operation that changes the list needs the node **before** the one you care about. Deleting node X means rewriting its predecessor's \`next\`, and X has no idea who that is — so you walk from the head to find it. The same problem makes "delete the tail" O(n) even when you keep a \`tail\` pointer: after removing the last node you need the new last node, and only a walk can find it.
 
-A \`prev\` pointer removes that walk. Given any node, its predecessor is one field away, so unlinking it takes a constant number of pointer writes. That is why doubly linked lists sit underneath LRU caches, deques and most general-purpose list types in standard libraries.
+A \`prev\` pointer removes that walk. Given any node, its predecessor is one field away, so unlinking it takes a constant number of pointer writes. Paired with a \`tail\` pointer next to \`head\` — which doubly linked lists keep as standard — both ends are one step away: appending is \`new.prev = tail\`, \`tail.next = new\`, \`tail = new\`, with no walk at all. That is why doubly linked lists sit underneath LRU caches, deques and most general-purpose list types in standard libraries.
 `,
       },
       {
@@ -254,7 +254,7 @@ If you only push and pop at the front, or append at the back, a singly linked li
     ],
     complexity: [
       { label: "Insert at head", time: "O(1)", space: "O(1)", note: "Link the new node in front and move `head`; also sets `tail` if the list was empty." },
-      { label: "Insert at tail", time: "O(1)", space: "O(1)", note: "With a tail pointer: `tail.next = new`, `new.prev = tail`, `tail = new`." },
+      { label: "Insert at tail", time: "O(1)", space: "O(1)", note: "Jump straight to `tail`: `new.prev = tail`, `tail.next = new`, `tail = new` (an empty list sets `head = tail = new`)." },
       { label: "Insert at index", time: "O(n)", space: "O(1)", note: "Walking to index i − 1 is O(n); the four pointer writes are O(1)." },
       { label: "Delete a node you hold", time: "O(1)", space: "O(1)", note: "Its predecessor is `x.prev`, so no search is needed." },
       { label: "Delete tail", time: "O(1)", space: "O(1)", note: "`tail = tail.prev; tail.next = NULL` — O(n) in a singly linked list." },
@@ -263,7 +263,7 @@ If you only push and pop at the front, or append at the back, a singly linked li
     ],
     code: {
       language: "python",
-      source: pythonList("doubly", true, ["insertHead", "insertAt", "deleteHead", "deleteTail", "deleteAt"]),
+      source: pythonList("doubly", true, ["insertHead", "insertTail", "insertAt", "deleteHead", "deleteTail", "deleteAt"]),
     },
     faqs: [
       {

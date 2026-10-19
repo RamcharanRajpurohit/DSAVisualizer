@@ -177,7 +177,7 @@ Start with an empty stack of capacity 5 (\`top = -1\`):
 - \`pop()\`: reads \`A[1] = 9\`, top drops to 0, and **9** is returned. Stack: [5].
 - \`push(2)\`: top becomes 1 again and \`A[1] = 2\` overwrites the old 9. Stack: [5, 2].
 
-Notice that pop never erased the 9 — it only moved \`top\`. The old value stayed in the array as garbage until the next push overwrote it. That is why pop, and even \`clear()\` (just \`top = -1\`), are O(1): no element other than the top is touched. In a garbage-collected language that stores object references, set the freed slot to \`None\` or \`null\` so the object can be reclaimed.`,
+Notice that pop never erased the 9 — it only moved \`top\`. The old value stayed in the array as garbage until the next push overwrote it. That is why pop, and even \`clear()\` (just \`top = -1\`), are O(1): no element other than the top is touched. In a garbage-collected language that stores object references, set the freed slot to \`None\` or \`null\` so the object can be reclaimed — still O(1) per pop, though a \`clear()\` that releases every reference must null each slot and becomes O(n).`,
       },
       {
         heading: "Overflow, underflow and growable stacks",
@@ -366,7 +366,7 @@ Popular interview tasks: implement a queue with two stacks, implement a stack wi
     keywords: ["circular queue", "circular queue visualizer", "ring buffer", "circular buffer", "circular queue full condition", "circular queue using array"],
     question: "What is a circular queue?",
     summary:
-      "A **circular queue** (or **ring buffer**) is a fixed-size array queue whose indices wrap around: after the last slot comes slot 0, using `(i + 1) % capacity`. Slots freed by dequeue are reused, so enqueue and dequeue stay O(1) and no space is wasted — the reason ring buffers sit inside keyboards, audio drivers and network cards.",
+      "A **circular queue** (or **ring buffer**) is a fixed-size array queue whose indices wrap around: after the last slot comes slot 0, using `(i + 1) % capacity`. Slots freed by dequeue are reused, so enqueue and dequeue stay O(1) and freed slots are never stranded — the reason ring buffers sit inside keyboards, audio drivers and network cards.",
     steps: [
       "Keep an array `A` of `capacity` slots, `front` (index of the first element), `rear` (index of the last element, initially −1) and `count`, the number of elements.",
       "**enqueue(x)**: if `count == capacity` the queue is full. Otherwise set `rear = (rear + 1) % capacity`, write `A[rear] = x` and increase `count`.",
@@ -943,7 +943,7 @@ Result: **[5, 25, 25, −1, 8, −1]**. The stack stores indices (the values are
       {
         heading: "Why it is O(n) and not O(n²)",
         body: `
-The \`while\` loop inside the \`for\` loop looks quadratic, but count the work per element instead of per iteration: every index is pushed exactly once and popped at most once. That is at most 2n stack operations in total, so the whole scan is **O(n)** — an *amortized* argument. A decreasing input such as [5, 4, 3, 2, 1] never pops until the end, and an increasing one pops once per step; neither exceeds 2n operations.
+The \`while\` loop inside the \`for\` loop looks quadratic, but count the work per element instead of per iteration: every index is pushed exactly once and popped at most once. That is at most 2n stack operations in total, so the whole scan is **O(n)** — an *amortized* argument. A decreasing input such as [5, 4, 3, 2, 1] never pops at all (n pushes; every index keeps −1), an increasing one pops once per step, and [5, 4, 3, 2, 1, 9] pops five indices in a single iteration — yet none of them exceeds 2n operations.
 
 The stack stays **monotonic**: its values never increase from bottom to top. That is why one comparison with the top is enough — if \`A[i]\` is not larger than the top, it is not larger than anything below it either, because those values are bigger still.`,
       },

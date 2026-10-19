@@ -117,14 +117,13 @@ export const java: LangGen = {
           circ && "    newNode.next = head;  // keep ring",
           tailPtr
             ? [
-                "    tail.next = newNode;  // O(1)",
-                dbl && "    newNode.prev = tail;",
+                dbl && "    newNode.prev = tail;  // O(1)",
+                dbl ? "    tail.next = newNode;" : "    tail.next = newNode;  // O(1)",
                 "    tail = newNode;",
               ]
             : [
                 ...walkToLast("curr", c),
                 "    curr.next = newNode;",
-                dbl && "    newNode.prev = curr;",
               ],
           "}",
         );
@@ -190,7 +189,7 @@ export const java: LangGen = {
         );
 
       case "deleteTail":
-        if (dbl && tailPtr) {
+        if (dbl) { // doubly always keeps tail (keepsTail): O(1) via tail.prev
           return L(
             "void deleteTail() {",
             EMPTY_ERROR,
@@ -202,21 +201,6 @@ export const java: LangGen = {
             "        tail.next = null;",
             "    }",
             gc("temp"),
-            "}",
-          );
-        }
-        if (dbl) {
-          return L(
-            "void deleteTail() {",
-            EMPTY_ERROR,
-            "    Node curr = head;",
-            "    while (curr.next != null)",
-            "        curr = curr.next;",
-            "    if (curr.prev == null)",
-            "        head = null;",
-            "    else",
-            "        curr.prev.next = null;",
-            gc("curr"),
             "}",
           );
         }

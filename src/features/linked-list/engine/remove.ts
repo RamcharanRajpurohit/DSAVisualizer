@@ -32,7 +32,8 @@ export function codeDeleteHead(kind: ListKind, tailPtr: boolean): Code {
 }
 
 export function codeDeleteTail(kind: ListKind, tailPtr: boolean): Code {
-  if (kind === "doubly" && tailPtr) {
+  // A doubly linked list always keeps `tail` (see keepsTail): O(1) via tail.prev.
+  if (kind === "doubly") {
     return code([
       "deleteTail():",
       ["empty", "  if head == NULL: error \"empty\""],
@@ -43,18 +44,6 @@ export function codeDeleteTail(kind: ListKind, tailPtr: boolean): Code {
       ["tail", "    tail = temp.prev"],
       ["cut", "    tail.next = NULL"],
       ["free", "  free(temp)"],
-    ], { op: "deleteTail", kind, tailPtr });
-  }
-  if (kind === "doubly") {
-    return code([
-      "deleteTail():",
-      ["empty", "  if head == NULL: error \"empty\""],
-      ["curr", "  curr = head"],
-      ["walk", "  while curr.next != NULL:"],
-      ["step", "    curr = curr.next"],
-      ["one", "  if curr.prev == NULL: head = NULL"],
-      ["cut", "  else: curr.prev.next = NULL"],
-      ["free", "  free(curr)"],
     ], { op: "deleteTail", kind, tailPtr });
   }
   const end = kind === "circular" ? "head" : "NULL";
@@ -264,7 +253,7 @@ export function doDeleteTail(r: Rec): boolean {
   const head = r.head;
   if (!head) { emptyError(r, "delete the tail"); return false; }
 
-  if (r.dbl && r.tailPtr && r.tail) {
+  if (r.dbl && r.tail) {
     const temp = r.tail;
     r.ptr("temp", temp);
     r.mark(temp, "danger");
@@ -286,35 +275,6 @@ export function doDeleteTail(r: Rec): boolean {
     r.move(temp, { lane: 1 });
     r.snap("tail.next = NULL", `Cut the old last node off: **${r.v(p)}** now ends the list.`, { line: "cut", callout: "tail.next = NULL" });
     freeNode(r, temp, "temp", "**O(1)** — this is a big advantage of doubly linked lists.");
-    return true;
-  }
-
-  if (r.dbl) {
-    let curr = head;
-    r.ptr("curr", curr);
-    r.mark(curr, "active");
-    r.snap("curr = head", "No tail pointer, so walk to the last node first (O(n)). Once there, its `prev` gives the new last node.", { line: "curr", callout: "curr = head" });
-    let hops = 0;
-    while (r.nx(curr)) {
-      r.mark(curr, "visited");
-      curr = r.nx(curr)!;
-      hops++;
-      r.ptr("curr", curr);
-      r.mark(curr, "active");
-      r.snap(`curr = curr.next (${r.v(curr)})`, `Hop ${hops}: curr.next isn't NULL yet.`, { line: ["walk", "step"], callout: "curr = curr.next", vars: { hops }, hold: 0.7 });
-    }
-    r.mark(curr, "danger");
-    const p = r.pv(curr);
-    if (!p) {
-      r.ptr("head", null);
-      r.move(curr, { lane: 1 });
-      r.snap("curr.prev == NULL → head = NULL", "The last node was also the first: the list becomes empty.", { line: "one", callout: "head = NULL" });
-    } else {
-      r.setNext(p, null);
-      r.move(curr, { lane: 1 });
-      r.snap("curr.prev.next = NULL", `Follow \`prev\` back to **${r.v(p)}** and end the list there.`, { line: "cut", callout: "curr.prev.next = NULL" });
-    }
-    freeNode(r, curr, "curr", "**O(n)** because of the walk; with a tail pointer this would be O(1).");
     return true;
   }
 

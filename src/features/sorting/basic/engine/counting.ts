@@ -80,7 +80,7 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
       `No comparisons: count each value in **${k}** counters (max − min + 1), indexed by \`value − lo\`` +
       (lo < 0 ? ", which also makes negatives work." : ".") +
       (sparse
-        ? ` Zero counters are hidden (⋯), but memory still pays for all ${k}.`
+        ? ` Zero counters are hidden (⋯), but memory and the prefix-sum loop still pay for all ${k}.`
         : " The counts then tell every element where to go."),
     tone: "info",
     line: [1, 2, 3],
@@ -138,7 +138,7 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
         (before
           ? `, so the ${before === 1 ? "copy" : `${before} copies`} of ${v} will fill output slot${before === 1 ? ` ${total - 1}` : `s ${total - before}…${total - 1}`}.`
           : ` (there is no ${v} in the input — the total just carries over).`) +
-        (sparse && columns[c] - columns[c - 1] > 1 ? " Hidden zero counters don't change the total." : ""),
+        (sparse && columns[c] - columns[c - 1] > 1 ? ` The loop also walks the ${columns[c] - columns[c - 1] - 1} hidden zero counter${columns[c] - columns[c - 1] === 2 ? "" : "s"} in between; they just carry the total.` : ""),
       tone: "info",
       line: [6, 7],
       inputMarks: paint({}, 0, n - 1, "dim"),

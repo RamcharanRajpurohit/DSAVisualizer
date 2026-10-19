@@ -82,15 +82,15 @@ export const ALGOS: Record<AlgoKey, AlgoDef> = {
     group: "Shortest paths",
     start: true,
     time: "O((V + E) log V)",
-    space: "O(V)",
+    space: "O(V + E)",
     info: "Shortest paths from one node when every weight is ≥ 0. Always finalizes the closest unfinished node from a **priority queue**.",
     code: DIJKSTRA_CODE,
     complexity: [
-      { op: "Binary heap", worst: "O((V + E) log V)", space: "O(V)" },
+      { op: "Binary heap", worst: "O((V + E) log V)", space: "O(V + E)" },
       { op: "Plain array", worst: "O(V²)", space: "O(V)" },
       { op: "Fibonacci heap", worst: "O(E + V log V)", space: "O(V)" },
     ],
-    complexityNote: "Wrong answers are possible with negative edge weights — try the Negative edge demo preset.",
+    complexityNote: "The queue row keeps one entry per node (decrease-key); the code tabs push a new entry instead and skip stale ones, so their heap can hold up to E entries. Wrong answers are possible with negative edge weights — try the Negative edge demo preset.",
     run: runDijkstra,
   },
   bellmanFord: {

@@ -109,14 +109,13 @@ export const python: LangGen = {
           circ && "    new_node.next = self.head  # keep ring",
           tailPtr
             ? [
-                "    self.tail.next = new_node  # O(1)",
-                dbl && "    new_node.prev = self.tail",
+                dbl && "    new_node.prev = self.tail  # O(1)",
+                dbl ? "    self.tail.next = new_node" : "    self.tail.next = new_node  # O(1)",
                 "    self.tail = new_node",
               ]
             : [
                 ...walkToLast("curr", c),
                 "    curr.next = new_node",
-                dbl && "    new_node.prev = curr",
               ],
         );
 
@@ -175,7 +174,7 @@ export const python: LangGen = {
         );
 
       case "deleteTail":
-        if (dbl && tailPtr) {
+        if (dbl) { // doubly always keeps tail (keepsTail): O(1) via tail.prev
           return L(
             "def delete_tail(self):",
             EMPTY_ERROR,
@@ -186,20 +185,6 @@ export const python: LangGen = {
             "        self.tail = temp.prev",
             "        self.tail.next = None",
             "    del temp  # free(temp): the GC reclaims it",
-          );
-        }
-        if (dbl) {
-          return L(
-            "def delete_tail(self):",
-            EMPTY_ERROR,
-            "    curr = self.head",
-            "    while curr.next is not None:",
-            "        curr = curr.next",
-            "    if curr.prev is None:",
-            "        self.head = None",
-            "    else:",
-            "        curr.prev.next = None",
-            "    del curr  # free(curr): the GC reclaims it",
           );
         }
         return L(
