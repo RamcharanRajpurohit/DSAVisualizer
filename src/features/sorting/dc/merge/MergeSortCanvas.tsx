@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo } from "react";
 import { useElementSize } from "@/lib/hooks/useElementSize";
-import { MONO_FONT, TONE_COLOR, VIZ, type Triple } from "@/lib/theme";
+import { EDGE, MONO_FONT, TONE_COLOR, VIZ, type Triple } from "@/lib/theme";
 import type { SortCanvasProps } from "../../types";
 import { CallStack } from "../common/CallStack";
 import { Cell } from "../common/Cell";
@@ -19,14 +19,18 @@ const ROLE_COLORS: Record<MergeRole, Triple> = {
   sorted: VIZ.success,
 };
 
+/** Ink on paper: neutral ink tints for waiting / split boxes, soft state tints for merging and sorted ones. */
 const BOX: Record<MergeBoxState, { border: string; bg: string; dashed?: boolean }> = {
-  pending: { border: "rgba(255,255,255,0.10)", bg: "rgba(255,255,255,0)", dashed: true },
-  holding: { border: "rgba(160,160,175,0.55)", bg: "rgba(69,69,82,0.22)" },
-  split: { border: "rgba(120,120,135,0.40)", bg: "rgba(255,255,255,0.015)" },
-  merging: { border: VIZ.merge[1], bg: "rgba(122,69,184,0.16)" },
-  sorted: { border: VIZ.success[1], bg: "rgba(0,168,84,0.13)" },
-  spent: { border: "rgba(92,255,168,0.22)", bg: "rgba(0,168,84,0.025)", dashed: true },
+  pending: { border: "rgba(26,26,26,0.16)", bg: "rgba(26,26,26,0)", dashed: true },
+  holding: { border: "rgba(26,26,26,0.38)", bg: "rgba(26,26,26,0.04)" },
+  split: { border: "rgba(26,26,26,0.22)", bg: "rgba(26,26,26,0.015)" },
+  merging: { border: VIZ.merge[1], bg: hexA(VIZ.merge[1], 0.08) },
+  sorted: { border: VIZ.success[1], bg: hexA(VIZ.success[1], 0.08) },
+  spent: { border: hexA(VIZ.success[1], 0.3), bg: hexA(VIZ.success[1], 0.02), dashed: true },
 };
+
+const LIFT = "0 1px 3px 0px rgba(0,0,0,0.12)";
+const FLAT = "0 0 0px 0px rgba(0,0,0,0)";
 
 export function MergeSortCanvas({ step, animSec }: SortCanvasProps<MergeStep>) {
   const [ref, size] = useElementSize();
@@ -57,7 +61,7 @@ function Scene({ step, L, animSec, width }: { step: MergeStep; L: MergeLayout; a
           className="pointer-events-none absolute inset-x-0"
           style={{ top: top - L.labelH - 2, height: L.labelH + c + L.idxH + 24 }}
           initial={false}
-          animate={{ backgroundColor: d === activeDepth ? "rgba(255,176,0,0.045)" : "rgba(255,176,0,0)" }}
+          animate={{ backgroundColor: d === activeDepth ? hexA(AMBER, 0.06) : hexA(AMBER, 0) }}
           transition={fade}
         >
           {L.gutter > 0 && (
@@ -81,10 +85,10 @@ function Scene({ step, L, animSec, width }: { step: MergeStep; L: MergeLayout; a
         const r = box[nd.id];
         const isActive = step.active === nd.id;
         const len = nd.hi - nd.lo + 1;
-        const glowColor = st === "merging" ? VIZ.merge[1] : isActive ? AMBER : step.done && nd.id === 0 ? VIZ.success[1] : null;
+        const lifted = st === "merging" || isActive || (step.done && nd.id === 0);
         const showMid = step.mid?.node === nd.id;
         const labelColor =
-          isActive ? (st === "merging" ? TONE_COLOR.merge : AMBER) : st === "sorted" ? TONE_COLOR.ok : st === "pending" ? "rgba(255,255,255,0.18)" : "var(--text-faint)";
+          isActive ? (st === "merging" ? TONE_COLOR.merge : AMBER) : st === "sorted" ? TONE_COLOR.ok : st === "pending" ? "rgba(26,26,26,0.3)" : "var(--text-faint)";
         return (
           <div key={`box-${nd.id}`}>
             <motion.div
@@ -94,7 +98,7 @@ function Scene({ step, L, animSec, width }: { step: MergeStep; L: MergeLayout; a
               animate={{
                 borderColor: isActive && st !== "merging" ? AMBER : style.border,
                 backgroundColor: style.bg,
-                boxShadow: glowColor ? `0 0 22px -2px ${hexA(glowColor, 0.55)}` : "0 0 0px 0px rgba(0,0,0,0)",
+                boxShadow: lifted ? LIFT : FLAT,
               }}
               transition={fade}
             />
@@ -110,9 +114,9 @@ function Scene({ step, L, animSec, width }: { step: MergeStep; L: MergeLayout; a
                       top: rowTop[nd.depth] + off,
                       width: inner,
                       height: inner,
-                      borderColor: "rgba(255,255,255,0.10)",
+                      borderColor: "rgba(26,26,26,0.14)",
                       fontSize: Math.max(8, inner * 0.36),
-                      color: st === "spent" ? "rgba(92,255,168,0.38)" : "rgba(236,236,241,0.30)",
+                      color: st === "spent" ? hexA(VIZ.success[1], 0.5) : "rgba(26,26,26,0.3)",
                     }}
                   >
                     {g >= 0 ? items[g].value : ""}
@@ -161,7 +165,7 @@ function Scene({ step, L, animSec, width }: { step: MergeStep; L: MergeLayout; a
               <div className="absolute border-l-2 border-dashed" style={{ height: c + 2 * pad + 16, borderColor: AMBER, left: -1 }} />
               <div
                 className="absolute -translate-x-1/2 whitespace-nowrap rounded-md px-1.5 py-px text-[10px] font-bold"
-                style={{ top: -16, background: AMBER, color: "#1a1a1a", fontFamily: MONO_FONT, boxShadow: `0 0 12px ${hexA(AMBER, 0.6)}` }}
+                style={{ top: -16, background: VIZ.active[0], color: VIZ.active[2], border: `1px solid ${AMBER}`, fontFamily: MONO_FONT }}
               >
                 mid = {step.mid.mid}
               </div>
@@ -208,7 +212,7 @@ function Scene({ step, L, animSec, width }: { step: MergeStep; L: MergeLayout; a
             value={it.value}
             tag={it.tag}
             colors={ROLE_COLORS[role]}
-            shadow={isFocus || flying ? SHADOW.focus : role === "sorted" ? SHADOW.glow("rgba(46,230,138,0.28)") : SHADOW.none}
+            shadow={isFocus || flying ? SHADOW.focus : SHADOW.none}
             pop={flying}
             serial={step.serial}
             animSec={animSec}
@@ -242,12 +246,12 @@ function Edges({ step, L }: { step: MergeStep; L: MergeLayout }) {
       const d = `M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`;
       const cs = step.box[child];
       const ps = step.box[nd.id];
-      let color = "#5c5c6a";
+      let color = hexA(EDGE.base, 0.55);
       let dash: string | undefined;
       let flow = false;
       let width = 1.5;
       if (cs === "pending") {
-        color = "rgba(255,255,255,0.10)";
+        color = "rgba(26,26,26,0.14)";
         dash = "4 5";
       } else if (ps === "merging") {
         color = TONE_COLOR.merge;
@@ -257,7 +261,7 @@ function Edges({ step, L }: { step: MergeStep; L: MergeLayout }) {
         color = AMBER;
         width = 2.2;
       } else if (cs === "sorted" || cs === "spent") {
-        color = "rgba(46,230,138,0.40)";
+        color = hexA(EDGE.tree, 0.5);
       }
       paths.push({ key: `${nd.id}-${child}`, d, color, dash, flow, width });
     }
@@ -271,7 +275,7 @@ function Edges({ step, L }: { step: MergeStep; L: MergeLayout }) {
             <motion.path
               d={p.d}
               fill="none"
-              stroke="#e8d4ff"
+              stroke={VIZ.merge[0]}
               strokeWidth={2.2}
               strokeDasharray="3 11"
               strokeLinecap="round"

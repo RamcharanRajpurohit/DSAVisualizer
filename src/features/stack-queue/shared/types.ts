@@ -34,3 +34,5 @@ export interface PseudoBlock {
   title: string;
   lines: readonly string[];
 }
+
+export type SQMode = "stack" | "queue" | "circular" | "deque" | "apps";

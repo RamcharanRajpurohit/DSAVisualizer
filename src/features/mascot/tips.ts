@@ -58,3 +58,20 @@ export const QUIZ_RIGHT = ["Correct! Big brain move 🧠", "Nailed it! 🎉", "Y
 export const QUIZ_WRONG = ["Almost! Read the explanation 👇", "So close — check why below.", "Not quite. You've got the next one!"];
 
 export const pick = <T,>(items: readonly T[]): T => items[Math.floor(Math.random() * items.length)];
+
+/** What Bit says when you arrive on a page. */
+export const PAGE_HELLO: Record<string, string> = {
+  "/": "Hi again! Pick something to explore 👇",
+  "/sorting": "Let's sort things out! 📊",
+  "/stack-queue": "Stacks and queues — last in or first out?",
+  "/linked-list": "Pointers! Mind the order you rewire them.",
+  "/heap": "Heaps: the biggest key always on top 🏔️",
+  "/bst": "Smaller left, bigger right. Let's walk the tree.",
+  "/avl-tree": "Watch me stay balanced ⚖️",
+  "/btree": "B-trees: the tree behind every database.",
+  "/graph": "Nodes, edges, paths — my favourite!",
+};
+
+export const FOCUS_HINT = "Type a value — or leave it empty and I'll pick one 🎲";
+export const RUN_START = ["Here we go! 👀", "Watch closely…", "Ooh, let's see this."];
+export const DANGER = ["Uh-oh!", "Whoa — careful!", "That's a problem…"];

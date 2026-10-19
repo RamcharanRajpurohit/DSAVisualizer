@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { clamp } from "@/lib/utils";
-import { CHIP, EASE } from "../constants";
+import { CHIP, EASE, INK } from "../constants";
 import type { ChipTone } from "../types";
 
 export interface Point {
@@ -62,7 +62,7 @@ export function Chip({ x, y, w, h, label, tone = "base", dur, from, to, shake, g
         backgroundColor: fill,
         borderColor: stroke,
         color: text,
-        boxShadow: glow ? `0 0 0 3px ${stroke}33, 0 0 22px ${stroke}aa` : `0 0 0 0px ${stroke}00, 0 4px 14px rgba(0,0,0,0.35)`,
+        boxShadow: glow ? `0 0 0 3px ${stroke}2e, ${INK.shadow}` : `0 0 0 0px ${stroke}00, ${INK.shadow}`,
       }}
       exit={{
         x: to?.x ?? x,

@@ -2,13 +2,13 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Layers } from "lucide-react";
-import { MONO_FONT, TONE_COLOR } from "@/lib/theme";
+import { MONO_FONT, TONE_COLOR, VIZ } from "@/lib/theme";
 import type { CallFrame } from "./types";
 
 const KIND_COLOR: Record<CallFrame["kind"], string> = {
   call: TONE_COLOR.info,
   merge: TONE_COLOR.merge,
-  partition: "#ff7ac6",
+  partition: VIZ.pivot[1],
 };
 
 /** Breadcrumb of the recursion: the active call is the bright chip on the right. */
@@ -45,10 +45,9 @@ export function CallStack({ frames, width }: { frames: readonly CallFrame[]; wid
                 className="truncate rounded-md border px-2 py-0.5 text-[11px] font-semibold"
                 style={{
                   fontFamily: MONO_FONT,
-                  color: active ? "#fff" : color,
+                  color,
                   borderColor: active ? color : `${color}55`,
-                  background: active ? `${color}33` : `${color}12`,
-                  boxShadow: active ? `0 0 14px -2px ${color}` : undefined,
+                  background: active ? `${color}1f` : `${color}0d`,
                 }}
               >
                 {f.label}

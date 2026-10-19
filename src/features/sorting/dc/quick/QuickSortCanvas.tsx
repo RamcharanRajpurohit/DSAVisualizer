@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo } from "react";
 import { useElementSize } from "@/lib/hooks/useElementSize";
-import { TONE_COLOR, VIZ, type Triple } from "@/lib/theme";
+import { PAPER, VIZ, type Triple } from "@/lib/theme";
 import type { SortCanvasProps } from "../../types";
 import { CallStack } from "../common/CallStack";
 import { Cell } from "../common/Cell";
@@ -19,20 +19,23 @@ const ROLE_COLORS: Record<QuickRole, Triple> = {
   high: VIZ.right,
   pivot: VIZ.pivot,
   locked: VIZ.success,
-  dim: VIZ.base,
+  dim: VIZ.dim,
 };
 
 const REGION = {
-  low: { fill: "rgba(57,170,255,0.10)", stroke: "rgba(124,196,255,0.45)", text: "#7cc4ff" },
-  high: { fill: "rgba(192,139,255,0.10)", stroke: "rgba(219,164,236,0.45)", text: "#dba4ec" },
+  low: { fill: hexA(VIZ.left[1], 0.08), stroke: hexA(VIZ.left[1], 0.45), text: VIZ.left[2] },
+  high: { fill: hexA(VIZ.right[1], 0.08), stroke: hexA(VIZ.right[1], 0.45), text: VIZ.right[2] },
 } as const;
 
 const NODE: Record<QuickNodeState, { border: string; bg: string; cell: string; text: string; dashed?: boolean }> = {
-  pending: { border: "rgba(255,255,255,0.28)", bg: "rgba(255,255,255,0.02)", cell: "rgba(69,69,82,0.45)", text: "#a3a3b2", dashed: true },
-  active: { border: AMBER, bg: "rgba(255,176,0,0.10)", cell: "rgba(69,69,82,0.9)", text: "#ececf1" },
-  split: { border: "rgba(160,160,175,0.35)", bg: "rgba(255,255,255,0.02)", cell: "rgba(69,69,82,0.40)", text: "#8c8c9a" },
-  done: { border: "rgba(92,255,168,0.45)", bg: "rgba(0,168,84,0.07)", cell: "rgba(0,168,84,0.28)", text: "#b8f5d4" },
+  pending: { border: "rgba(26,26,26,0.3)", bg: "rgba(26,26,26,0.02)", cell: "rgba(26,26,26,0.06)", text: PAPER.inkFaint, dashed: true },
+  active: { border: AMBER, bg: hexA(AMBER, 0.08), cell: VIZ.active[0], text: VIZ.active[2] },
+  split: { border: "rgba(26,26,26,0.22)", bg: "rgba(26,26,26,0.015)", cell: "rgba(26,26,26,0.05)", text: PAPER.inkDim },
+  done: { border: hexA(VIZ.success[1], 0.5), bg: hexA(VIZ.success[1], 0.05), cell: VIZ.success[0], text: VIZ.success[2] },
 };
+
+const LIFT = "0 1px 3px 0px rgba(0,0,0,0.12)";
+const FLAT = "0 0 0px 0px rgba(0,0,0,0)";
 
 export function QuickSortCanvas({ step, animSec }: SortCanvasProps<QuickStep>) {
   const [ref, size] = useElementSize();
@@ -74,18 +77,18 @@ function Scene({ step, L, animSec, width }: { step: QuickStep; L: QuickLayout; a
             transition={{ duration: animSec, ease }}
           >
             {(() => {
-              const color = step.range.label.startsWith("partition") ? "#ff7ac6" : AMBER;
+              const color = step.range.label.startsWith("partition") ? VIZ.pivot[1] : AMBER;
               return (
                 <>
                   <div
                     className="absolute inset-x-0 flex justify-center whitespace-nowrap font-mono text-[11px] font-bold"
-                    style={{ top: 0, color, textShadow: "0 1px 2px #000" }}
+                    style={{ top: 0, color }}
                   >
                     {step.range.label}
                   </div>
                   <div
                     className="absolute inset-x-0 rounded-t-md border-x-2 border-t-2"
-                    style={{ top: 18, height: 12, borderColor: color, boxShadow: `0 -4px 14px -6px ${color}` }}
+                    style={{ top: 18, height: 12, borderColor: color }}
                   />
                 </>
               );
@@ -165,10 +168,8 @@ function Scene({ step, L, animSec, width }: { step: QuickStep; L: QuickLayout; a
           : cand.has(it.id)
             ? SHADOW.candidate
             : role === "pivot"
-              ? SHADOW.glow("rgba(255,122,198,0.55)")
-              : role === "locked"
-                ? SHADOW.glow("rgba(46,230,138,0.30)")
-                : SHADOW.none;
+              ? SHADOW.lift
+              : SHADOW.none;
         return (
           <Cell
             key={it.id}
@@ -179,7 +180,7 @@ function Scene({ step, L, animSec, width }: { step: QuickStep; L: QuickLayout; a
             tag={it.tag}
             colors={ROLE_COLORS[role]}
             shadow={shadow}
-            opacity={role === "dim" ? 0.32 : 1}
+            opacity={role === "dim" ? 0.7 : 1}
             arc={arc}
             serial={step.serial}
             animSec={animSec}
@@ -188,7 +189,7 @@ function Scene({ step, L, animSec, width }: { step: QuickStep; L: QuickLayout; a
             {role === "pivot" && (
               <span
                 className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1 py-px font-mono text-[9px] font-bold uppercase"
-                style={{ top: -19, background: VIZ.pivot[0], color: "#fff", boxShadow: `0 0 10px ${hexA("#ff7ac6", 0.6)}` }}
+                style={{ top: -19, background: VIZ.pivot[0], color: VIZ.pivot[2], border: `1px solid ${VIZ.pivot[1]}` }}
               >
                 pivot
               </span>
@@ -217,7 +218,6 @@ function RecursionTree({ step, L, animSec }: { step: QuickStep; L: QuickLayout; 
     <>
       <div className="pointer-events-none absolute flex items-baseline gap-2 font-mono" style={{ left: colX(L, -1), top: L.treeHeaderY }}>
         <span className="text-[10px] font-bold uppercase tracking-wider text-fg-dim">Recursion tree</span>
-        <span className="text-[10px] text-fg-faint">one row per depth · each box is a call&apos;s sub-range</span>
       </div>
       {nodes.map((nd) => {
         const st = nodeState[nd.id];
@@ -238,7 +238,7 @@ function RecursionTree({ step, L, animSec }: { step: QuickStep; L: QuickLayout; 
               scaleY: 1,
               borderColor: style.border,
               backgroundColor: style.bg,
-              boxShadow: active ? `0 0 16px -2px ${hexA(AMBER, 0.6)}` : "0 0 0px 0px rgba(0,0,0,0)",
+              boxShadow: active ? LIFT : FLAT,
             }}
             transition={{ duration: Math.max(0.15, animSec * 0.8) }}
           >
@@ -281,10 +281,10 @@ function RecursionTree({ step, L, animSec }: { step: QuickStep; L: QuickLayout; 
                 fontSize: font,
                 background: VIZ.success[0],
                 borderColor: VIZ.success[1],
-                color: "#fff",
+                color: VIZ.success[2],
               }}
               initial={{ opacity: 0, scale: 0.4 }}
-              animate={{ opacity: 1, scale: 1, boxShadow: `0 0 10px ${hexA(TONE_COLOR.ok, 0.45)}` }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: Math.max(0.15, animSec), ease: [0.34, 1.56, 0.64, 1] }}
               title="Pivot locked in its final position"
             >

@@ -2,6 +2,7 @@
 
 import { Check, Link2 } from "lucide-react";
 import { useState } from "react";
+import { emitMascot } from "@/lib/mascot-bus";
 import { buildShareUrl, type ShareParams } from "@/lib/share";
 
 /** Copies a link that reopens this page with the same input (VisuAlgo-style shareable state). */
@@ -15,6 +16,7 @@ export function ShareButton({ getParams }: { getParams: () => ShareParams }) {
       window.prompt("Copy this link", url);
     }
     window.history.replaceState(null, "", url);
+    emitMascot({ type: "say", text: "Link copied — anyone who opens it sees exactly this 🔗" });
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };

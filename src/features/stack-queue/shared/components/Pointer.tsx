@@ -4,7 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { EASE } from "../constants";
+import { EASE, INK } from "../constants";
 
 type Dir = "left" | "right" | "up" | "down";
 
@@ -33,7 +33,7 @@ export function Pointer({
   dim?: boolean;
 }) {
   const Icon = ICON[dir];
-  const c = alert ? "#ff5c5c" : color;
+  const c = alert ? INK.danger : color;
   return (
     <motion.div
       className="pointer-events-none absolute left-0 top-0 z-20"
@@ -47,9 +47,8 @@ export function Pointer({
           className="whitespace-nowrap rounded-md border px-1.5 py-px font-mono text-[11px] font-semibold"
           animate={{
             color: c,
-            borderColor: `${c}77`,
-            backgroundColor: alert ? "#3a1515" : "#101018",
-            boxShadow: alert ? `0 0 16px ${c}aa` : `0 0 0px ${c}00`,
+            borderColor: `${c}66`,
+            backgroundColor: alert ? INK.dangerTint : INK.well,
           }}
           transition={{ duration: 0.25 }}
         >

@@ -75,7 +75,7 @@ export function runPostfix(input: string): PostfixResult {
     }
     const b = pop(R)!;
     R.snap(`b = pop() → ${b.text}`,
-      `\`${t}\` is an operator. The top value was pushed **last**, so it is the **right** operand b. (Order matters for − / % ^.)`,
+      `\`${t}\` is an operator: the top value was pushed **last**, so it is the **right** operand b. Order matters for − / % ^.`,
       { line: [6, 7], vars: vars(i, { b: b.text }), fx: { floats: [{ item: b, slot: "b" }], hl: { [b.id]: "active" } } });
     const a = pop(R)!;
     R.snap(`a = pop() → ${a.text}`, "The next value down is the **left** operand a.",

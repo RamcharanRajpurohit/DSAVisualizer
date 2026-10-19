@@ -1,35 +1,42 @@
 "use client";
 
 import { ArrowLeftToLine, ArrowRightToLine, Eraser, Eye, RotateCw, Settings2 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Button, Field, Row, Section, Segmented } from "@/components/ui";
 import { ValueInput, useValueInput } from "@/components/visualizer";
+import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { randomValue, randomValues } from "@/lib/values";
-import { CapacityPicker, Note, StatsBar } from "../shared/components/Controls";
+import { implementationsFor } from "../shared/code";
+import { CapacityPicker, StatsBar } from "../shared/components/Controls";
 import { ModeShell } from "../shared/components/ModeShell";
-import { chipLegend, PTR } from "../shared/constants";
+import { chipLegend, INK, PTR } from "../shared/constants";
+import type { ModeProps } from "../shared/modeProps";
 import { CAP_MAX } from "../shared/util";
+import { CIRC_IMPL } from "./code";
 import {
   circFull, circIntro, circUsable, circValues, createCirc, runCirc,
   type CircOp, type CircState, type CircStep, type FullRule,
 } from "./engine";
+import { CIRC_LESSON } from "./lesson";
+import { circFromLink, circLink } from "./link";
 import { CIRC_CODE } from "./pseudocode";
+import { circQuiz } from "./quiz";
 import { RingView } from "./RingView";
 
 const INITIAL = createCirc(6, "count", [15, 42, 8, 23], 4);
 const INTRO = circIntro(INITIAL);
 
 const RULES = [
-  { value: "count" as const, label: "count variable", title: "Track the number of elements" },
-  { value: "gap" as const, label: "one-slot gap", title: "Keep one slot empty; no counter" },
+  { value: "count" as const, label: "Counter", title: "Keep a count: empty is count == 0, full is count == capacity" },
+  { value: "gap" as const, label: "Gap slot", title: "No counter: rear is the next free slot and one slot always stays empty" },
 ];
 
 const LEGEND = chipLegend([
   { label: "front hand", color: PTR.front, kind: "line" },
   { label: "rear hand", color: PTR.rear, kind: "line" },
-  { label: "Kept-empty gap", color: "rgba(255,176,0,0.12)", stroke: "#ffb000" },
-  { label: "Free slot", color: "transparent", stroke: "rgba(255,255,255,0.25)" },
+  { label: "Kept-empty gap", color: INK.warnTint, stroke: INK.warn },
+  { label: "Free slot", color: "transparent", stroke: INK.slot },
 ]);
 
 const COMPLEXITY = {
@@ -39,28 +46,42 @@ const COMPLEXITY = {
     { op: "peek", worst: "O(1)", space: "O(1)" },
     { op: "isFull/isEmpty", worst: "O(1)", space: "O(1)" },
   ],
-  note: "One fixed array, no element ever moves and no slot is wasted: the modulo turns the array's end into its beginning. The gap rule trades one slot of capacity for not needing a counter.",
+  note: "No element moves and no slot is wasted: the modulo turns the array's end into its start.",
 };
 
-export function CircularMode({ tabs, active }: { tabs: ReactNode; active: boolean }) {
+const enq = (v: number): CircOp => ({ kind: "enqueue", v });
+const deq: CircOp = { kind: "dequeue" };
+
+export function CircularMode({ tabs, active, init, shortcuts }: ModeProps) {
   const [model, setModel] = useState<CircState>(INITIAL);
   const [steps, setSteps] = useState<readonly CircStep[]>(INTRO);
   const player = useStepPlayer(steps, { baseMs: 1050, keyboard: active });
   const input = useValueInput({ mode: "multi", maxCount: CAP_MAX });
 
+  const [restored, setRestored] = useState(false);
+  if (init && !restored) {
+    setRestored(true);
+    const s = circFromLink(init);
+    if (s) {
+      setModel(s);
+      setSteps(circIntro(s));
+    }
+  }
+
   const usable = circUsable(model);
   const full = circFull(model);
 
-  const run = (ops: CircOp[]) => {
-    const r = runCirc(model, ops);
+  const runFrom = (state: CircState, ops: CircOp[]) => {
+    const r = runCirc(state, ops);
     setModel(r.state);
     setSteps(r.steps);
   };
+  const run = (ops: CircOp[]) => runFrom(model, ops);
 
   const enqueue = () => {
     const vals = input.read(() => randomValue(circValues(model)));
     if (!vals) return;
-    run(vals.map((v) => ({ kind: "enqueue", v })));
+    run(vals.map(enq));
     input.clear();
   };
 
@@ -68,12 +89,16 @@ export function CircularMode({ tabs, active }: { tabs: ReactNode; active: boolea
     // fill up, overflow once, dequeue two, then enqueue two more: they wrap into the freed slots
     const room = usable - model.count;
     const vals = randomValues(room + 3, { exclude: circValues(model) });
-    run([
-      ...vals.slice(0, room + 1).map((v): CircOp => ({ kind: "enqueue", v })),
-      { kind: "dequeue" },
-      { kind: "dequeue" },
-      ...vals.slice(room + 1).map((v): CircOp => ({ kind: "enqueue", v })),
-    ]);
+    run([...vals.slice(0, room + 1).map(enq), deq, deq, ...vals.slice(room + 1).map(enq)]);
+  };
+
+  const lessonActions: LessonActions = {
+    wrap: () => runFrom(createCirc(6, "count", [15, 42, 8], 2), [enq(23), enq(4), enq(16)]),
+    step: () => runFrom(createCirc(6, "count", [15, 42, 8, 23], 2), [enq(4)]),
+    fillCount: () => runFrom(createCirc(5, "count", [15, 42], 3), [enq(8), enq(23), enq(4), enq(16)]),
+    fillGap: () => runFrom(createCirc(5, "gap", [15, 42], 3), [enq(8), enq(23), enq(4)]),
+    frontWrap: () => runFrom(createCirc(6, "count", [15, 42, 8], 4), [deq, deq, deq]),
+    cycle: () => runFrom(createCirc(4, "count", [11, 22], 0), [enq(33), deq, enq(44), deq, enq(55), deq, enq(66), deq]),
   };
 
   const step = player.step ?? INTRO[0];
@@ -82,63 +107,36 @@ export function CircularMode({ tabs, active }: { tabs: ReactNode; active: boolea
   const controls = (
     <>
       <Section title="Enqueue" icon={<ArrowRightToLine />}>
-        <ValueInput
-          input={input}
-          label="Value(s)"
-          onEnter={enqueue}
-          onRandom={() => input.fill(randomValues(3, { exclude: circValues(model) }))}
-          hint="Empty box → random value · 5, 12, 8 enqueues three"
-        />
-        <Button variant="primary" block icon={<ArrowRightToLine size={15} />} onClick={enqueue} title={full ? "Full — enqueue will show an overflow" : "Add at the rear"}>
+        <ValueInput input={input} label="Value" onEnter={enqueue} onRandom={() => input.fill(randomValues(3, { exclude: circValues(model) }))} />
+        <Button variant="primary" block icon={<ArrowRightToLine size={15} />} onClick={enqueue}
+          title={full ? "Full: this enqueue shows an overflow" : "Add at the rear (empty box = random value)"}>
           Enqueue
         </Button>
       </Section>
 
       <Section title="Operations" icon={<RotateCw />}>
         <Row>
-          <Button icon={<ArrowLeftToLine size={15} />} onClick={() => run([{ kind: "dequeue" }])}
-            title={model.count === 0 ? "Empty — dequeue will show an underflow" : "Remove from the front"}>
+          <Button icon={<ArrowLeftToLine size={15} />} onClick={() => run([deq])} title={model.count === 0 ? "Empty: this shows an underflow" : "Remove from the front"}>
             Dequeue
           </Button>
-          <Button icon={<Eye size={15} />} onClick={() => run([{ kind: "peek" }])}>Peek</Button>
+          <Button icon={<Eye size={15} />} onClick={() => run([{ kind: "peek" }])} title="Read the front without removing it">
+            Peek
+          </Button>
         </Row>
-        <Button size="sm" variant="danger" icon={<Eraser size={14} />} onClick={() => run([{ kind: "clear" }])} disabled={model.count === 0} title="Reset to empty">
-          Clear
-        </Button>
-        <StatsBar
-          size={model.count}
-          capacity={usable}
-          color={PTR.front}
-          items={[
-            { label: "front", value: model.front, className: "text-viz-green" },
-            { label: model.rule === "count" ? "rear" : "rear (free)", value: model.rear, className: "text-viz-blue" },
-            { label: model.rule === "count" ? "count" : "slots", value: model.rule === "count" ? model.count : `${model.cap}` },
-          ]}
-        />
+        <StatsBar size={model.count} capacity={usable} color={PTR.front} />
       </Section>
 
-      <Section title="Setup & demos" icon={<Settings2 />}>
-        <CapacityPicker value={model.cap} onChange={(cap) => run([{ kind: "new", cap, rule: model.rule }])} hint="Picking a size builds a new, empty queue" />
-        <Field label="Full vs empty detection">
+      <Section title="Setup" icon={<Settings2 />}>
+        <CapacityPicker value={model.cap} onChange={(cap) => run([{ kind: "new", cap, rule: model.rule }])} />
+        <Field label="Full check">
           <Segmented<FullRule> options={RULES} value={model.rule} onChange={(rule) => run([{ kind: "new", cap: model.cap, rule }])} size="sm" />
         </Field>
         <Button size="sm" block onClick={wrapDemo} title="Fill up, overflow, dequeue two, enqueue two that wrap around">
           Wrap-around demo
         </Button>
-        <Note>
-          {model.rule === "count" ? (
-            <>
-              <b className="text-fg">Using a count:</b> <code className="text-viz-amber">count == 0</code> is empty,{" "}
-              <code className="text-viz-amber">count == capacity</code> is full. Without it, a full ring and an empty ring both have rear right
-              behind front — the counter removes the ambiguity.
-            </>
-          ) : (
-            <>
-              <b className="text-fg">One-slot gap:</b> rear marks the next free slot. Empty is <code className="text-viz-amber">front == rear</code>;
-              we call it full one step earlier, when <code className="text-viz-amber">(rear + 1) % capacity == front</code>, sacrificing one slot.
-            </>
-          )}
-        </Note>
+        <Button size="sm" variant="ghost" icon={<Eraser size={14} />} onClick={() => run([{ kind: "clear" }])} disabled={model.count === 0} disabledReason="Already empty" title="Reset to empty">
+          Clear
+        </Button>
       </Section>
     </>
   );
@@ -146,13 +144,23 @@ export function CircularMode({ tabs, active }: { tabs: ReactNode; active: boolea
   return (
     <ModeShell
       tabs={tabs}
-      subtitle="A ring buffer: front and rear advance with (i + 1) % capacity, so the array's end wraps to its start and freed slots are reused."
+      subtitle="A ring buffer: indices advance with (i + 1) % capacity, so freed slots are reused."
       controls={controls}
       player={player}
       code={code}
+      implementations={implementationsFor(CIRC_IMPL[step.s.rule], step.op === "idle" ? null : step.op)}
       legend={LEGEND}
       complexity={COMPLEXITY}
       playbackLabel={code.title}
+      lesson={CIRC_LESSON}
+      lessonActions={lessonActions}
+      share={() => circLink(model)}
+      shortcuts={shortcuts}
+      quiz={() => {
+        player.last();
+        return circQuiz(model);
+      }}
+      quizEmpty="Enqueue a few values first."
     >
       {({ width, height }) => <RingView step={step} width={width} height={height} dur={player.animSec} />}
     </ModeShell>

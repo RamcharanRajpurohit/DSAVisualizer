@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { onMascot } from "@/lib/mascot-bus";
 import type { Mood } from "./moods";
-import { CHEERS, pick, QUIZ_RIGHT, QUIZ_WRONG } from "./tips";
+import { CHEERS, DANGER, pick, QUIZ_RIGHT, QUIZ_WRONG, RUN_START } from "./tips";
 
 const DROWSY_AFTER = 45_000;
 const SLEEP_AFTER = 80_000;
@@ -30,6 +30,7 @@ export function useMascotBrain() {
   const sleepy = useRef(false);
   const speechId = useRef(0);
   const lastStatus = useRef(0);
+  const lastChat = useRef(0);
 
   const show = useCallback((m: Mood, ms: number, priority = 1) => {
     const now = Date.now();
@@ -50,6 +51,14 @@ export function useMascotBrain() {
     if (speechTimer.current) clearTimeout(speechTimer.current);
     speechTimer.current = setTimeout(() => setSpeech(null), ms);
   }, []);
+
+  /** Non-urgent remarks: at most one every few seconds so Bit never spams. */
+  const chat = useCallback((text: string, ms = 2600, odds = 1) => {
+    const now = Date.now();
+    if (now - lastChat.current < 5000 || Math.random() > odds) return;
+    lastChat.current = now;
+    say(text, ms);
+  }, [say]);
 
   const hush = useCallback(() => {
     if (speechTimer.current) clearTimeout(speechTimer.current);
@@ -105,11 +114,13 @@ export function useMascotBrain() {
             show("thinking", 2600, 1);
             break;
           }
+          if (!running && !done) chat(pick(RUN_START), 2000, 0.45);
           if (done) {
             show("celebrate", 1800, 3);
-            if (Math.random() < 0.2) say(pick(CHEERS), 2000);
+            chat(pick(CHEERS), 2200, 0.6);
           } else if (e.tone === "danger") {
             show("surprised", 1600, 3);
+            chat(pick(DANGER), 1800, 0.6);
           } else if (e.tone === "warn") {
             show("curious", 1100, 1);
           } else if (e.tone === "ok") {
@@ -130,6 +141,7 @@ export function useMascotBrain() {
           break;
         case "lesson-open":
           show("proud", 1500, 2);
+          chat("Class is in session 🎓", 2200, 0.7);
           break;
         case "say":
           say(e.text);
@@ -144,7 +156,7 @@ export function useMascotBrain() {
       if (moodTimer.current) clearTimeout(moodTimer.current);
       if (speechTimer.current) clearTimeout(speechTimer.current);
     };
-  }, [show, say, scheduleSleep]);
+  }, [show, say, chat, scheduleSleep]);
 
-  return { mood, beat, speech, show, say, hush, activity };
+  return { mood, beat, speech, show, say, chat, hush, activity };
 }

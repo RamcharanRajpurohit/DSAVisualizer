@@ -3,23 +3,24 @@
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactElement, ReactNode } from "react";
 import { RichText } from "@/components/ui";
-import { TONE_COLOR, TONE_LABEL } from "@/lib/theme";
+import { TONE_COLOR, TONE_LABEL, VIZ } from "@/lib/theme";
 import { clamp, cn } from "@/lib/utils";
 import { Chip, type Point } from "../shared/components/Chip";
 import { Pointer } from "../shared/components/Pointer";
 import { rowGeometry } from "../shared/components/SlotRow";
-import { EASE, PTR } from "../shared/constants";
+import { EASE, INK, PTR } from "../shared/constants";
 import type { ChipTone } from "../shared/types";
 import type { AppKind, AppStep, Mark, SItem } from "./core";
 
+// tape cells: paper-white with ink outlines; states are soft tints with the state's own dark text
 const MARK_STYLE: Record<Mark, { border: string; bg: string; color: string }> = {
-  idle: { border: "rgba(255,255,255,0.16)", bg: "#1c1c25", color: "#ececf1" },
-  current: { border: "#ffd466", bg: "rgba(255,176,0,0.22)", color: "#ffe199" },
-  done: { border: "rgba(255,255,255,0.08)", bg: "rgba(255,255,255,0.02)", color: "#6c6c7a" },
-  skip: { border: "rgba(255,255,255,0.04)", bg: "rgba(0,0,0,0)", color: "#4a4a56" },
-  wait: { border: "rgba(90,180,255,0.7)", bg: "rgba(57,170,255,0.13)", color: "#9fd3ff" },
-  ok: { border: "rgba(92,255,168,0.7)", bg: "rgba(46,230,138,0.13)", color: "#7dffbd" },
-  error: { border: "#ff8a8a", bg: "rgba(255,92,92,0.22)", color: "#ffb3b3" },
+  idle: { border: VIZ.base[1], bg: VIZ.base[0], color: VIZ.base[2] },
+  current: { border: VIZ.active[1], bg: VIZ.active[0], color: VIZ.active[2] },
+  done: { border: "rgba(26,26,26,0.18)", bg: "rgba(255,253,248,0.5)", color: INK.faint },
+  skip: { border: "rgba(26,26,26,0.08)", bg: "rgba(0,0,0,0)", color: INK.faint },
+  wait: { border: VIZ.compare[1], bg: VIZ.compare[0], color: VIZ.compare[2] },
+  ok: { border: VIZ.success[1], bg: VIZ.success[0], color: VIZ.success[2] },
+  error: { border: VIZ.danger[1], bg: VIZ.danger[0], color: VIZ.danger[2] },
 };
 
 const OUTPUT_LABEL: Record<AppKind, string> = {
@@ -132,7 +133,7 @@ export function AppView({
               backgroundColor: m.bg,
               color: m.color,
               x: err ? [0, -5, 5, -3, 3, 0] : 0,
-              boxShadow: s.marks[i] === "current" ? "0 0 18px rgba(255,176,0,0.45)" : err ? "0 0 16px rgba(255,92,92,0.5)" : "0 0 0px rgba(0,0,0,0)",
+              boxShadow: s.marks[i] === "current" ? `0 0 0 3px ${INK.warnTint}` : err ? `0 0 0 3px ${INK.dangerTint}` : INK.none,
               textDecorationLine: s.marks[i] === "skip" ? "line-through" : "none",
             }}
             transition={{ duration: 0.25 }}
@@ -156,9 +157,9 @@ export function AppView({
       {/* NGE result row */}
       {kind === "nge" && (
         <>
-          <Caption x={tg.x(0)} y={resY - 15} className="text-viz-green/80">next greater</Caption>
+          <Caption x={tg.x(0)} y={resY - 15} className="text-viz-green-deep">next greater</Caption>
           {s.tokens.map((t, i) => (
-            <div key={`res${t.id}`} className="absolute rounded-md border-2 border-dashed border-white/10" style={{ left: tg.x(i), top: resY, width: tg.cellW, height: th }} />
+            <div key={`res${t.id}`} className="absolute rounded-md border-2 border-dashed border-line" style={{ left: tg.x(i), top: resY, width: tg.cellW, height: th }} />
           ))}
         </>
       )}
@@ -169,7 +170,7 @@ export function AppView({
         className="absolute rounded-b-xl border-x-[5px] border-b-[5px]"
         style={{ left: colX, top: colTop, width: colW, height: colBottom - colTop }}
         initial={false}
-        animate={{ borderColor: fx.stackAlert ? "#ff5c5c" : "#4a4a5a", boxShadow: fx.stackAlert ? "0 0 22px rgba(255,92,92,0.5)" : "0 0 0px rgba(0,0,0,0)" }}
+        animate={{ borderColor: fx.stackAlert ? INK.danger : INK.wall, backgroundColor: fx.stackAlert ? INK.dangerTint : "rgba(0,0,0,0)" }}
         transition={{ duration: 0.3 }}
       />
       {s.stack.length === 0 && (
@@ -192,13 +193,13 @@ export function AppView({
       {kind === "infix" &&
         Array.from({ length: Math.min(n, perRow * outRows) }, (_, k) => {
           const p = outPos(k);
-          return <div key={`oslot${k}`} className="absolute rounded-md border border-dashed border-white/[0.06]" style={{ left: p.x, top: p.y, width: oc, height: oc }} />;
+          return <div key={`oslot${k}`} className="absolute rounded-md border border-dashed border-line" style={{ left: p.x, top: p.y, width: oc, height: oc }} />;
         })}
       {kind === "postfix" && (
         <>
-          <div className="absolute rounded-lg border-2 border-dashed border-white/10" style={{ left: calcPos.a.x, top: calcY, width: cw, height: cw }} />
-          <div className="absolute rounded-lg border-2 border-dashed border-white/10" style={{ left: calcPos.b.x, top: calcY, width: cw, height: cw }} />
-          <div className="absolute flex items-center justify-center font-mono text-xl font-bold text-viz-amber" style={{ left: ox + cw, width: 52, top: calcY, height: cw }}>
+          <div className="absolute rounded-lg border-2 border-dashed border-line-strong" style={{ left: calcPos.a.x, top: calcY, width: cw, height: cw }} />
+          <div className="absolute rounded-lg border-2 border-dashed border-line-strong" style={{ left: calcPos.b.x, top: calcY, width: cw, height: cw }} />
+          <div className="absolute flex items-center justify-center font-mono text-xl font-bold" style={{ left: ox + cw, width: 52, top: calcY, height: cw, color: TONE_COLOR.warn }}>
             {opSymbol}
           </div>
           <div className="absolute text-center font-mono text-[10px] text-fg-faint" style={{ left: calcPos.a.x, width: cw, top: calcY + cw + 2 }}>a</div>
@@ -214,7 +215,7 @@ export function AppView({
         {fx.card && (
           <motion.div
             key={fx.card.title + fx.card.body}
-            className="pointer-events-none absolute rounded-xl border bg-surface/95 px-3 py-2 shadow-lg"
+            className="pointer-events-none absolute rounded-xl border bg-surface px-3 py-2 shadow-sm"
             style={{ left: ox, top: cardY, maxWidth: Math.min(ow, 340), borderColor: `${TONE_COLOR[fx.card.tone]}66`, boxShadow: `inset 3px 0 0 ${TONE_COLOR[fx.card.tone]}` }}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -234,14 +235,13 @@ export function AppView({
         {fx.verdict && (
           <motion.div
             key={fx.verdict.text}
-            className="pointer-events-none absolute rounded-xl px-4 py-2.5 font-mono text-base font-bold shadow-xl"
+            className="pointer-events-none absolute rounded-xl px-4 py-2.5 font-mono text-base font-bold shadow-sm"
             style={{
               left: ox,
               top: verdictY,
               maxWidth: ow,
               background: TONE_LABEL[fx.verdict.tone][0],
               color: TONE_LABEL[fx.verdict.tone][1],
-              boxShadow: `0 0 30px ${TONE_LABEL[fx.verdict.tone][0]}66`,
             }}
             initial={{ opacity: 0, scale: 0.9, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

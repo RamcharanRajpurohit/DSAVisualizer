@@ -17,12 +17,12 @@ export function Pointer({
       exit={{ opacity: 0, y: y + 6 }}
       transition={{ duration: animSec, ease: [0.33, 1, 0.68, 1] }}
     >
-      <svg width={12 * size} height={7 * size} viewBox="0 0 12 7" style={{ filter: `drop-shadow(0 0 4px ${color})` }}>
+      <svg width={12 * size} height={7 * size} viewBox="0 0 12 7">
         <path d="M6 0 L12 7 L0 7 Z" fill={color} />
       </svg>
       <span
         className="font-bold leading-none"
-        style={{ color, fontFamily: MONO_FONT, fontSize: Math.max(10, 12 * size), marginTop: 1, textShadow: "0 1px 2px #000" }}
+        style={{ color, fontFamily: MONO_FONT, fontSize: Math.max(10, 12 * size), marginTop: 1 }}
       >
         {label}
       </span>

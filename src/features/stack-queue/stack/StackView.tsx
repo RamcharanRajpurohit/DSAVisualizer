@@ -6,7 +6,7 @@ import { clamp } from "@/lib/utils";
 import { Chip } from "../shared/components/Chip";
 import { Callout, ResultBadge } from "../shared/components/Callout";
 import { Pointer } from "../shared/components/Pointer";
-import { CHIP, EASE, PTR } from "../shared/constants";
+import { CHIP, EASE, INK, PTR } from "../shared/constants";
 import type { StackStep } from "./engine";
 
 const WALL = 6;
@@ -33,8 +33,7 @@ function geometry(W: number, H: number, cap: number) {
 export function StackView({ step, width, height, dur }: { step: StackStep; width: number; height: number; dur: number }) {
   const { s, fx } = step;
   const g = geometry(width, height, s.cap);
-  const wallColor = fx.flash ? "#ff5c5c" : "#4a4a5a";
-  const wallGlow = fx.flash ? "0 0 22px rgba(255,92,92,0.65)" : "0 0 0 rgba(0,0,0,0)";
+  const wallColor = fx.flash ? INK.danger : INK.wall;
   const rightX = g.left + g.innerW + WALL;
   const empty = s.top === -1 && !fx.float;
 
@@ -84,7 +83,7 @@ export function StackView({ step, width, height, dur }: { step: StackStep; width
       {/* slots (dashed outlines) and stale values */}
       {Array.from({ length: s.cap }, (_, i) => {
         const hl = fx.slot?.index === i ? fx.slot.tone : null;
-        const c = hl ? CHIP[hl][1] : "rgba(255,255,255,0.09)";
+        const c = hl ? CHIP[hl][1] : INK.slot;
         const stale = s.slots[i] ? null : s.stale[i];
         return (
           <motion.div
@@ -92,11 +91,11 @@ export function StackView({ step, width, height, dur }: { step: StackStep; width
             className="absolute flex items-center justify-center rounded-lg border-2 border-dashed font-mono"
             style={{ left: g.slotX, top: g.slotY(i), width: g.slotW, height: g.slotH }}
             initial={false}
-            animate={{ borderColor: c, boxShadow: hl ? `0 0 18px ${c}66` : "0 0 0px rgba(0,0,0,0)" }}
+            animate={{ borderColor: c, backgroundColor: hl ? `${CHIP[hl][0]}99` : "rgba(0,0,0,0)" }}
             transition={{ duration: 0.25 }}
           >
             {stale != null && (
-              <span className="select-none text-[13px] italic text-fg-faint/40 line-through decoration-fg-faint/30" title="Stale value: above top, so not part of the stack">
+              <span className="select-none text-[13px] italic text-fg-faint/70 line-through decoration-fg-faint/50" title="Stale value: above top, so not part of the stack">
                 {stale}
               </span>
             )}
@@ -109,21 +108,21 @@ export function StackView({ step, width, height, dur }: { step: StackStep; width
         className="absolute rounded-l-md"
         style={{ left: g.left - WALL, top: g.containerTop, width: WALL, height: g.baseY - g.containerTop + WALL }}
         initial={false}
-        animate={{ backgroundColor: fx.flash === "overflow" ? wallColor : "#4a4a5a", boxShadow: fx.flash === "overflow" ? wallGlow : "0 0 0 rgba(0,0,0,0)" }}
+        animate={{ backgroundColor: fx.flash === "overflow" ? wallColor : INK.wall }}
         transition={{ duration: 0.3 }}
       />
       <motion.div
         className="absolute rounded-r-md"
         style={{ left: g.left + g.innerW, top: g.containerTop, width: WALL, height: g.baseY - g.containerTop + WALL }}
         initial={false}
-        animate={{ backgroundColor: fx.flash === "overflow" ? wallColor : "#4a4a5a", boxShadow: fx.flash === "overflow" ? wallGlow : "0 0 0 rgba(0,0,0,0)" }}
+        animate={{ backgroundColor: fx.flash === "overflow" ? wallColor : INK.wall }}
         transition={{ duration: 0.3 }}
       />
       <motion.div
         className="absolute rounded-b-md"
         style={{ left: g.left - WALL, top: g.baseY, width: g.innerW + 2 * WALL, height: WALL }}
         initial={false}
-        animate={{ backgroundColor: fx.flash === "underflow" ? wallColor : "#4a4a5a", boxShadow: fx.flash === "underflow" ? wallGlow : "0 0 0 rgba(0,0,0,0)" }}
+        animate={{ backgroundColor: fx.flash === "underflow" ? wallColor : INK.wall }}
         transition={{ duration: 0.3 }}
       />
       {/* the open end, where push and pop happen */}
@@ -131,7 +130,7 @@ export function StackView({ step, width, height, dur }: { step: StackStep; width
         className="absolute border-t-2 border-dashed"
         style={{ left: g.left - WALL, top: g.containerTop - 1, width: g.innerW + 2 * WALL }}
         initial={false}
-        animate={{ borderColor: fx.flash === "overflow" ? "#ff5c5c" : "rgba(255,255,255,0.12)" }}
+        animate={{ borderColor: fx.flash === "overflow" ? INK.danger : INK.line }}
       />
 
       <AnimatePresence>
@@ -167,13 +166,13 @@ export function StackView({ step, width, height, dur }: { step: StackStep; width
 
       {/* -1 marker under the base */}
       <div
-        className="absolute flex items-center justify-end font-mono text-[10px] text-fg-faint/70"
+        className="absolute flex items-center justify-end font-mono text-[10px] text-fg-faint"
         style={{ left: g.left - WALL - 46, width: 38, top: g.minusY - 8, height: 16 }}
       >
         −1
       </div>
       <motion.div
-        className="absolute h-0 border-t border-dashed border-white/10"
+        className="absolute h-0 border-t border-dashed border-line-strong"
         style={{ left: g.left, width: g.innerW, top: g.minusY }}
         initial={false}
         animate={{ opacity: s.top === -1 ? 1 : 0.4 }}

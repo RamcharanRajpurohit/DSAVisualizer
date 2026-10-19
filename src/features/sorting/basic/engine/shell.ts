@@ -40,9 +40,8 @@ export function recordShell(input: readonly number[]): BarsStep[] {
   r.snap({
     title: `Shell sort · ${n} elements`,
     detail:
-      "Insertion sort only moves elements one slot at a time, so a small value at the far right needs many shifts. " +
-      "Shell sort first insertion-sorts elements that are **gap** apart, letting values jump far in one move, then shrinks the gap.\n" +
-      `Gaps used here (n/2, n/4, …): ${listText(gaps)}. The last pass (gap 1) is plain insertion sort on an almost-sorted array.`,
+      "Insertion-sort elements **gap** apart so values jump far in one move, then shrink the gap. " +
+      `Gaps here: ${listText(gaps)}; the last pass (gap 1) is plain insertion sort on an almost-sorted array.`,
     tone: "info",
     line: [1, 2],
     tag: `gaps ${gaps.join(" → ")}`,
@@ -55,8 +54,8 @@ export function recordShell(input: readonly number[]): BarsStep[] {
       title: `gap = ${gap}`,
       detail:
         gap === 1
-          ? "gap = 1: an ordinary insertion sort. Earlier passes already moved most elements close to their place, so it needs only a few short shifts."
-          : `Elements ${gap} apart form ${gap} interleaved sub-sequences (indices with the same remainder mod ${gap}). Each one gets insertion-sorted on its own.`,
+          ? "Plain insertion sort. Earlier passes moved most elements close to their place, so the shifts are short."
+          : `Elements ${gap} apart form ${gap} interleaved sub-sequences, each insertion-sorted on its own.`,
       tone: "info",
       line: 3,
       tag,
@@ -74,9 +73,9 @@ export function recordShell(input: readonly number[]): BarsStep[] {
         title: `tmp = ${tmp} (A[${i}])`,
         detail:
           (gap > 1
-            ? `Work on the sub-sequence at indices ${listText(chainList(i, gap), 8)} (the others are dimmed). `
+            ? `Sub-sequence ${listText(chainList(i, gap), 8)} (others dimmed). `
             : "") +
-          `Lift **${tmp}** out — \`tmp ← A[${i}]\`, \`j ← ${i}\` — and insert it among the elements ${gap === 1 ? "to its left" : `${gap} slots apart to its left`}.`,
+          `Lift **${tmp}** out and insert it among the elements ${gap === 1 ? "to its left" : `${gap} slots apart to its left`}.`,
         tone: "info",
         line: [4, 5, 6],
         marks: chain,
@@ -121,7 +120,7 @@ export function recordShell(input: readonly number[]): BarsStep[] {
             title: `Shift ${a} → index ${j}`,
             detail:
               `\`A[${j}] ← A[${j - gap}]\`, then \`j ← ${j - gap}\`: the gap jumps to index ${j - gap}.` +
-              (gap > 1 ? ` Plain insertion sort would have needed up to ${gap} one-slot shifts for this move.` : ""),
+              (gap > 1 ? ` Insertion sort would need ${gap} one-slot shifts for this.` : ""),
             tone: "warn",
             line: [8, 9],
             marks: { ...chain, [j]: "active" },
@@ -179,8 +178,7 @@ export function recordShell(input: readonly number[]): BarsStep[] {
   r.snap({
     title: "Sorted!",
     detail:
-      `${gaps.length} gap ${gaps.length === 1 ? "pass" : "passes"} (${gaps.join(", ")}) with **${comparisons}** comparisons and **${shifts}** shifts. ` +
-      "Long-distance moves can carry an element past an equal one, so shell sort is **not stable**." +
+      `**${comparisons}** comparisons and **${shifts}** shifts over gaps ${gaps.join(", ")}; long jumps make it **not stable**.` +
       stabilityNote(r.slots),
     tone: "ok",
     marks: paint({}, 0, n - 1, "success"),

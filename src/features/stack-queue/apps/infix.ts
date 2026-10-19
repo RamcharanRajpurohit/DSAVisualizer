@@ -162,7 +162,7 @@ export function runInfix(input: string): InfixResult {
   }
   const post = R.s.output.map((x) => x.text);
   R.snap("Postfix ready ✓",
-    `\`${outText()}\`\nRead it left to right with a stack (see **Postfix eval**): operands are pushed, each operator pops its two operands. No parentheses or precedence rules needed. O(n) time.`,
+    `\`${outText()}\`\nNo parentheses or precedence rules are needed any more: each operator just pops its two operands.`,
     { tone: "ok", vars: vars(T.length), fx: { verdict: { text: post.join(" "), tone: "ok" } } });
   return { steps: R.steps, postfix: post };
 }

@@ -1,4 +1,5 @@
 import { VIZ } from "@/lib/theme";
+import { QUICK_IMPL, QUICK_LESSON } from "../../content";
 import type { SortAlgorithmDef, SortOptionSpec, SortRunOptions } from "../../types";
 import { HOARE_PSEUDOCODE, LOMUTO_PSEUDOCODE } from "./pseudocode";
 import { QuickSortCanvas } from "./QuickSortCanvas";
@@ -15,8 +16,8 @@ const OPTIONS: readonly SortOptionSpec[] = [
       { value: "hoare", label: "Hoare", title: "Two pointers scan inward from both ends" },
     ],
     hints: {
-      lomuto: "j scans left → right; i marks the end of the ≤ region. The pivot is locked into its final place after each partition.",
-      hoare: "i and j scan inward from both ends and swap misplaced pairs. Fewer swaps, but the pivot isn't locked in place.",
+      lomuto: "One scan; the pivot lands in its final spot.",
+      hoare: "Two pointers scan inward; fewer swaps.",
     },
   },
   {
@@ -32,11 +33,11 @@ const OPTIONS: readonly SortOptionSpec[] = [
       { value: "median3", label: "Median of three" },
     ],
     hints: {
-      last: "Classic textbook choice. Try the Sorted preset to see the O(n²) worst case.",
-      first: "Also O(n²) on sorted or reversed input.",
-      middle: "Sorted input now splits evenly.",
-      random: "Expected O(n log n) on every input.",
-      median3: "Median of A[lo], A[mid], A[hi] — robust and cheap.",
+      last: "Sorted input hits the O(n²) worst case.",
+      first: "Sorted or reversed input → O(n²).",
+      middle: "Sorted input splits evenly.",
+      random: "Expected O(n log n) on any input.",
+      median3: "Median of A[lo], A[mid], A[hi].",
     },
   },
 ];
@@ -44,9 +45,7 @@ const OPTIONS: readonly SortOptionSpec[] = [
 export const quickSort: SortAlgorithmDef<QuickStep> = {
   key: "quick",
   name: "Quick Sort",
-  blurb:
-    "Pick a pivot, partition the range so smaller elements go left and larger go right, then sort each side recursively. " +
-    "Watch the ≤ / > regions grow and the recursion tree take shape.",
+  blurb: "Partition around a pivot, then sort each side recursively.",
   family: "Divide & conquer",
   stable: false,
   inPlace: true,
@@ -55,6 +54,8 @@ export const quickSort: SortAlgorithmDef<QuickStep> = {
     { op: "Space", best: "log n", avg: "log n", worst: "O(n)" },
   ],
   pseudocode: LOMUTO_PSEUDOCODE,
+  implementations: QUICK_IMPL,
+  lesson: QUICK_LESSON,
   legend: [
     { label: "Unsorted", color: VIZ.base[0], stroke: VIZ.base[1] },
     { label: "Pivot", color: VIZ.pivot[0], stroke: VIZ.pivot[1] },
@@ -62,8 +63,8 @@ export const quickSort: SortAlgorithmDef<QuickStep> = {
     { label: "> pivot", color: VIZ.right[0], stroke: VIZ.right[1] },
     { label: "Examining", color: "transparent", stroke: VIZ.active[1] },
     { label: "Final position", color: VIZ.success[0], stroke: VIZ.success[1] },
-    { label: "Outside range", color: "rgba(69,69,82,0.35)", stroke: "rgba(108,108,120,0.35)" },
-    { label: "Pending call", color: "transparent", stroke: "rgba(255,255,255,0.3)", kind: "dashed" },
+    { label: "Outside range", color: VIZ.dim[0], stroke: VIZ.dim[1] },
+    { label: "Pending call", color: "transparent", stroke: "rgba(26,26,26,0.3)", kind: "dashed" },
   ],
   maxSize: 20,
   record: (input: readonly number[], opts?: SortRunOptions) => recordQuickSort(input, opts ?? {}),

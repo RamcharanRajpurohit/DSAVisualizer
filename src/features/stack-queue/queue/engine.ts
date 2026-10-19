@@ -45,11 +45,13 @@ export type QueueOpKind = QueueOp["kind"] | "idle";
 export type QueueStep = SnapStep<QueueOpKind, QueueState, QueueFx>;
 type R = Recorder<QueueOpKind, QueueState, QueueFx>;
 
-export function createQueue(cap: number, values: readonly number[] = []): QueueState {
+/** A queue whose elements start at index `front` (so an example can already have wasted slots). */
+export function createQueue(cap: number, values: readonly number[] = [], front = 0): QueueState {
   const slots = emptySlots<Item>(cap);
-  const vs = values.slice(0, cap);
-  vs.forEach((v, i) => (slots[i] = { id: `q${i}`, v }));
-  return { slots, front: 0, rear: vs.length - 1, cap, nextId: vs.length };
+  const f = Math.max(0, Math.min(front, cap));
+  const vs = values.slice(0, cap - f);
+  vs.forEach((v, i) => (slots[f + i] = { id: `q${i}`, v }));
+  return { slots, front: f, rear: f + vs.length - 1, cap, nextId: vs.length };
 }
 
 export const queueSize = (s: QueueState) => Math.max(0, s.rear - s.front + 1);
@@ -80,13 +82,11 @@ function enqueue(R: R, v: number): boolean {
       { tone: "warn", line: 2, vars: x, fx: { float: { item, tone: "new", at: cap }, ptr: { rear: "focus" } } });
     if (front > 0) {
       R.snap(`"Full" — but ${plural(front, "slot")} sit empty!`,
-        `enqueue refuses, yet A[0..${front - 1}] ${front === 1 ? "is" : "are"} free: ${front === 1 ? "it was" : "they were"} emptied by earlier dequeues. ` +
-          "Because `rear` only ever moves right, nothing will be written there again. This is the **wasted space** problem of a linear array queue.",
+        `enqueue refuses, yet A[0..${front - 1}] ${front === 1 ? "is" : "are"} free (emptied by dequeues). \`rear\` only moves right, so ${front === 1 ? "it is" : "they are"} never reused: the **wasted space** problem.`,
         { tone: "danger", line: 3, vars: x, hold: 1.8,
           fx: { float: { item, tone: "danger", at: cap, shake: true }, waste: true, ptr: { rear: "alert" }, callout: { text: `${plural(front, "wasted slot")} — can't be reused`, tone: "danger", at: "waste" } } });
       R.snap("Two ways out",
-        "① **Shift** every element back to index 0 (the **Compact** button) — but that costs O(n).\n" +
-          "② Let the indices **wrap around**: `rear = (rear + 1) % capacity`. That is a **circular queue** — O(1), no wasted slot. Open the **Circular** tab to see it.",
+        "① **Compact**: shift everything back to index 0, in O(n).\n② **Wrap** the indices with `% capacity`: a circular queue, in O(1).",
         { tone: "warn", line: 3, vars: x, hold: 1.4, fx: { waste: true, result: { text: `enqueue(${v}) → "full"`, tone: "danger" } } });
     } else {
       R.snap("Queue Overflow!",
@@ -107,9 +107,8 @@ function enqueue(R: R, v: number): boolean {
     { line: 4, vars: x, fx: { float: { item, tone: "new", at: rear + 1 }, slot: { index: rear + 1, tone: "new" }, ptr: { rear: "focus" } } });
   R.s = { ...R.s, slots: setAt(R.s.slots, rear + 1, item) };
   R.snap(`A[${rear + 1}] = ${v}`,
-    `**${v}** joins the back of the queue. O(1) — nothing else moves.` +
-      (front === rear + 1 ? `\nIt is the only element, so front (${front}) and rear (${rear + 1}) point at the same slot.` : "") +
-      (rear + 1 === cap - 1 ? "\nrear is now at the **last index**: the next enqueue will be refused, however many dequeues happen." : ""),
+    `**${v}** joins the back in O(1); nothing else moves.` +
+      (rear + 1 === cap - 1 ? " rear is now at the **last index**: the next enqueue will be refused." : front === rear + 1 ? " It is the only element, so front == rear." : ""),
     { tone: "ok", line: 5, vars: x, fx: { hl: { [item.id]: "ok" } } });
   return true;
 }
@@ -140,8 +139,7 @@ function dequeue(R: R): boolean {
     { line: 5, vars: x, fx: { float: { item, tone: "out", at: front }, ptr: { front: "focus" } } });
   R.snap(`return ${item.v}`,
     `dequeue() hands back **${item.v}** in O(1).` +
-      (front + 1 > rear ? " The queue is now empty (front > rear)." : ` The new front is A[${front + 1}] = ${s0.slots[front + 1]?.v}.`) +
-      `\n${plural(front + 1, "slot")} at the start of the array ${front + 1 === 1 ? "is" : "are"} now wasted.`,
+      (front + 1 > rear ? ` The queue is now empty, with ${plural(front + 1, "wasted slot")}.` : ` ${plural(front + 1, "slot")} before front ${front + 1 === 1 ? "is" : "are"} now wasted.`),
     { tone: "ok", line: 6, vars: x, fx: { waste: true, result: { text: `dequeue() → ${item.v}`, tone: "ok" } } });
   return true;
 }
@@ -179,14 +177,14 @@ function compact(R: R): boolean {
   }
   R.s = { ...R.s, front: 0, rear: n - 1 };
   R.snap("front = 0, rear = n − 1",
-    `Reset the indices: front = 0, rear = ${n - 1}. The wasted slots are free again — but this cost O(n). Doing it on every dequeue would make dequeue O(n); a **circular queue** gets the same effect in O(1) by wrapping the indices instead of moving data.`,
+    `The indices reset to front = 0, rear = ${n - 1}, so the wasted slots are usable again. That cost O(n); a **circular queue** gets the same in O(1).`,
     { tone: "ok", line: [5, 6], vars: { n }, fx: { ptr: { front: "focus", rear: "focus" } } });
   return true;
 }
 
 function clear(R: R) {
   R.s = { ...R.s, slots: R.s.slots.map(() => null), front: 0, rear: -1 };
-  R.snap("clear(): front = 0, rear = -1", "Back to the initial empty state. Resetting front also reclaims any wasted slots. O(1).",
+  R.snap("clear(): front = 0, rear = -1", "Back to the empty state in O(1), which also reclaims any wasted slots.",
     { tone: "ok", line: [2, 3], fx: { ptr: { front: "focus", rear: "focus" } } });
   return true;
 }
@@ -227,9 +225,7 @@ export function runQueue(state: QueueState, ops: readonly QueueOp[]): RunResult<
 export function queueIntro(state: QueueState): QueueStep[] {
   const R: R = new Recorder<QueueOpKind, QueueState, QueueFx>(state, "idle", varsOf);
   R.snap("A queue: First In, First Out",
-    "Like a line at a counter: new elements **enqueue** at the **rear**, and **dequeue** removes from the **front**. " +
-      "This version stores it in a plain array where both indices only move right.\n" +
-      "Dequeue a few times, then keep enqueuing — watch what happens when rear hits the end (or press **Wasted-space demo**).",
+    "Like a line at a counter: **enqueue** joins at the **rear**, **dequeue** leaves from the **front**. In a plain array both indices only move right.",
     {});
   return R.steps;
 }

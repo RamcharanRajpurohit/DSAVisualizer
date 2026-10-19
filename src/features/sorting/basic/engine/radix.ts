@@ -52,7 +52,7 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
   if (n === 0) {
     snap({
       title: "Nothing to sort",
-      detail: "The array is empty. Add a few values (or generate a random array) to watch radix sort work.",
+      detail: "The array is empty.",
       tone: "muted",
       done: true,
       vars: vars(null, null, null, null),
@@ -63,13 +63,9 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
   snap({
     title: `Radix sort (LSD) · ${s(digits, "digit")} per key`,
     detail:
-      "Sort one **digit** at a time, starting with the least significant (ones) digit. Each pass drops every element into one " +
-      "of 10 buckets by that digit, then collects the buckets in order 0 → 9. Because each pass is **stable**, after pass p the " +
-      `array is sorted by its last p digits — so ${s(digits, "pass", "passes")} sort it completely, with no comparisons at all.` +
-      (offset
-        ? `\nThe input contains negative numbers, whose digits don't order correctly, so every key gets **+${offset}** (= −min) first. ` +
-          "Adding the same amount to everything keeps the order. The shifted key is shown under each value."
-        : ""),
+      "Bucket the elements by one **digit** per pass, ones digit first, and collect buckets 0 → 9. " +
+      `Each pass is **stable**, so ${s(digits, "pass", "passes")} sort every digit with no comparisons.` +
+      (offset ? `\nNegative digits don't order correctly, so every key gets **+${offset}** (= −min), shown under each value.` : ""),
     tone: "info",
     line: [1, 2],
     tag: `${s(digits, "pass", "passes")}`,
@@ -98,8 +94,8 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
     snap({
       title: `Pass ${pass + 1}: the ${placeName(pass)} digit`,
       detail:
-        `\`exp = ${exp}\`: look only at digit ⌊key / ${exp}⌋ mod 10 (highlighted in each tile) and ignore the rest. All ten buckets start empty.` +
-        (pass > 0 ? ` The order left by the previous pass decides ties, so it must be kept — that's why buckets are FIFO queues.` : ""),
+        `\`exp = ${exp}\`: only digit ⌊key / ${exp}⌋ mod 10 (highlighted) matters.` +
+        (pass > 0 ? " Ties keep the previous pass's order, which is why buckets are FIFO queues." : ""),
       tone: "info",
       line: [3, 4],
       digitPos: pass,
@@ -118,7 +114,7 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
           (offset ? `key = ${it.value} + ${offset} = ${k}; ` : "") +
           `⌊${k} / ${exp}⌋ mod 10 = **${d}**, so ${it.value} is appended to the **end** of bucket ${d}` +
           (ahead.length
-            ? `, behind ${listText(ahead, 6)} which came earlier — appending keeps earlier elements first, so the pass is stable.`
+            ? `, behind ${listText(ahead, 6)}: appending keeps earlier elements first, so the pass is stable.`
             : "."),
         tone: "warn",
         line: [5, 6, 7],
@@ -156,8 +152,7 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
       snap({
         title: `Collect bucket ${b} → A[${start}${group.length > 1 ? `..${pos - 1}` : ""}]`,
         detail:
-          `Bucket ${b} holds ${listText(group.map((g) => g.value), 8)} — ${group.length > 1 ? "they go" : "it goes"} back into the next free ` +
-          `${group.length > 1 ? "slots" : "slot"} in the same order they arrived.`,
+          `Bucket ${b} (${listText(group.map((g) => g.value), 8)}) goes back in arrival order.`,
         tone: "info",
         line: 8,
         digitPos: pass,
@@ -173,8 +168,7 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
       title: lastPass ? `Sorted by all ${s(pass + 1, "digit")}` : `Sorted by the last ${s(pass + 1, "digit")}`,
       detail: lastPass
         ? `That was the most significant digit (no key reaches ${exp * 10}), so the array is fully sorted.`
-        : `Looking only at the last ${s(pass + 1, "digit")}, the array is now in order: ${listText(row.map((it) => it?.value ?? 0), 10)}. ` +
-          `Next: the ${placeName(pass + 1)} digit (\`exp ← ${exp * 10}\`).`,
+        : `The array is in order by its last ${s(pass + 1, "digit")}. Next: the ${placeName(pass + 1)} digit (\`exp ← ${exp * 10}\`).`,
       tone: "ok",
       line: 3,
       digitPos: pass,
@@ -188,9 +182,8 @@ export function recordRadix(source: readonly number[]): RadixStep[] {
   snap({
     title: "Sorted!",
     detail:
-      `${s(pass, "pass", "passes")} × (${n} elements + 10 buckets): O(d · (n + b)) time with d = ${digits}, b = 10 — ` +
-      `and not a single comparison. ${moves} element moves in total.` +
-      (offset ? ` The +${offset} offset only affected the keys; the values themselves never changed.` : ""),
+      `${s(pass, "pass", "passes")} × (${n} elements + 10 buckets) = O(d · (n + b)), with ${moves} moves and no comparisons.` +
+      (offset ? ` The +${offset} offset only changed the keys, never the values.` : ""),
     tone: "ok",
     line: 9,
     marks: allIds("success"),

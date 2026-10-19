@@ -2,13 +2,13 @@
 
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "motion/react";
 import { useEffect, type ReactElement } from "react";
-import { MONO_FONT } from "@/lib/theme";
+import { MONO_FONT, VIZ } from "@/lib/theme";
 import { clamp } from "@/lib/utils";
 import { Chip } from "../shared/components/Chip";
 import { Callout, ResultBadge } from "../shared/components/Callout";
 import { Pointer } from "../shared/components/Pointer";
 import { rowGeometry, SlotRow } from "../shared/components/SlotRow";
-import { CHIP, EASE, PTR } from "../shared/constants";
+import { CHIP, EASE, INK, PTR } from "../shared/constants";
 import type { ChipTone } from "../shared/types";
 import { mod } from "../shared/util";
 import type { CircStep } from "./engine";
@@ -74,14 +74,14 @@ function Hand({
   const y2 = useTransform(a, (v) => cy + r1 * Math.sin(v * RAD));
   const lx = useTransform(a, (v) => cx + labelR * Math.cos(v * RAD) - side * 15 * Math.sin(v * RAD));
   const ly = useTransform(a, (v) => cy + labelR * Math.sin(v * RAD) + side * 15 * Math.cos(v * RAD));
-  const c = alert ? "#ff5c5c" : color;
+  const c = alert ? INK.danger : color;
   const w = label.length * 6.6 + 12;
   return (
-    <g style={{ filter: alert ? `drop-shadow(0 0 6px ${c})` : undefined }}>
+    <g>
       <motion.line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth={3.5} strokeLinecap="round" />
       <motion.path d="M 7 0 L -5 -5.5 L -5 5.5 Z" fill={c} style={{ x: x2, y: y2, rotate: a }} />
       <motion.g style={{ x: lx, y: ly }}>
-        <rect x={-w / 2} y={-9} width={w} height={18} rx={5} fill="#101018" stroke={c} strokeOpacity={0.6} />
+        <rect x={-w / 2} y={-9} width={w} height={18} rx={5} fill={alert ? VIZ.danger[0] : INK.well} stroke={c} strokeOpacity={0.6} />
         <text textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600} fontFamily={MONO_FONT} fill={c}>
           {label}
         </text>
@@ -111,9 +111,9 @@ function RingChip({
       animate={{ x: shake ? [x, x - 7, x + 7, x - 4, x + 4, x] : x, y, opacity: 1, scale: 1 }}
       exit={{ x: to.x, y: to.y, opacity: 0, scale: 0.6, transition: { duration: dur * 0.9, ease: EASE } }}
       transition={{ duration: dur, ease: EASE }}
-      style={{ filter: glow ? `drop-shadow(0 0 7px ${stroke})` : undefined }}
     >
-      <motion.circle r={r} initial={false} animate={{ fill, stroke }} strokeWidth={2.5} transition={{ duration: 0.25 }} />
+      {glow && <circle r={r + 4} fill="none" stroke={stroke} strokeOpacity={0.25} strokeWidth={3} />}
+      <motion.circle r={r} initial={false} animate={{ fill, stroke }} strokeWidth={2} transition={{ duration: 0.25 }} />
       <motion.text
         textAnchor="middle"
         dominantBaseline="central"
@@ -169,8 +169,8 @@ export function RingView({ step, width, height, dur }: { step: CircStep; width: 
         {s.slots.map((it, i) => {
           const hl = fx.slot?.index === i ? fx.slot.tone : null;
           const isGap = fx.gap === i;
-          const stroke = hl ? CHIP[hl][1] : isGap ? "#ffb000" : it ? "rgba(93,124,166,0.55)" : "rgba(255,255,255,0.13)";
-          const fill = hl ? `${CHIP[hl][1]}22` : isGap ? "rgba(255,176,0,0.08)" : it ? "rgba(57,170,255,0.07)" : "rgba(255,255,255,0.015)";
+          const stroke = hl ? CHIP[hl][1] : isGap ? INK.warn : it ? "rgba(26,26,26,0.35)" : INK.slot;
+          const fill = hl ? `${CHIP[hl][0]}cc` : isGap ? INK.warnTint : it ? "rgba(255,253,248,0.9)" : "rgba(255,253,248,0.35)";
           return (
             <motion.path
               key={`sec${i}`}
@@ -180,14 +180,13 @@ export function RingView({ step, width, height, dur }: { step: CircStep; width: 
               initial={false}
               animate={{ fill, stroke }}
               transition={{ duration: 0.3 }}
-              style={{ filter: hl || isGap ? `drop-shadow(0 0 8px ${stroke})` : undefined }}
             />
           );
         })}
         {s.slots.map((_, i) => {
           const p = g.at(i, g.labelR);
           return (
-            <text key={`lbl${i}`} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize={10.5} fontFamily={MONO_FONT} fill="#8a8a9a">
+            <text key={`lbl${i}`} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize={10.5} fontFamily={MONO_FONT} fill={INK.faint}>
               {i}
             </text>
           );
@@ -195,18 +194,18 @@ export function RingView({ step, width, height, dur }: { step: CircStep; width: 
         {fx.gap != null && (() => {
           const p = g.at(fx.gap, g.Rm);
           return (
-            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill="#ffb000">
+            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill={INK.warn}>
               gap
             </text>
           );
         })()}
 
         {/* hub */}
-        <circle cx={g.cx} cy={g.cy} r={hubR} fill="#101018" stroke={full ? "#ff5c5c" : empty ? "#5c5c6a" : "#2ee68a"} strokeOpacity={0.6} strokeWidth={2} />
-        <text x={g.cx} y={g.cy - hubR * 0.28} textAnchor="middle" dominantBaseline="central" fontSize={clamp(hubR * 0.3, 8, 11)} fill="#8a8a9a" fontFamily={MONO_FONT}>
+        <circle cx={g.cx} cy={g.cy} r={hubR} fill={INK.well} stroke={full ? INK.danger : empty ? INK.faint : INK.ok} strokeOpacity={0.7} strokeWidth={2} />
+        <text x={g.cx} y={g.cy - hubR * 0.28} textAnchor="middle" dominantBaseline="central" fontSize={clamp(hubR * 0.3, 8, 11)} fill={INK.faint} fontFamily={MONO_FONT}>
           {s.rule === "count" ? "count" : "size"}
         </text>
-        <text x={g.cx} y={g.cy + hubR * 0.22} textAnchor="middle" dominantBaseline="central" fontSize={clamp(hubR * 0.5, 11, 20)} fontWeight={700} fill={full ? "#ff8a8a" : "#ececf1"} fontFamily={MONO_FONT}>
+        <text x={g.cx} y={g.cy + hubR * 0.22} textAnchor="middle" dominantBaseline="central" fontSize={clamp(hubR * 0.5, 11, 20)} fontWeight={700} fill={full ? INK.danger : INK.text} fontFamily={MONO_FONT}>
           {s.count}/{s.rule === "count" ? s.cap : s.cap - 1}
         </text>
 
@@ -223,8 +222,8 @@ export function RingView({ step, width, height, dur }: { step: CircStep; width: 
         {fx.calc && (
           <motion.div
             key={fx.calc.text}
-            className="pointer-events-none absolute right-3 top-3 z-30 rounded-xl border bg-surface/95 px-3 py-2 font-mono text-[13px] font-semibold shadow-xl"
-            style={{ borderColor: fx.calc.wrap ? "#ffb00088" : "#39aaff66", color: fx.calc.wrap ? "#ffd466" : "#9fd3ff" }}
+            className="pointer-events-none absolute right-3 top-3 z-30 rounded-xl border bg-surface px-3 py-2 font-mono text-[13px] font-semibold shadow-sm"
+            style={{ borderColor: fx.calc.wrap ? `${INK.warn}66` : `${INK.info}55`, color: fx.calc.wrap ? VIZ.active[2] : VIZ.compare[2] }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -247,9 +246,9 @@ export function RingView({ step, width, height, dur }: { step: CircStep; width: 
       {/* the same array, unrolled */}
       {stripOn && (
         <>
-          <div className="absolute border-t border-dashed border-white/10" style={{ left: 16, right: 16, top: ringH + 4 }} />
+          <div className="absolute border-t border-dashed border-line-strong" style={{ left: 16, right: 16, top: ringH + 4 }} />
           <div className="absolute font-mono text-[10px] uppercase tracking-wider text-fg-faint" style={{ left: 16, top: ringH + 10 }}>
-            same array, unrolled
+            array
           </div>
           <SlotRow g={sg} y={stripY} h={sh} n={s.cap} highlight={fx.slot ? { index: fx.slot.index, tone: fx.slot.tone } : fx.gap != null ? { index: fx.gap, tone: "active" } : undefined} />
           <AnimatePresence initial={false}>

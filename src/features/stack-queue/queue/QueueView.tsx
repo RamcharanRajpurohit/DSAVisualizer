@@ -49,7 +49,7 @@ export function QueueView({ step, width, height, dur }: { step: QueueStep; width
     <div className="absolute inset-0">
       {/* live window: the part of the array between front and rear */}
       <motion.div
-        className="absolute rounded-xl border border-viz-blue/25 bg-viz-blue/[0.07]"
+        className="absolute rounded-xl border border-viz-blue/25 bg-viz-blue/[0.06]"
         style={{ top: rowY - 6, height: h + 12 }}
         initial={false}
         animate={{
@@ -94,11 +94,6 @@ export function QueueView({ step, width, height, dur }: { step: QueueStep; width
       {callout && <Callout spec={fx.callout} x={callout.x} y={callout.y} anchor={callout.anchor} maxWidth={Math.min(280, width - 24)} />}
       <ResultBadge spec={fx.result} />
 
-      <div className="pointer-events-none absolute bottom-3 right-3 text-right font-mono text-[10px] leading-relaxed text-fg-faint">
-        size = rear − front + 1 = {size}
-        <br />
-        front and rear only move →
-      </div>
     </div>
   );
 }

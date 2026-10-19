@@ -1,4 +1,5 @@
 import { ListOrdered } from "lucide-react";
+import { TONE_COLOR } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const ROWS = [
@@ -11,9 +12,9 @@ const ROWS = [
 /** Operator precedence / associativity, with the two operators being compared highlighted. */
 export function PrecedenceTable({ incoming, top }: { incoming?: string; top?: string }) {
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-3">
+    <section className="rounded-xl border border-line bg-surface p-3" title="Pop the top while it binds tighter — or equally tight and the incoming operator is left-associative.">
       <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-        <ListOrdered size={14} className="text-viz-amber" /> Precedence
+        <ListOrdered size={14} className="text-fg-dim" /> Precedence
       </h3>
       <table className="w-full text-left font-mono text-[12px]">
         <thead className="text-fg-faint">
@@ -32,24 +33,21 @@ export function PrecedenceTable({ incoming, top }: { incoming?: string; top?: st
                 key={r.label}
                 className={cn(
                   "border-t border-line transition-colors duration-300",
-                  isIn && isTop ? "bg-viz-purple/15" : isIn ? "bg-viz-amber/15" : isTop ? "bg-viz-blue/15" : "",
+                  isIn && isTop ? "bg-viz-purple/10" : isIn ? "bg-viz-amber/15" : isTop ? "bg-viz-blue/10" : "",
                 )}
               >
                 <td className="py-1 pl-1 font-bold text-fg">{r.label}</td>
-                <td className="py-1 text-viz-blue">{r.prec}</td>
+                <td className="py-1 text-viz-blue-deep">{r.prec}</td>
                 <td className="py-1 text-[11px] text-fg-dim">
                   {r.assoc}
-                  {isIn && <span className="ml-1.5 rounded bg-viz-amber/25 px-1 text-[9px] font-bold uppercase text-viz-amber">incoming</span>}
-                  {isTop && <span className="ml-1.5 rounded bg-viz-blue/25 px-1 text-[9px] font-bold uppercase text-viz-blue">top</span>}
+                  {isIn && <span className="ml-1.5 rounded bg-viz-amber/20 px-1 text-[9px] font-bold uppercase" style={{ color: TONE_COLOR.warn }}>incoming</span>}
+                  {isTop && <span className="ml-1.5 rounded bg-viz-blue/15 px-1 text-[9px] font-bold uppercase text-viz-blue-deep">top</span>}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      <p className="mt-2 text-[11px] leading-relaxed text-fg-faint">
-        Pop the top while it binds tighter (higher precedence) — or equally tight and the incoming operator is left-associative.
-      </p>
     </section>
   );
 }

@@ -1,26 +1,32 @@
 "use client";
 
-import { Braces, Calculator, Dices, Play, Sigma, TrendingUp, Workflow } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { Dices, Play, Sigma } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button, Input, Section } from "@/components/ui";
-import type { LegendItem } from "@/components/visualizer";
+import type { Implementations, LegendItem } from "@/components/visualizer";
+import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { cn } from "@/lib/utils";
-import { Note } from "../shared/components/Controls";
 import { ModeShell } from "../shared/components/ModeShell";
-import { CHIP } from "../shared/constants";
+import { CHIP, INK } from "../shared/constants";
+import type { ModeProps } from "../shared/modeProps";
 import { AppView } from "./AppView";
 import { runBrackets } from "./brackets";
+import { APP_IMPL } from "./code";
 import type { AppKind, AppStep } from "./core";
 import { DEFAULT_INPUT, EXAMPLES, randomInput } from "./examples";
 import { runInfix } from "./infix";
+import { APPS_LESSON } from "./lesson";
 import { runNge } from "./nge";
 import { PrecedenceTable } from "./PrecedenceTable";
 import { runPostfix } from "./postfix";
 import { APP_CODE } from "./pseudocode";
+import { appsQuiz } from "./quiz";
 
 interface AppRun {
   kind: AppKind;
+  /** The input this recording was made from. */
+  text: string;
   steps: readonly AppStep[];
   /** Infix → postfix output, when the conversion succeeded. */
   postfix: string[] | null;
@@ -28,64 +34,63 @@ interface AppRun {
 
 function record(kind: AppKind, text: string): AppRun {
   switch (kind) {
-    case "brackets": return { kind, steps: runBrackets(text).steps, postfix: null };
-    case "infix": { const r = runInfix(text); return { kind, steps: r.steps, postfix: r.postfix }; }
-    case "postfix": return { kind, steps: runPostfix(text).steps, postfix: null };
-    case "nge": return { kind, steps: runNge(text).steps, postfix: null };
+    case "brackets": return { kind, text, steps: runBrackets(text).steps, postfix: null };
+    case "infix": { const r = runInfix(text); return { kind, text, steps: r.steps, postfix: r.postfix }; }
+    case "postfix": return { kind, text, steps: runPostfix(text).steps, postfix: null };
+    case "nge": return { kind, text, steps: runNge(text).steps, postfix: null };
   }
 }
 
 const INITIAL_RUN = record("brackets", DEFAULT_INPUT.brackets);
+const KINDS: readonly AppKind[] = ["brackets", "infix", "postfix", "nge"];
+const MAX_TEXT = 80;
 
-const APPS: { kind: AppKind; title: string; blurb: string; icon: ReactNode }[] = [
-  { kind: "brackets", title: "Balanced brackets", blurb: "Do ( ) [ ] { } nest properly?", icon: <Braces size={15} /> },
-  { kind: "infix", title: "Infix → Postfix", blurb: "Shunting-yard with precedence", icon: <Workflow size={15} /> },
-  { kind: "postfix", title: "Postfix evaluation", blurb: "Compute 5 1 2 + 4 * + 3 -", icon: <Calculator size={15} /> },
-  { kind: "nge", title: "Next greater element", blurb: "Monotonic stack, one pass", icon: <TrendingUp size={15} /> },
+const APPS: { kind: AppKind; title: string; tip: string }[] = [
+  { kind: "brackets", title: "Brackets", tip: "Balanced brackets: do ( ) [ ] { } nest properly?" },
+  { kind: "infix", title: "To postfix", tip: "Infix → postfix: shunting-yard with precedence and associativity" },
+  { kind: "postfix", title: "Postfix eval", tip: "Evaluate Reverse Polish notation with a stack" },
+  { kind: "nge", title: "Next greater", tip: "Next greater element with a monotonic stack" },
 ];
 
 const HINT: Record<AppKind, string> = {
-  brackets: "Any text — only ( ) [ ] { } matter; spaces are ignored.",
-  infix: "Numbers or names, operators + − * / % ^, parentheses.",
-  postfix: "Space-separated tokens (12 3 *), or single digits without spaces (231*+).",
-  nge: "Whole numbers 0–999, separated by spaces or commas (up to 14).",
+  brackets: "Any text; only ( ) [ ] { } matter",
+  infix: "Numbers or names, + − * / % ^ and parentheses",
+  postfix: "Space-separated tokens (12 3 *) or single digits (231*+)",
+  nge: "Whole numbers 0–999, separated by spaces (up to 14)",
 };
 
 const SUBTITLE: Record<AppKind, string> = {
-  brackets: "A stack remembers which brackets are still open; the innermost one is always on top.",
-  infix: "Dijkstra's shunting-yard: operands flow to the output, operators wait on a stack until precedence lets them out.",
-  postfix: "Reverse Polish notation needs no parentheses: push numbers, and every operator pops its two operands.",
-  nge: "A monotonic (decreasing) stack finds every element's next greater element in a single O(n) pass.",
-};
-
-const NOTE: Record<AppKind, ReactNode> = {
-  brackets: <>Compilers and editors use exactly this to match brackets, HTML tags and <code className="text-viz-amber">begin/end</code> blocks.</>,
-  infix: <>Calculators and compilers convert to postfix (or a syntax tree) because it can be evaluated left to right with no precedence rules.</>,
-  postfix: <>The Java JVM, Python bytecode and old HP calculators all work like this: a stack machine.</>,
-  nge: <>Same trick: stock span, daily temperatures, largest rectangle in a histogram.</>,
+  brackets: "A stack remembers which brackets are still open.",
+  infix: "Shunting-yard: operators wait on a stack until precedence lets them out.",
+  postfix: "Push numbers; every operator pops its two operands.",
+  nge: "A decreasing stack finds every next greater element in one pass.",
 };
 
 const COMPLEXITY: Record<AppKind, { rows: { op: string; worst: string; space: string }[]; note: string }> = {
-  brackets: { rows: [{ op: "isBalanced", worst: "O(n)", space: "O(n)" }], note: "One pass; each character is pushed and popped at most once. The stack is as deep as the deepest nesting." },
-  infix: { rows: [{ op: "toPostfix", worst: "O(n)", space: "O(n)" }], note: "Each token is pushed and popped at most once, so the inner while-loops add up to O(n) overall." },
-  postfix: { rows: [{ op: "evaluate", worst: "O(n)", space: "O(n)" }], note: "Each token does O(1) stack work. The stack holds at most the number of operands." },
-  nge: { rows: [{ op: "brute force", worst: "O(n²)", space: "O(1)" }, { op: "monotonic stack", worst: "O(n)", space: "O(n)" }], note: "Every index is pushed once and popped at most once — amortized O(1) per element." },
+  brackets: { rows: [{ op: "isBalanced", worst: "O(n)", space: "O(n)" }], note: "Each character is pushed and popped at most once." },
+  infix: { rows: [{ op: "toPostfix", worst: "O(n)", space: "O(n)" }], note: "Each token is pushed and popped at most once, so the inner loops add up to O(n)." },
+  postfix: { rows: [{ op: "evaluate", worst: "O(n)", space: "O(n)" }], note: "Each token does O(1) stack work." },
+  nge: { rows: [{ op: "brute force", worst: "O(n²)", space: "O(1)" }, { op: "monotonic stack", worst: "O(n)", space: "O(n)" }], note: "Every index is pushed once and popped at most once." },
 };
 
 const LEGEND: LegendItem[] = [
-  { label: "Current token", color: "rgba(255,176,0,0.25)", stroke: "#ffd466" },
-  { label: "Waiting on stack", color: "rgba(57,170,255,0.15)", stroke: "#5ab4ff" },
-  { label: "Matched / done ✓", color: "rgba(46,230,138,0.15)", stroke: "#5cffa8" },
-  { label: "Error", color: "rgba(255,92,92,0.22)", stroke: "#ff8a8a" },
+  { label: "Current token", color: CHIP.active[0], stroke: CHIP.active[1] },
+  { label: "Waiting on stack", color: CHIP.new[0], stroke: CHIP.new[1] },
+  { label: "Matched / done", color: CHIP.ok[0], stroke: CHIP.ok[1] },
+  { label: "Error", color: CHIP.danger[0], stroke: CHIP.danger[1] },
   { label: "Stack element", color: CHIP.base[0], stroke: CHIP.base[1] },
-  { label: "Just pushed", color: CHIP.new[0], stroke: CHIP.new[1] },
-  { label: "Being compared", color: CHIP.active[0], stroke: CHIP.active[1] },
   { label: "Popped → output", color: CHIP.out[0], stroke: CHIP.out[1] },
+  { label: "Skipped", color: "transparent", stroke: INK.line },
 ];
 
 const toPostfix = (e: string) => runInfix(e).postfix;
+const impl = (kind: AppKind): Implementations => {
+  const c = APP_IMPL[kind];
+  const t = (s: string) => s.replace(/^\n+/, "");
+  return { python: t(c.python), cpp: t(c.cpp), java: t(c.java), javascript: t(c.javascript) };
+};
 
-export function AppsMode({ tabs, active }: { tabs: ReactNode; active: boolean }) {
+export function AppsMode({ tabs, active, init, shortcuts }: ModeProps) {
   const [kind, setKind] = useState<AppKind>("brackets");
   const [texts, setTexts] = useState<Record<AppKind, string>>(DEFAULT_INPUT);
   const [run, setRun] = useState<AppRun>(INITIAL_RUN);
@@ -100,6 +105,25 @@ export function AppsMode({ tabs, active }: { tabs: ReactNode; active: boolean })
     setAuto(autoPlay);
   };
 
+  // ?mode=apps&app=infix&expr=(3%2B4)*2 — applied once.
+  const [restored, setRestored] = useState(false);
+  if (init && !restored) {
+    setRestored(true);
+    const k = init.get("app") as AppKind | null;
+    const expr = init.get("expr");
+    if (k && KINDS.includes(k) && expr && expr.length <= MAX_TEXT) start(k, expr, false);
+  }
+
+  const lessonActions: LessonActions = {
+    brOk: () => start("brackets", "{[()()]}", true),
+    brCross: () => start("brackets", "([)]", true),
+    inParen: () => start("infix", "(3+4)*2", true),
+    inRight: () => start("infix", "2^3^2", true),
+    pfEval: () => start("postfix", "5 1 2 + 4 * + 3 -", true),
+    nge: () => start("nge", "4 5 2 25 7 8", true),
+    ngeDec: () => start("nge", "5 4 3 2 1", true),
+  };
+
   const step = player.step ?? run.steps[0];
   const code = APP_CODE[run.kind];
   const numericPostfix = run.kind === "infix" && run.postfix && !run.postfix.some((t) => /^[A-Za-z_]/.test(t));
@@ -107,24 +131,21 @@ export function AppsMode({ tabs, active }: { tabs: ReactNode; active: boolean })
   const controls = (
     <>
       <Section title="Application" icon={<Sigma />}>
-        <div className="flex flex-col gap-1.5" role="tablist">
+        <div className="grid grid-cols-2 gap-1.5" role="tablist">
           {APPS.map((a) => (
             <button
               key={a.kind}
               type="button"
               role="tab"
               aria-selected={kind === a.kind}
+              title={a.tip}
               onClick={() => kind !== a.kind && start(a.kind, texts[a.kind], false)}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors",
-                kind === a.kind ? "border-viz-blue/50 bg-viz-blue/10" : "border-line bg-bg-elev hover:border-line-strong hover:bg-surface-2",
+                "min-w-0 truncate rounded-lg border px-2 py-2 text-center text-[12.5px] font-medium transition-colors",
+                kind === a.kind ? "border-fg/40 bg-surface-2 text-fg" : "border-line bg-bg-elev text-fg-dim hover:bg-surface-2 hover:text-fg",
               )}
             >
-              <span className={cn("shrink-0", kind === a.kind ? "text-viz-blue" : "text-fg-faint")}>{a.icon}</span>
-              <span className="min-w-0">
-                <span className={cn("block text-[13px] font-semibold", kind === a.kind ? "text-fg" : "text-fg-dim")}>{a.title}</span>
-                <span className="block truncate text-[11px] text-fg-faint">{a.blurb}</span>
-              </span>
+              {a.title}
             </button>
           ))}
         </div>
@@ -134,54 +155,46 @@ export function AppsMode({ tabs, active }: { tabs: ReactNode; active: boolean })
         title="Input"
         icon={<Play />}
         action={
-          <button type="button" onClick={() => start(kind, randomInput(kind, toPostfix), true)} className="rounded-md p-1 text-fg-faint transition hover:bg-surface-3 hover:text-viz-amber" title="Random input" aria-label="Random input">
+          <button type="button" onClick={() => start(kind, randomInput(kind, toPostfix), true)} className="rounded-md p-1 text-fg-faint transition hover:bg-surface-3 hover:text-fg" title="Random input" aria-label="Random input">
             <Dices size={15} />
           </button>
         }
       >
-        <div className="flex flex-col gap-1.5">
-          <Input
-            value={texts[kind]}
-            onChange={(e) => setTexts((t) => ({ ...t, [kind]: e.target.value }))}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); start(kind, texts[kind], true); } }}
-            placeholder={DEFAULT_INPUT[kind]}
-            spellCheck={false}
-            className="font-mono"
-            aria-label="Expression"
-          />
-          <span className="text-[11px] text-fg-faint">{HINT[kind]}</span>
-        </div>
+        <Input
+          value={texts[kind]}
+          onChange={(e) => setTexts((t) => ({ ...t, [kind]: e.target.value }))}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); start(kind, texts[kind], true); } }}
+          placeholder={DEFAULT_INPUT[kind]}
+          title={HINT[kind]}
+          maxLength={MAX_TEXT}
+          spellCheck={false}
+          className="font-mono"
+          aria-label="Expression"
+        />
         <Button variant="primary" block icon={<Play size={15} />} onClick={() => start(kind, texts[kind], true)}>
-          Run step by step
+          Run
         </Button>
         {numericPostfix && (
           <Button size="sm" block onClick={() => start("postfix", run.postfix!.join(" "), true)} title="Evaluate the postfix output">
-            Evaluate this postfix →
+            Evaluate result
           </Button>
         )}
-        <div>
-          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-fg-faint">Examples</div>
-          <div className="flex flex-wrap gap-1.5">
-            {EXAMPLES[kind].map((ex) => (
-              <button
-                key={ex.text}
-                type="button"
-                onClick={() => start(kind, ex.text, true)}
-                className={cn(
-                  "rounded-md border px-2 py-1 font-mono text-[11px] transition-colors",
-                  ex.bad
-                    ? "border-viz-red/30 bg-viz-red/5 text-viz-red/90 hover:bg-viz-red/15"
-                    : "border-line-strong bg-surface-2 text-fg-dim hover:border-viz-green/40 hover:text-fg",
-                )}
-                title={ex.bad ? "Invalid / unbalanced on purpose" : "Run this example"}
-              >
-                {ex.bad && "✗ "}
-                {ex.label ?? ex.text}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-1.5">
+          {EXAMPLES[kind].map((ex) => (
+            <button
+              key={ex.text}
+              type="button"
+              onClick={() => start(kind, ex.text, true)}
+              className={cn(
+                "rounded-md border px-2 py-1 font-mono text-[11px] transition-colors",
+                ex.bad ? "border-viz-red/30 text-viz-red-deep hover:bg-viz-red/5" : "border-line-strong bg-bg-elev text-fg-dim hover:bg-surface-2 hover:text-fg",
+              )}
+              title={ex.bad ? "Invalid or unbalanced on purpose" : "Run this example"}
+            >
+              {ex.label ?? ex.text}
+            </button>
+          ))}
         </div>
-        <Note>{NOTE[kind]}</Note>
       </Section>
     </>
   );
@@ -193,10 +206,20 @@ export function AppsMode({ tabs, active }: { tabs: ReactNode; active: boolean })
       controls={controls}
       player={player}
       code={code}
+      implementations={impl(run.kind)}
       legend={LEGEND}
       complexity={COMPLEXITY[run.kind]}
       insightExtra={run.kind === "infix" ? <PrecedenceTable incoming={step.fx.prec?.incoming} top={step.fx.prec?.top} /> : undefined}
       playbackLabel={code.title}
+      lesson={APPS_LESSON}
+      lessonActions={lessonActions}
+      share={() => ({ mode: "apps", app: run.kind, expr: run.text })}
+      shortcuts={shortcuts}
+      quiz={() => {
+        player.first(); // predict before watching: the answer is on the last step
+        return appsQuiz(run.kind, run.text);
+      }}
+      quizEmpty="Run a valid input first."
     >
       {({ width, height }) => <AppView step={step} kind={run.kind} width={width} height={height} dur={player.animSec} maxDepth={maxDepth} />}
     </ModeShell>

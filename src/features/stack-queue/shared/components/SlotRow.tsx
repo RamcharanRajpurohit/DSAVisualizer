@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { clamp } from "@/lib/utils";
-import { CHIP } from "../constants";
+import { CHIP, INK } from "../constants";
 
 export interface RowGeometry {
   cellW: number;
@@ -27,7 +27,7 @@ export function rowGeometry(W: number, n: number, { margin = 1, minCell = 18, ma
   return { cellW, gap, pitch, rowW, left, x: (i) => left + i * pitch, cx: (i) => left + i * pitch + cellW / 2 };
 }
 
-const HATCH = "repeating-linear-gradient(135deg, rgba(255,92,92,0.18) 0 5px, transparent 5px 11px)";
+const HATCH = "repeating-linear-gradient(135deg, rgba(220,38,38,0.13) 0 5px, transparent 5px 11px)";
 
 /** Dashed slot outlines with index labels underneath; optional wasted (hatched) and highlighted slots. */
 export function SlotRow({
@@ -48,7 +48,7 @@ export function SlotRow({
       {Array.from({ length: n }, (_, i) => {
         const hl = highlight?.index === i ? highlight.tone : null;
         const w = wasted?.(i) ?? false;
-        const color = hl ? CHIP[hl][1] : w ? "rgba(255,92,92,0.45)" : "rgba(255,255,255,0.1)";
+        const color = hl ? CHIP[hl][1] : w ? "rgba(220,38,38,0.55)" : INK.slot;
         return (
           <motion.div
             key={`slot${i}`}
@@ -57,12 +57,12 @@ export function SlotRow({
             initial={false}
             animate={{
               borderColor: color,
-              boxShadow: hl ? `0 0 16px ${color}77` : w && wastePulse ? "0 0 16px rgba(255,92,92,0.45)" : "0 0 0px rgba(0,0,0,0)",
+              backgroundColor: hl ? `${CHIP[hl][0]}99` : w && wastePulse ? INK.dangerTint : "rgba(0,0,0,0)",
             }}
             transition={{ duration: 0.3 }}
           >
             {w && h >= 30 && (
-              <span className="absolute inset-x-0 bottom-0.5 text-center text-[8px] font-bold uppercase tracking-wider text-viz-red/70">
+              <span className="absolute inset-x-0 bottom-0.5 text-center text-[8px] font-bold uppercase tracking-wider text-viz-red-deep">
                 {g.cellW >= 40 ? "wasted" : "✕"}
               </span>
             )}

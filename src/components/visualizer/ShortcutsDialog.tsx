@@ -13,6 +13,8 @@ const COMMON: readonly Shortcut[] = [
   { keys: ["Space"], label: "Play / pause" },
   { keys: ["Home", "End"], label: "First / last step" },
   { keys: ["Enter"], label: "Run the main action from a value box" },
+  { keys: ["F"], label: "Canvas fullscreen on / off" },
+  { keys: ["Shift", "F"], label: "Whole page fullscreen" },
   { keys: ["Ctrl", "K"], label: "Jump to another visualizer" },
   { keys: ["?"], label: "Show this help" },
 ];

@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { CanvasHint } from "@/components/visualizer";
 import { useElementSize } from "@/lib/hooks/useElementSize";
-import { MONO_FONT, VIZ, type VizState } from "@/lib/theme";
+import { MONO_FONT, PAPER, VIZ, type VizState } from "@/lib/theme";
 import { clamp } from "@/lib/utils";
 import type { SortCanvasProps } from "../../types";
 import type { RadixStep, SortItem } from "../types";
@@ -49,7 +49,7 @@ function DigitString({ k, digits, digitPos, active }: { k: number; digits: numbe
             className="rounded-[3px]"
             style={
               hot
-                ? { color: active ? "#ffd466" : "#ffb000", background: active ? "#1a1a1a" : "rgba(255,176,0,0.18)", boxShadow: `0 0 0 1px ${active ? "#1a1a1a" : "rgba(255,176,0,0.55)"}`, fontWeight: 800 }
+                ? { color: VIZ.active[2], background: active ? VIZ.base[0] : VIZ.active[0], boxShadow: `0 0 0 1px ${VIZ.active[1]}`, fontWeight: 800 }
                 : idx < lead
                   ? { opacity: 0.35 }
                   : undefined
@@ -123,9 +123,8 @@ function RadixScene({ step, animSec, W, H }: { step: RadixStep; animSec: number;
             style={{ left: bcx(b) - bucketW * 0.46, top: bucketTop, width: bucketW * 0.92, height: bucketBottom - bucketTop, borderLeftWidth: 1.5, borderRightWidth: 1.5, borderBottomWidth: 1.5, borderTopWidth: 0, borderStyle: "solid" }}
             initial={false}
             animate={{
-              borderColor: on ? rgba(amber, 0.85) : "rgba(255,255,255,0.10)",
-              backgroundColor: on ? rgba(amber, 0.07) : "rgba(255,255,255,0.02)",
-              boxShadow: on ? `0px 0px 22px 0px ${rgba(amber, 0.25)}` : `0px 0px 0px 0px ${rgba(amber, 0)}`,
+              borderColor: on ? rgba(amber, 0.85) : "rgba(26, 26, 26, 0.16)",
+              backgroundColor: on ? rgba(amber, 0.07) : "rgba(26, 26, 26, 0.02)",
             }}
             transition={{ duration: Math.min(animSec, 0.3) }}
           >
@@ -134,8 +133,8 @@ function RadixScene({ step, animSec, W, H }: { step: RadixStep; animSec: number;
               style={{
                 height: BUCKET_HEAD,
                 fontFamily: MONO_FONT,
-                color: on ? "#1a1a1a" : "#a3a3b2",
-                background: on ? amber : "rgba(255,255,255,0.06)",
+                color: on ? VIZ.active[2] : PAPER.inkDim,
+                background: on ? VIZ.active[0] : "rgba(26, 26, 26, 0.05)",
                 transition: "background 0.2s, color 0.2s",
               }}
             >
@@ -151,7 +150,7 @@ function RadixScene({ step, animSec, W, H }: { step: RadixStep; animSec: number;
           <div
             key={`ghost-${i}`}
             className="pointer-events-none absolute rounded-md"
-            style={{ left: cx(i) - rowTileW / 2, top: rowTop, width: rowTileW, height: rowTileH, border: "1.5px dashed rgba(255,255,255,0.14)" }}
+            style={{ left: cx(i) - rowTileW / 2, top: rowTop, width: rowTileW, height: rowTileH, border: "1.5px dashed rgba(26, 26, 26, 0.2)" }}
           />
         ),
       )}
@@ -171,7 +170,7 @@ function RadixScene({ step, animSec, W, H }: { step: RadixStep; animSec: number;
 
       {/* tiles */}
       {tiles.map((tile) => {
-        const st = stateStyle(tile.state, step.done);
+        const st = stateStyle(tile.state);
         const k = tile.item.value + step.offset;
         const keyStr = String(k).padStart(step.digits, "0");
         const showValue = twoLines && tile.h >= 30;
@@ -191,7 +190,6 @@ function RadixScene({ step, animSec, W, H }: { step: RadixStep; animSec: number;
               borderWidth: 2,
               borderStyle: "solid",
               fontFamily: MONO_FONT,
-              backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 55%)",
             }}
           >
             {showValue && (

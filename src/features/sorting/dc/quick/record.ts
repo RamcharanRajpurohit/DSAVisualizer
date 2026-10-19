@@ -199,8 +199,7 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
   push({
     title: `Start: quick sort ${plural(n, "element")}`,
     detail:
-      "Quick sort is **divide and conquer** too, but it does the work *before* recursing: pick a **pivot**, **partition** the range " +
-      "so smaller elements end up left of it and larger ones right, then sort both sides independently — no merge step needed.\n" +
+      "Pick a **pivot**, **partition** so smaller values go left and larger go right, then sort both sides (no merge step).\n" +
       `Scheme: **${lomuto ? "Lomuto" : "Hoare"}** · pivot: **${RULE_TEXT[rule]}**.`,
     line: QL.call,
   });
@@ -282,8 +281,8 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
     push({
       title: `pivot = ${pv};  i = ${i}`,
       detail:
-        `Invariant: A[lo..i] ≤ ${pv} (blue) and A[i+1..j−1] > ${pv} (purple). Both regions start empty (i = lo − 1); ` +
-        `**j** will examine A[${lo}..${hi - 1}] one element at a time.`,
+        `Invariant: A[lo..i] ≤ ${pv} (blue) and A[i+1..j−1] > ${pv} (purple). ` +
+        `Both start empty while **j** scans A[${lo}..${hi - 1}].`,
       line: [QL.pivot, QL.init],
       ptrs: [{ key: "i", index: i }, { key: "j", index: lo }],
     });
@@ -489,7 +488,7 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
           title: `Pointers crossed (i = ${i} ≥ j = ${j}) → return ${j}`,
           detail:
             `Everything in A[${lo}..${j}] is ≤ ${pv} and everything in A[${j + 1}..${hi}] is ≥ ${pv}. ` +
-            "Unlike Lomuto, the pivot is *not* necessarily in its final place — both parts are sorted recursively.",
+            "Unlike Lomuto, the pivot isn't necessarily final, so both parts recurse.",
           line: QL.cross,
           ptrs: P(),
           regions: regions(j, j + 1),
@@ -530,7 +529,7 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
       nodeState[node] = "done";
       push({
         title: `quickSort(${lo}, ${hi}) — one element`,
-        detail: `${intro}A single element is trivially in its final position: **${v(lo)}** stays at index ${lo}.`,
+        detail: `${intro}A single element (**${v(lo)}**) is already in its final position.`,
         line: QL.base,
         tone: "ok",
         hold: 0.85,
@@ -541,7 +540,7 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
 
     push({
       title: `Call quickSort(${lo}, ${hi})`,
-      detail: `${intro}Sort A[${lo}..${hi}] = ${listText(slice(lo, hi))}. Partition it around a pivot first.`,
+      detail: `${intro}Partition A[${lo}..${hi}] around a pivot first.`,
       line: callerLine,
     });
     range = { lo, hi, label: `partition(${lo}, ${hi})` };
@@ -560,8 +559,8 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
     push({
       title: lomuto ? `p = ${p}: pivot ${v(p)} is locked in place` : `p = ${p}: split into [${lo}..${p}] and [${p + 1}..${hi}]`,
       detail:
-        `Divide step done. Left part: ${part(lLo, lHi)}. Right part: ${part(rLo, rHi)}. ` +
-        "The two parts never need to be combined — once both are sorted, the whole range is sorted.",
+        `Left part: ${part(lLo, lHi)} · right part: ${part(rLo, rHi)}. ` +
+        "Once both are sorted the range is sorted, with no merge step.",
       line: QL.partition,
       tone: "ok",
       regions: [
@@ -575,7 +574,7 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
       quickSort(
         right,
         QL.recurseRight,
-        left >= 0 ? `Left part A[${lLo}..${lHi}] is sorted ✓. Now the **right part**. ` : "The left part is empty. Recurse into the **right part**. ",
+        left >= 0 ? "Left part sorted ✓; now the **right part**. " : "Left part empty; now the **right part**. ",
       );
     }
     nodeState[node] = "done";
@@ -594,9 +593,9 @@ export function recordQuickSort(input: readonly number[], opts: QuickOptions = {
     detail:
       n === 1
         ? "A single element is already sorted."
-        : `${plural(n, "element")} sorted in place with **${plural(comparisons, "comparison")}** and **${plural(swaps, "swap")}**. ` +
-          `Recursion depth ${maxDepth} (balanced would be ⌈log₂ ${n}⌉ = ${Math.ceil(Math.log2(n))})` +
-          (maxDepth > 2 * Math.ceil(Math.log2(n)) + 1 ? " — unbalanced splits are what make quick sort slow on bad pivots." : ".") +
+        : `**${plural(comparisons, "comparison")}**, **${plural(swaps, "swap")}**, recursion depth ${maxDepth} ` +
+          `(balanced: ${Math.ceil(Math.log2(n))})` +
+          (maxDepth > 2 * Math.ceil(Math.log2(n)) + 1 ? ", so bad pivots made the splits lopsided." : ".") +
           stabilityNote(items, A),
     tone: "ok",
     hold: 2,

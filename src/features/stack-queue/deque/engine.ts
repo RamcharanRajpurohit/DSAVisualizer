@@ -79,9 +79,9 @@ const varsOf = (s: DequeState): Vars => ({
 });
 
 const wrapBack = (from: number, cap: number) =>
-  from === 0 ? `\n**Wrap-around!** front was at index 0, so it steps back to the **end** of the array: \`(0 − 1 + ${cap}) % ${cap} = ${cap - 1}\`. Adding capacity before the modulo keeps the result non-negative.` : "";
+  from === 0 ? ` **Wrap-around:** from 0 it goes to the last index, ${cap - 1}; adding capacity first keeps \`%\` non-negative.` : "";
 const wrapFwd = (name: string, from: number, cap: number) =>
-  from === cap - 1 ? `\n**Wrap-around!** ${name} was at the last index and continues at 0.` : "";
+  from === cap - 1 ? ` **Wrap-around:** ${name} continues at 0.` : "";
 
 function overflow(R: R, item: Item, side: Side, fn: string) {
   const { size, cap } = R.s;
@@ -110,8 +110,8 @@ function pushFront(R: R, item: Item): boolean {
     { line: 2, vars: x, fx: { float: { item, tone: "new", side: "front" }, slot: { index: nf, tone: "new" } } });
   R.s = { ...s0, front: nf, rear: size === 0 ? nf : s0.rear };
   R.snap(`front = (${front} − 1 + ${cap}) % ${cap} = ${nf}`,
-    `A new first element goes in the slot **before** the current front, so front steps backwards.` + wrapBack(front, cap) +
-      (size === 0 ? "\nThe deque was empty, so this element is both the front and the rear." : ""),
+    `A new first element goes in the slot **before** front, so front steps back.` +
+      (front === 0 ? wrapBack(front, cap) : size === 0 ? " The deque was empty, so this element is both front and rear." : ""),
     { line: 4, vars: x, fx: { float: { item, tone: "new", side: "front" }, slot: { index: nf, tone: "new" }, ptr: { front: "focus" },
       calc: { text: `front = (${front} − 1 + ${cap}) % ${cap} = ${nf}`, wrap: front === 0 } } });
   R.s = { ...R.s, slots: setAt(R.s.slots, nf, item), size: size + 1 };
@@ -130,11 +130,11 @@ function pushBack(R: R, item: Item): boolean {
     { line: 2, vars: x, fx: { float: { item, tone: "new", side: "back" } } });
   R.s = { ...s0, rear: r };
   R.snap(`rear = (${front} + ${size}) % ${cap} = ${r}`,
-    `The first free slot after the last element is \`(front + size) % capacity\`.` + (front + size >= cap ? "\nThe sum passes the end of the array, so the modulo **wraps** it to the start." : ""),
+    `The first free slot after the last element is \`(front + size) % capacity\`.` + (front + size >= cap ? " The sum passes the end, so the modulo **wraps** it to the start." : ""),
     { line: 4, vars: x, fx: { float: { item, tone: "new", side: "back" }, slot: { index: r, tone: "new" }, ptr: { rear: "focus" },
       calc: { text: `rear = (${front} + ${size}) % ${cap} = ${r}`, wrap: front + size >= cap } } });
   R.s = { ...R.s, slots: setAt(R.s.slots, r, item), size: size + 1 };
-  R.snap(`A[${r}] = ${item.v}, size = ${size + 1}`, `**${item.v}** joins the back. front did not move. O(1).`,
+  R.snap(`A[${r}] = ${item.v}, size = ${size + 1}`, `**${item.v}** joins the back in O(1); front does not move.`,
     { tone: "ok", line: [5, 6], vars: x, fx: { hl: { [item.id]: "ok" } } });
   return true;
 }
@@ -237,9 +237,7 @@ export function runDeque(state: DequeState, ops: readonly DequeOp[]): RunResult<
 export function dequeIntro(state: DequeState): DequeStep[] {
   const R: R = new Recorder<DequeOpKind, DequeState, DequeFx>(state, "idle", varsOf);
   R.snap("A deque: a queue with two open ends",
-    "Elements can be added or removed at **both** the front and the back. Top: the deque as you think of it. Bottom: the circular array that stores it — " +
-      `front = ${state.front}, and the elements wrap past the end of the array.\n` +
-      "Use it as a stack (push/pop the same end), a queue (push back, pop front), or both — e.g. sliding-window maximum.",
+    `Values are added and removed at **both** ends. Top row: the deque in order; bottom row: the circular array that stores it (front = ${state.front}).`,
     {});
   return R.steps;
 }

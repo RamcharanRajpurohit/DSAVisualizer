@@ -2,20 +2,25 @@
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
-import { MONO_FONT, TONE_LABEL, VIZ, type Tone, type VizState } from "@/lib/theme";
+import { MONO_FONT, PAPER, TONE_COLOR, TONE_LABEL, VIZ, type Tone, type VizState } from "@/lib/theme";
 import type { Pointer, PointerColor, SortItem } from "../types";
 
 /** Shared easing for every glide on the sorting canvases. */
 export const EASE = [0.33, 0, 0.2, 1] as const;
 
+/** Pointer ink colours (the strong outline of each state, readable on paper). */
 export const POINTER_HEX: Record<PointerColor, string> = {
-  amber: "#ffb000",
-  blue: "#39aaff",
-  pink: "#ff7ac6",
-  purple: "#c08bff",
-  green: "#2ee68a",
-  gray: "#a3a3b2",
+  amber: VIZ.active[1],
+  blue: VIZ.compare[1],
+  pink: VIZ.pivot[1],
+  purple: VIZ.merge[1],
+  green: VIZ.success[1],
+  gray: PAPER.inkFaint,
 };
+
+/** Soft neutral lift for highlighted elements; the same two-number shape as NO_SHADOW so motion can tween. */
+export const SOFT_SHADOW = "0px 1px 3px 0px rgba(0, 0, 0, 0.14)";
+export const NO_SHADOW = "0px 0px 0px 0px rgba(0, 0, 0, 0)";
 
 /** "#rrggbb" → "rgba(r, g, b, a)" (motion interpolates rgba strings smoothly). */
 export function rgba(hex: string, a: number): string {
@@ -26,18 +31,17 @@ export function rgba(hex: string, a: number): string {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
-const GLOWING: ReadonlySet<VizState> = new Set(["compare", "active", "moving", "pivot", "danger"]);
+const LIFTED: ReadonlySet<VizState> = new Set(["compare", "active", "moving", "pivot", "danger"]);
 
-/** Fill / border / glow / label colours for an element in `state`. */
-export function stateStyle(state: VizState, done = false) {
+/** Fill / border / shadow / label colours for an element in `state` (ink on paper: tint + strong outline). */
+export function stateStyle(state: VizState) {
   const [fill, stroke, text] = VIZ[state];
-  const glow = GLOWING.has(state) ? 0.55 : done && state === "success" ? 0.28 : 0;
   return {
     fill,
     stroke,
     text,
-    label: state === "base" ? "#c9c9d4" : state === "dim" ? "#5c5c6a" : stroke,
-    shadow: `0px 0px ${glow ? 18 : 0}px ${glow ? 1 : 0}px ${rgba(stroke, glow)}`,
+    label: state === "base" ? PAPER.inkDim : text,
+    shadow: LIFTED.has(state) ? SOFT_SHADOW : NO_SHADOW,
   };
 }
 
@@ -94,7 +98,7 @@ export function CalloutBubble({ x, y, text, tone, animSec }: { x: number; y: num
       <div className="flex -translate-x-1/2 flex-col items-center">
         <div
           className="whitespace-nowrap rounded-md px-2 py-[3px] text-[12px] font-bold leading-tight"
-          style={{ background: bg, color: fg, boxShadow: `0 4px 16px ${rgba(bg, 0.45)}`, fontFamily: MONO_FONT }}
+          style={{ background: bg, color: fg, boxShadow: SOFT_SHADOW, fontFamily: MONO_FONT }}
         >
           {text}
         </div>
@@ -130,9 +134,9 @@ export function CornerTag({ children, side = "left", tone = "muted" }: { childre
       style={{
         [side]: 12,
         fontFamily: MONO_FONT,
-        color: ok ? "#2ee68a" : "#a3a3b2",
-        background: ok ? "rgba(0, 168, 84, 0.14)" : "rgba(21, 21, 28, 0.85)",
-        borderColor: ok ? "rgba(46, 230, 138, 0.45)" : "rgba(255, 255, 255, 0.1)",
+        color: ok ? TONE_COLOR.ok : PAPER.inkDim,
+        background: ok ? VIZ.success[0] : PAPER.well,
+        borderColor: ok ? VIZ.success[1] : PAPER.line,
       }}
     >
       {children}

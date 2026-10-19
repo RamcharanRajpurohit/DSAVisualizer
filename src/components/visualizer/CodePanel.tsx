@@ -2,6 +2,7 @@
 
 import { Check, Code2, Copy } from "lucide-react";
 import { useState } from "react";
+import { emitMascot } from "@/lib/mascot-bus";
 import { usePreference } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { highlightLine, type CodeLang } from "./highlight";
@@ -20,6 +21,13 @@ export const CODE_LANGS: readonly { id: CodeLang; label: string }[] = [
 ];
 
 type Tab = "pseudo" | CodeLang;
+
+const LANG_QUIPS: Record<CodeLang, string> = {
+  python: "Python 🐍 — reads almost like the pseudocode.",
+  cpp: "C++ ⚡ — same idea, closer to the metal.",
+  java: "Java ☕ — classic interview language.",
+  javascript: "JavaScript — paste it straight into your console.",
+};
 
 export interface CodePanelProps {
   /** Pseudocode lines (the tab that follows the animation). */
@@ -78,7 +86,10 @@ export function CodePanel({ code, active, title = "Code", implementations, class
               key={t.id}
               role="tab"
               aria-selected={tab === t.id}
-              onClick={() => setSaved(t.id)}
+              onClick={() => {
+                setSaved(t.id);
+                if (t.id !== "pseudo" && t.id !== tab) emitMascot({ type: "say", text: LANG_QUIPS[t.id] });
+              }}
               className={cn(
                 "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
                 tab === t.id ? "border-fg bg-fg text-bg-elev" : "border-line text-fg-dim hover:text-fg",

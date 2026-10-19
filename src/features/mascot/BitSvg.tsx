@@ -19,14 +19,20 @@ export interface BitSvgProps {
   reduced?: boolean;
   /** Changes on every reaction; replays one-shot motions. */
   beat?: number;
+  /** Travelling across the screen: hop and lean toward `facing` (−1 left, 1 right). */
+  walking?: boolean;
+  facing?: number;
 }
 
 /** Bit: an ink blob with pill eyes and a little pointer antenna (it's a list node at heart). */
-export function BitSvg({ mood, gaze, lean, blinking, size, reduced, beat = 0 }: BitSvgProps) {
+export function BitSvg({ mood, gaze, lean, blinking, size, reduced, beat = 0, walking = false, facing = 1 }: BitSvgProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const face = FACES[mood];
-  const g = face.track ? gaze : face.gaze ?? { x: 0, y: 0 };
-  const motionSpec = bodyMotion(mood);
+  // While walking Bit looks where it's going.
+  const g = walking ? { x: facing, y: 0.1 } : face.track ? gaze : face.gaze ?? { x: 0, y: 0 };
+  const motionSpec = walking
+    ? { animate: { y: [0, -7, 0], rotate: facing * 8, scaleY: [1, 1.04, 0.96, 1], scaleX: 1 }, transition: { duration: 0.32, repeat: Infinity, ease: "easeOut" as const } }
+    : bodyMotion(mood);
   const canBlink = face.eyes === "open" || face.eyes === "focus" || face.eyes === "wide";
 
   return (
@@ -50,7 +56,7 @@ export function BitSvg({ mood, gaze, lean, blinking, size, reduced, beat = 0 }: 
       />
 
       <motion.g
-        key={ONE_SHOT.has(mood) ? `${mood}-${beat}` : "loop"}
+        key={walking ? "walk" : ONE_SHOT.has(mood) ? `${mood}-${beat}` : "loop"}
         animate={reduced ? {} : motionSpec.animate}
         transition={motionSpec.transition}
       >

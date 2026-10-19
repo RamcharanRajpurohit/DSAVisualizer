@@ -194,7 +194,7 @@ export function recordMergeSort(input: readonly number[]): MergeStep[] {
       box[id] = "sorted";
       push({
         title: `mergeSort(${lo}, ${hi}) — base case`,
-        detail: `${intro}A piece with a single element (**${val(it)}**) is already sorted, so this call returns straight away.`,
+        detail: `${intro}A single element (**${val(it)}**) is already sorted, so return.`,
         tone: "ok",
         line: ML.base,
         hold: 0.85,
@@ -206,7 +206,7 @@ export function recordMergeSort(input: readonly number[]): MergeStep[] {
     const size = len(id);
     push({
       title: `Call mergeSort(${lo}, ${hi})`,
-      detail: `${intro}Sort A[${lo}..${hi}] = ${listText(vals(content[id]))}. It has ${size} elements, so it must be divided first.`,
+      detail: `${intro}Sort A[${lo}..${hi}]: ${size} elements, so divide first.`,
       line: callerLine,
     });
 
@@ -250,7 +250,7 @@ export function recordMergeSort(input: readonly number[]): MergeStep[] {
 
     sort(L, ML.recurseLeft, "Recurse into the **left half** first. ");
     active = id;
-    sort(R, ML.recurseRight, `Left half A[${lo}..${mid}] is sorted ✓. Now recurse into the **right half**. `);
+    sort(R, ML.recurseRight, "Left half sorted ✓; now the **right half**. ");
     active = id;
     merge(id);
     stack.pop();
@@ -285,8 +285,8 @@ export function recordMergeSort(input: readonly number[]): MergeStep[] {
     push({
       title: `Both halves sorted → merge(${lo}, ${mid}, ${hi})`,
       detail:
-        `L = ${listText(vals(Lc))} and R = ${listText(vals(Rc))} are each sorted. Merge them back into A[${lo}..${hi}]: ` +
-        "**i** walks along L, **j** along R, and **k** marks the next slot to fill. The smaller front element always goes next.",
+        `L = ${listText(vals(Lc))} and R = ${listText(vals(Rc))} are each sorted. ` +
+        "**i** walks L, **j** walks R, and the smaller front element goes to slot **k**.",
       line: [ML.copy, ML.init],
       ptrs: ptrs(),
     });
@@ -319,7 +319,7 @@ export function recordMergeSort(input: readonly number[]): MergeStep[] {
         title: `Compare L[${i}] = ${va} with R[${j}] = ${vb}`,
         detail: takeLeft
           ? va === vb
-            ? `Equal keys! Take the one from **L** first (\`<=\`, not \`<\`): it came earlier in the input, so equal keys keep their original order — that is what makes merge sort **stable**.`
+            ? `Equal keys: take **L**'s first (\`<=\`, not \`<\`), since it came earlier. That keeps merge sort **stable**.`
             : `${va} ≤ ${vb}, so **${va}** is the smallest element left in either run.`
           : `${vb} < ${va}, so **${vb}** is the smallest element left in either run.`,
         line: [ML.loop, ML.compare],
@@ -403,8 +403,7 @@ export function recordMergeSort(input: readonly number[]): MergeStep[] {
     detail:
       n === 1
         ? "A single element is already sorted — no splitting or merging needed."
-        : `${plural(n, "element")} sorted with **${plural(comparisons, "comparison")}** and **${plural(writes, "write")}** into the array. ` +
-          `The tree is ⌈log₂ ${n}⌉ = ${lg} splits deep and each level does at most ${n} writes — hence **O(n log n)**.` +
+        : `**${plural(comparisons, "comparison")}** and **${plural(writes, "write")}** over ${lg} levels of at most ${n} writes: **O(n log n)**.` +
           stabilityNote(items, content[0]),
     tone: "ok",
     hold: 2,

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Fragment } from "react";
 import { CanvasHint } from "@/components/visualizer";
 import { useElementSize } from "@/lib/hooks/useElementSize";
-import { MONO_FONT, VIZ, type VizState } from "@/lib/theme";
+import { MONO_FONT, PAPER, VIZ, type VizState } from "@/lib/theme";
 import { clamp } from "@/lib/utils";
 import type { SortCanvasProps } from "../../types";
 import type { CountingStep, SortItem } from "../types";
@@ -135,7 +135,7 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
         top: base - 12,
         width: barW,
         height: 12,
-        border: `1.5px dashed ${active ? rgba(VIZ.active[1], 0.8) : "rgba(255,255,255,0.14)"}`,
+        border: `1.5px dashed ${active ? rgba(VIZ.active[1], 0.8) : PAPER.line}`,
         borderBottom: "none",
       }}
     />
@@ -146,7 +146,7 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
       {/* bands */}
       <BandLabel y={inTop} accent={VIZ.compare[1]}>A · input</BandLabel>
       <div
-        className="pointer-events-none absolute rounded-xl border border-white/[0.06] bg-white/[0.02]"
+        className="pointer-events-none absolute rounded-xl border border-line bg-bg-elev/60"
         style={{ left: 8, right: 8, top: cTop - 4, height: countBand + 2 }}
       />
       <BandLabel y={cTop} accent={VIZ.merge[1]}>{cLabel}</BandLabel>
@@ -159,9 +159,9 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
 
       {/* baselines */}
       {[inBase, outBase].map((y) => (
-        <div key={y} className="pointer-events-none absolute h-px bg-white/15" style={{ left: cx(0) - slotW / 2, width: slotW * n, top: y }} />
+        <div key={y} className="pointer-events-none absolute h-px bg-line-strong" style={{ left: cx(0) - slotW / 2, width: slotW * n, top: y }} />
       ))}
-      <div className="pointer-events-none absolute h-px bg-white/15" style={{ left: colX[0] - colW / 2, width: colX[K - 1] - colX[0] + colW, top: cBase }} />
+      <div className="pointer-events-none absolute h-px bg-line-strong" style={{ left: colX[0] - colW / 2, width: colX[K - 1] - colX[0] + colW, top: cBase }} />
 
       {/* empty slots */}
       {step.input.map((it, i) => (it ? null : ghost(`gi-${i}`, cx(i), inBase)))}
@@ -184,7 +184,7 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
 
       {/* count columns */}
       {step.columns.map((v, c) => {
-        const st = stateStyle(step.countMarks[c] ?? "base", step.done);
+        const st = stateStyle(step.countMarks[c] ?? "base");
         const h = countH(step.counts[c]);
         const label = String(v);
         return (
@@ -194,12 +194,12 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
               initial={false}
               animate={{ x: colX[c] - colBarW / 2, y: cBase - h, height: h, backgroundColor: st.fill, borderColor: st.stroke, boxShadow: st.shadow }}
               transition={t}
-              style={{ width: colBarW, ...barBorder(h > 0 ? 2 : 0), backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0) 50%)" }}
+              style={{ width: colBarW, ...barBorder(h > 0 ? 2 : 0) }}
             />
             <motion.div
               className="absolute flex -translate-x-1/2 items-center justify-center rounded font-bold"
               initial={false}
-              animate={{ backgroundColor: rgba(st.stroke, step.countMarks[c] ? 0.22 : 0.06), borderColor: rgba(st.stroke, step.countMarks[c] ? 0.9 : 0.3), color: step.countMarks[c] ? st.stroke : "#ececf1" }}
+              animate={{ backgroundColor: rgba(st.stroke, step.countMarks[c] ? 0.22 : 0.06), borderColor: rgba(st.stroke, step.countMarks[c] ? 0.9 : 0.3), color: step.countMarks[c] ? st.text : PAPER.ink }}
               transition={t}
               style={{ left: colX[c], top: cBase + 3, minWidth: Math.min(colW * 0.86, 30), height: 18, padding: "0 3px", borderWidth: 1, borderStyle: "solid", fontFamily: MONO_FONT, fontSize: fitFont(String(step.counts[c]), colW * 0.8, colFs) }}
             >
@@ -250,7 +250,7 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
 
       {/* items */}
       {bars.map((bar) => {
-        const st = stateStyle(bar.state, step.done);
+        const st = stateStyle(bar.state);
         const h = height(bar.item.value);
         const tag = narrow ? undefined : tags.get(bar.item.id);
         const label = String(bar.item.value) + (tag ? " " : "");
@@ -266,7 +266,6 @@ function CountingScene({ step, animSec, W, H }: { step: CountingStep; animSec: n
               width: barW,
               zIndex: bar.state === "active" ? 8 : 2,
               ...barBorder(2),
-              backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%)",
             }}
           >
             {showValue && (

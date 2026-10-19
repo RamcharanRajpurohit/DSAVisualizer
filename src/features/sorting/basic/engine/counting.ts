@@ -1,5 +1,5 @@
 import type { CountingPhase, CountingStep, Marks, Pointer, SortItem } from "../types";
-import { listText, makeItems, paint, s } from "./common";
+import { makeItems, paint, s } from "./common";
 
 /** Widest value range drawn as a full count array; wider ranges hide the zero counters. */
 export const COUNTING_DENSE_MAX = 30;
@@ -67,7 +67,7 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
   if (n === 0) {
     snap("done", {
       title: "Nothing to sort",
-      detail: "The array is empty. Add a few values (or generate a random array) to watch counting sort work.",
+      detail: "The array is empty.",
       tone: "muted",
       done: true,
     });
@@ -77,15 +77,11 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
   snap("setup", {
     title: `Range ${lo} … ${hi} → k = ${k} counters`,
     detail:
-      "Counting sort never compares two elements. Instead it counts how often each value occurs, in an array **C** of " +
-      `k = max − min + 1 = ${hi} − ${lo} + 1 = **${k}** counters, then uses the counts to compute where every element goes.\n` +
-      `C is indexed by \`value − lo\` (lo = ${lo}) so the smallest value lands in C[0]` +
-      (lo < 0 ? " — that offset is also what makes **negative values** work." : ".") +
+      `No comparisons: count each value in **${k}** counters (max − min + 1), indexed by \`value − lo\`` +
+      (lo < 0 ? ", which also makes negatives work." : ".") +
       (sparse
-        ? `\n**k = ${k} is too wide to draw**, so only the ${s(columns.length, "value")} that actually occur get a column; ` +
-          "the hidden counters (marked ⋯) stay 0 the whole time. A real implementation still allocates all k of them — " +
-          "counting sort only pays off when k is small compared to n."
-        : ""),
+        ? ` Zero counters are hidden (⋯), but memory still pays for all ${k}.`
+        : " The counts then tell every element where to go."),
     tone: "info",
     line: [1, 2, 3],
     tag: sparse ? `k = ${k} · ${columns.length} shown` : `k = ${k}`,
@@ -119,9 +115,8 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
   snap("prefix", {
     title: "Histogram done → prefix sums",
     detail:
-      `C now says how many times each value occurs${dupes.length ? ` (e.g. ${dupes[0]} × ${counts[colOf.get(dupes[0]) ?? 0]})` : ""}. ` +
-      "Next, a running total turns counts into **positions**: afterwards C[v] = how many elements are ≤ v, which is one past the " +
-      `last output slot v will occupy. ${cName(columns[0])} stays as it is.`,
+      `C holds how often each value occurs${dupes.length ? ` (${dupes[0]} × ${counts[colOf.get(dupes[0]) ?? 0]})` : ""}. ` +
+      "A running total turns counts into **positions**: C[v] = how many elements are ≤ v.",
     tone: "info",
     line: 6,
     inputMarks: paint({}, 0, n - 1, "dim"),
@@ -143,7 +138,7 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
         (before
           ? `, so the ${before === 1 ? "copy" : `${before} copies`} of ${v} will fill output slot${before === 1 ? ` ${total - 1}` : `s ${total - before}…${total - 1}`}.`
           : ` (there is no ${v} in the input — the total just carries over).`) +
-        (sparse && columns[c] - columns[c - 1] > 1 ? " The hidden zero counters in between don't change the running total." : ""),
+        (sparse && columns[c] - columns[c - 1] > 1 ? " Hidden zero counters don't change the total." : ""),
       tone: "info",
       line: [6, 7],
       inputMarks: paint({}, 0, n - 1, "dim"),
@@ -158,8 +153,8 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
   snap("place", {
     title: "Place elements, right → left",
     detail:
-      "Walk A **backwards**. For each element, decrement its counter and write the element at that position in B. " +
-      "Going right-to-left means the last copy of a value takes the last slot of its block — equal values keep their input order, so counting sort is **stable** (radix sort depends on that).",
+      "Walk A **backwards**: decrement each element's counter and write it at that slot of B. " +
+      "The last copy of a value takes the last slot of its block, so equal values keep their order: **stable**.",
     tone: "info",
     line: 8,
     countMarks: paint({}, 0, columns.length - 1, "merge"),
@@ -183,8 +178,8 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
     snap("place", {
       title: `Place ${v} at B[${pos}]`,
       detail:
-        `\`${cName(v)}\` was ${pos + 1}; decrement it to **${pos}** — the last free slot in ${v}'s block — and write ${v} into B[${pos}].` +
-        (dup ? ` Another ${v} already sits to its right in B: the original order of the equal values is preserved.` : ""),
+        `\`${cName(v)}\` drops to **${pos}**, the last free slot in ${v}'s block.` +
+        (dup ? ` The ${v} already in B came later in A and sits to its right: input order kept.` : ""),
       tone: "warn",
       line: [8, 9, 10, 11],
       outputMarks: { ...paint({}, 0, n - 1, "merge"), [pos]: "active" },
@@ -199,8 +194,7 @@ export function recordCounting(source: readonly number[]): CountingStep[] {
   snap("done", {
     title: "Sorted!",
     detail:
-      `B holds the sorted array — copy it back into A. ${n} elements, ${s(k, "counter")}, **0 comparisons**: ` +
-      `O(n + k) time and O(n + k) extra space. Result: ${listText(output.map((it) => it?.value ?? 0), 12)}.`,
+      `B is copied back into A. ${n} elements, ${s(k, "counter")}, **0 comparisons**: O(n + k) time and space.`,
     tone: "ok",
     line: 12,
     outputMarks: paint({}, 0, n - 1, "success"),

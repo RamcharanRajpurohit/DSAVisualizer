@@ -1,5 +1,19 @@
 import type { LegendItem } from "@/components/visualizer";
 import { VIZ, type VizState } from "@/lib/theme";
+import {
+  BUBBLE_IMPL,
+  BUBBLE_LESSON,
+  COUNTING_IMPL,
+  COUNTING_LESSON,
+  INSERTION_IMPL,
+  INSERTION_LESSON,
+  RADIX_IMPL,
+  RADIX_LESSON,
+  SELECTION_IMPL,
+  SELECTION_LESSON,
+  SHELL_IMPL,
+  SHELL_LESSON,
+} from "../content";
 import type { AnySortAlgorithm, SortAlgorithmDef } from "../types";
 import { BarsCanvas } from "./components/BarsCanvas";
 import { CountingCanvas } from "./components/CountingCanvas";
@@ -23,9 +37,7 @@ const sw = (label: string, state: VizState, kind: LegendItem["kind"] = "swatch")
 const bubble: SortAlgorithmDef<BarsStep> = {
   key: "bubble",
   name: "Bubble sort",
-  blurb:
-    "Sweep left → right swapping out-of-order neighbours; the largest unsorted value bubbles to the end each pass. " +
-    "A `swapped` flag stops early once a pass makes no swaps.",
+  blurb: "Swap out-of-order neighbours until a whole pass makes no swaps.",
   family: "Simple",
   stable: true,
   inPlace: true,
@@ -35,6 +47,8 @@ const bubble: SortAlgorithmDef<BarsStep> = {
     { op: "Swaps", best: "0", avg: "~n²/4", worst: "n(n−1)/2" },
   ],
   pseudocode: BUBBLE_CODE,
+  implementations: BUBBLE_IMPL,
+  lesson: BUBBLE_LESSON,
   legend: [
     sw("Unsorted", "base"),
     sw("Comparing", "compare"),
@@ -50,9 +64,7 @@ const bubble: SortAlgorithmDef<BarsStep> = {
 const selection: SortAlgorithmDef<BarsStep> = {
   key: "selection",
   name: "Selection sort",
-  blurb:
-    "Scan the unsorted part for its minimum and swap it to the front; the final prefix grows by one per pass. " +
-    "Always n(n−1)/2 comparisons, but at most n − 1 swaps.",
+  blurb: "Find the minimum of the unsorted part and swap it to the front.",
   family: "Simple",
   stable: false,
   inPlace: true,
@@ -62,6 +74,8 @@ const selection: SortAlgorithmDef<BarsStep> = {
     { op: "Swaps", best: "0", avg: "≤ n − 1", worst: "n − 1" },
   ],
   pseudocode: SELECTION_CODE,
+  implementations: SELECTION_IMPL,
+  lesson: SELECTION_LESSON,
   legend: [
     sw("Unsorted", "base"),
     sw("Scanning (j)", "compare"),
@@ -78,9 +92,7 @@ const selection: SortAlgorithmDef<BarsStep> = {
 const insertion: SortAlgorithmDef<BarsStep> = {
   key: "insertion",
   name: "Insertion sort",
-  blurb:
-    "Grow a sorted prefix: lift the next key out, slide bigger prefix elements one slot right, drop the key into the gap. " +
-    "Very fast on nearly-sorted input.",
+  blurb: "Slide each element left into its place in the sorted prefix.",
   family: "Simple",
   stable: true,
   inPlace: true,
@@ -90,6 +102,8 @@ const insertion: SortAlgorithmDef<BarsStep> = {
     { op: "Shifts", best: "0", avg: "~n²/4", worst: "n(n−1)/2" },
   ],
   pseudocode: INSERTION_CODE,
+  implementations: INSERTION_IMPL,
+  lesson: INSERTION_LESSON,
   legend: [
     sw("Not yet inserted", "base"),
     sw("Sorted prefix", "merge"),
@@ -107,9 +121,7 @@ const insertion: SortAlgorithmDef<BarsStep> = {
 const shell: SortAlgorithmDef<BarsStep> = {
   key: "shell",
   name: "Shell sort",
-  blurb:
-    "Insertion sort on elements gap apart, with shrinking gaps n/2, n/4, …, 1. Far-away values travel in one jump, so the " +
-    "final gap-1 pass has little left to do. (Shell's gaps: Θ(n²) worst case; Knuth's 1, 4, 13, … give O(n^1.5).)",
+  blurb: "Insertion sort over shrinking gaps, so far-away values move in one jump.",
   family: "Simple",
   stable: false,
   inPlace: true,
@@ -118,6 +130,8 @@ const shell: SortAlgorithmDef<BarsStep> = {
     { op: "Passes", best: "⌊log₂ n⌋", avg: "⌊log₂ n⌋", worst: "⌊log₂ n⌋" },
   ],
   pseudocode: SHELL_CODE,
+  implementations: SHELL_IMPL,
+  lesson: SHELL_LESSON,
   legend: [
     sw("Current sub-sequence", "base"),
     sw("Other sub-sequences", "dim"),
@@ -134,9 +148,7 @@ const shell: SortAlgorithmDef<BarsStep> = {
 const counting: SortAlgorithmDef<CountingStep> = {
   key: "counting",
   name: "Counting sort",
-  blurb:
-    "No comparisons: count each value, turn the counts into end positions with prefix sums, then place elements right → left " +
-    "(stable). Only worth it when the value range k is small.",
+  blurb: "Count each value, then place elements using prefix sums — no comparisons.",
   family: "Non-comparison",
   stable: true,
   inPlace: false,
@@ -145,6 +157,8 @@ const counting: SortAlgorithmDef<CountingStep> = {
     { op: "Compares", best: "0", avg: "0", worst: "0" },
   ],
   pseudocode: COUNTING_CODE,
+  implementations: COUNTING_IMPL,
+  lesson: COUNTING_LESSON,
   legend: [
     sw("Input element", "base"),
     sw("Being counted", "compare"),
@@ -162,9 +176,7 @@ const counting: SortAlgorithmDef<CountingStep> = {
 const radix: SortAlgorithmDef<RadixStep> = {
   key: "radix",
   name: "Radix sort (LSD)",
-  blurb:
-    "Distribute elements into 10 buckets by one digit, collect them back in order, repeat from the ones digit upwards. " +
-    "Each pass is stable, so after d passes all d digits are sorted.",
+  blurb: "Bucket by one digit at a time, ones first, with stable passes.",
   family: "Non-comparison",
   stable: true,
   inPlace: false,
@@ -173,13 +185,15 @@ const radix: SortAlgorithmDef<RadixStep> = {
     { op: "Passes", best: "d digits", avg: "d digits", worst: "d digits" },
   ],
   pseudocode: RADIX_CODE,
+  implementations: RADIX_IMPL,
+  lesson: RADIX_LESSON,
   legend: [
     sw("Element", "base"),
     sw("Moving", "active"),
     sw("Sorted by last p digits", "merge"),
     sw("Sorted", "success"),
-    { label: "Current digit", color: "rgba(255,176,0,0.18)", stroke: "#ffb000", kind: "swatch" },
-    { label: "Active bucket", color: "rgba(255,176,0,0.07)", stroke: "#ffd466", kind: "swatch" },
+    { label: "Current digit", color: VIZ.active[0], stroke: VIZ.active[1], kind: "swatch" },
+    { label: "Active bucket", color: "rgba(217, 119, 6, 0.07)", stroke: "rgba(217, 119, 6, 0.85)", kind: "swatch" },
   ],
   maxSize: 16,
   record: recordRadix,

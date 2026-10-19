@@ -78,8 +78,7 @@ function push(R: R, v: number): boolean {
       `Check for overflow first: \`top == capacity − 1\` → \`${top} == ${cap - 1}\` → **true**. Every slot A[0..${cap - 1}] is already taken.`,
       { tone: "warn", line: 2, vars: x, fx: { float: { item, tone: "new" }, ptr: "focus" } });
     R.snap("Stack Overflow!",
-      `There is nowhere to put **${v}** — writing \`A[${cap}]\` would run past the end of the array. A fixed-capacity stack must refuse the push (throw an error or return false).\n` +
-      "A **dynamic-array** stack would instead allocate an array twice as big and copy everything: O(n) for that one push, still O(1) amortized.",
+      `There is nowhere to put **${v}**: \`A[${cap}]\` would run past the end of the array. A dynamic-array stack would grow instead (O(1) amortized).`,
       { tone: "danger", line: 3, vars: x, hold: 1.6,
         fx: { float: { item, tone: "danger", shake: true }, flash: "overflow", ptr: "alert", callout: { text: "Overflow — no free slot", tone: "danger", at: "float" } } });
     R.snap(`push(${v}) rejected`,
@@ -100,9 +99,8 @@ function push(R: R, v: number): boolean {
   const stale = R.s.stale[top + 1];
   R.s = { ...R.s, slots: setAt(R.s.slots, top + 1, item), stale: setAt(R.s.stale, top + 1, null) };
   R.snap(`A[${top + 1}] = ${v}`,
-    `**${v}** drops into slot ${top + 1} and becomes the new top. Nothing else moves, so push is **O(1)**.` +
-      (stale != null ? `\nThe stale ${stale} left in that slot by an earlier pop is simply overwritten.` : "") +
-      (top + 1 === cap - 1 ? "\nThe stack is now **full** — one more push would overflow." : ""),
+    `**${v}** becomes the new top; nothing else moves, so push is **O(1)**.` +
+      (top + 1 === cap - 1 ? " The stack is now **full**." : stale != null ? ` It overwrites the stale ${stale} left by an earlier pop.` : ""),
     { tone: "ok", line: 5, vars: x, fx: { hl: { [item.id]: "ok" } } });
   return true;
 }
@@ -115,7 +113,7 @@ function pop(R: R): boolean {
       "Check for underflow first: `top == -1` → **true**. There is no element to remove.",
       { tone: "warn", line: 2, fx: { ptr: "focus" } });
     R.snap("Stack Underflow!",
-      "Popping an empty stack is an error — there is no `A[-1]`. Real code throws (e.g. `EmptyStackException`) or returns a sentinel; callers should check `isEmpty()` first.",
+      "Popping an empty stack is an error: there is no `A[-1]`. Check `isEmpty()` first.",
       { tone: "danger", line: 3, hold: 1.6,
         fx: { flash: "underflow", ptr: "alert", callout: { text: "Underflow — nothing to pop", tone: "danger", at: "base" }, result: { text: "pop() → underflow", tone: "danger" } } });
     return false;
@@ -131,11 +129,11 @@ function pop(R: R): boolean {
 
   R.s = { ...s0, slots: setAt(s0.slots, top, null), stale: setAt(s0.stale, top, item.v), top: top - 1 };
   R.snap(`top = top - 1 → ${top - 1}`,
-    `**${item.v}** lifts out and \`top\` drops to ${top - 1}. We never erase \`A[${top}]\`: the old value stays in memory as garbage (faded), but it sits above top so it is no longer part of the stack — the next push overwrites it.`,
+    `**${item.v}** lifts out and \`top\` drops to ${top - 1}. \`A[${top}]\` isn't erased: it is now garbage (faded) that the next push overwrites.`,
     { line: 5, vars: x, fx: { float: { item, tone: "out" }, ptr: "focus" } });
   R.snap(`return ${item.v}`,
-    `pop() hands back **${item.v}**. Constant work no matter how big the stack is → **O(1)**.` +
-      (top - 1 === -1 ? "\nThe stack is now empty (top = -1)." : `\nThe new top is A[${top - 1}] = ${s0.slots[top - 1]?.v}.`),
+    `pop() hands back **${item.v}** in **O(1)**.` +
+      (top - 1 === -1 ? " The stack is now empty (top = -1)." : ` The new top is A[${top - 1}] = ${s0.slots[top - 1]?.v}.`),
     { tone: "ok", line: 6, vars: x, fx: { result: { text: `pop() → ${item.v}`, tone: "ok" } } });
   return true;
 }
@@ -152,7 +150,7 @@ function peek(R: R): boolean {
   const item = slots[top]!;
   R.snap("peek() — is the stack empty?", `\`top == -1\` → \`${top} == -1\` → **false**.`, { line: 2, fx: { ptr: "focus" } });
   R.snap(`peek() → ${item.v}`,
-    `Return \`A[top]\` = **${item.v}** but leave \`top\` alone — peek only looks. Handy when the next decision depends on the top (e.g. operator precedence in infix → postfix). **O(1)**.`,
+    `Return \`A[top]\` = **${item.v}** and leave \`top\` alone: peek only looks, in O(1).`,
     { tone: "ok", line: 4, vars: { x: item.v }, fx: { hl: { [item.id]: "active" }, result: { text: `peek() → ${item.v}`, tone: "ok" } } });
   return true;
 }
@@ -194,7 +192,7 @@ function clear(R: R) {
     top: -1,
   };
   R.snap("top = -1",
-    "Resetting `top` is all it takes: every slot is now above top, so the old values are unreachable garbage (faded) that future pushes will overwrite. No loop over the elements → **O(1)**.",
+    "Resetting `top` is all it takes: the old values become garbage that future pushes overwrite. No loop, so **O(1)**.",
     { tone: "ok", line: 2, fx: { ptr: "focus" } });
   return true;
 }
@@ -238,8 +236,7 @@ export function runStack(state: StackState, ops: readonly StackOp[]): RunResult<
 export function stackIntro(state: StackState): StackStep[] {
   const R: R = new Recorder<StackOpKind, StackState, StackFx>(state, "idle", varsOf);
   R.snap("A stack: Last In, First Out",
-    `Elements are added (**push**) and removed (**pop**) at one end only — the **top**. Here the stack is an array of ${state.cap} slots; \`top\` is the index of the newest element.\n` +
-      "Type a value (or leave the box empty for a random one) and press **Push**, or try **Pop** / **Peek**.",
+    `Values are pushed and popped at one end only: the **top**. Here it is an array of ${state.cap} slots, and \`top\` is the index of the newest value.`,
     { fx: {} });
   return R.steps;
 }

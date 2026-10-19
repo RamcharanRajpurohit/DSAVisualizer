@@ -131,8 +131,8 @@ export function stabilityNote(final: readonly (SortItem | null)[]): string {
     const pos = group.indexOf(it.id);
     const earlier = group.slice(pos + 1).find((id) => id < it.id);
     if (earlier != null) {
-      return `\nLook at the duplicate tags: **${tag(it.value, it.id)}** now comes before **${tag(it.value, earlier)}** — equal values changed their relative order.`;
+      return `\n**${tag(it.value, it.id)}** now comes before **${tag(it.value, earlier)}**: equal values changed order.`;
     }
   }
-  return "\n(This time the equal values happen to keep their original order — but that is luck, not a guarantee.)";
+  return "\nEqual values kept their order this time, but only by luck.";
 }

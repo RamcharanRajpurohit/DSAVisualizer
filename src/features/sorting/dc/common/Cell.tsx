@@ -29,7 +29,7 @@ export interface CellProps {
 
 const EASE_MOVE = [0.33, 1, 0.68, 1] as const;
 
-/** One array element: glides to (x, y), tweens its colours, arcs when swapped, glows when focused. */
+/** One array element: glides to (x, y), tweens its colours, arcs when swapped, gets a ring when focused. */
 export function Cell({
   x, y, size, value, tag, colors, shadow = SHADOW.none, opacity = 1, arc = 0, pop = false, serial, animSec, z = 1, children,
 }: CellProps) {

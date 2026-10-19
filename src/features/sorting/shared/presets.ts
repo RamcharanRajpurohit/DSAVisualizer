@@ -5,11 +5,11 @@ import { randInt } from "@/lib/utils";
 export type PresetKind = "random" | "sorted" | "reversed" | "nearly" | "few";
 
 export const PRESETS: readonly { kind: PresetKind; label: string; title: string }[] = [
-  { kind: "random", label: "Random", title: "Distinct random values" },
-  { kind: "reversed", label: "Reversed", title: "Descending order — worst case for many sorts" },
-  { kind: "nearly", label: "Nearly sorted", title: "Sorted with a couple of elements out of place" },
-  { kind: "few", label: "Few unique", title: "Lots of duplicates — shows stability" },
+  { kind: "random", label: "Random", title: "Random — distinct values" },
   { kind: "sorted", label: "Sorted", title: "Already sorted — quick sort's worst case with a last-element pivot" },
+  { kind: "reversed", label: "Reversed", title: "Reversed — worst case for many sorts" },
+  { kind: "nearly", label: "Nearly", title: "Nearly sorted — a couple of elements out of place" },
+  { kind: "few", label: "Dupes", title: "Few unique values — shows stability" },
 ];
 
 /** The page opens on this array (deterministic, so server and client render the same thing). */

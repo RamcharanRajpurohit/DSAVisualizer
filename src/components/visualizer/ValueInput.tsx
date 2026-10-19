@@ -132,6 +132,7 @@ export function ValueInput({ input, onEnter, onRandom, label, placeholder, hint,
       {label && <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-faint">{label}</span>}
       <div className="relative">
         <input
+          data-value-input
           type="text"
           inputMode={input.mode === "single" ? "numeric" : "text"}
           value={input.text}

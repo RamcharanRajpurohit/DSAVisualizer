@@ -2,12 +2,13 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactElement } from "react";
+import { VIZ } from "@/lib/theme";
 import { clamp } from "@/lib/utils";
 import { Chip } from "../shared/components/Chip";
 import { Callout, ResultBadge } from "../shared/components/Callout";
 import { Pointer } from "../shared/components/Pointer";
 import { rowGeometry, SlotRow } from "../shared/components/SlotRow";
-import { PTR } from "../shared/constants";
+import { INK, PTR } from "../shared/constants";
 import { dequeItems, type DequeStep } from "./engine";
 
 export function DequeView({ step, width, height, dur }: { step: DequeStep; width: number; height: number; dur: number }) {
@@ -47,7 +48,7 @@ export function DequeView({ step, width, height, dur }: { step: DequeStep; width
   return (
     <div className="absolute inset-0">
       <div className="pointer-events-none absolute right-3 top-3 text-right font-mono text-[10px] uppercase tracking-wider text-fg-faint">
-        logical view · front → back
+        deque
       </div>
 
       {/* tube */}
@@ -74,8 +75,8 @@ export function DequeView({ step, width, height, dur }: { step: DequeStep; width
         {fx.calc && (
           <motion.div
             key={fx.calc.text}
-            className="pointer-events-none absolute left-0 top-0 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg border bg-surface/95 px-2.5 py-1 font-mono text-[12px] font-semibold"
-            style={{ left: width / 2, top: midY, borderColor: fx.calc.wrap ? "#ffb00088" : "#39aaff55", color: fx.calc.wrap ? "#ffd466" : "#9fd3ff" }}
+            className="pointer-events-none absolute left-0 top-0 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg border bg-surface px-2.5 py-1 font-mono text-[12px] font-semibold shadow-sm"
+            style={{ left: width / 2, top: midY, borderColor: fx.calc.wrap ? `${INK.warn}66` : `${INK.info}55`, color: fx.calc.wrap ? VIZ.active[2] : VIZ.compare[2] }}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
@@ -113,7 +114,7 @@ export function DequeView({ step, width, height, dur }: { step: DequeStep; width
       <Pointer x={g.cx(s.front)} y={py + ph + 19} dir="up" label={`front = ${s.front}`} color={PTR.front} dur={dur} alert={fx.ptr?.front === "alert"} />
 
       <div className="pointer-events-none absolute bottom-3 right-3 text-right font-mono text-[10px] uppercase tracking-wider text-fg-faint">
-        physical circular array · A[0..{s.cap - 1}]
+        array A[0..{s.cap - 1}]
       </div>
       <ResultBadge spec={fx.result} />
     </div>

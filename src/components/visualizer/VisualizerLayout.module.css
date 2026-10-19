@@ -89,3 +89,27 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 }
+
+/* Browser fullscreen: the workspace takes the whole screen (no navbar). */
+.layout:fullscreen {
+  height: 100dvh;
+  width: 100vw;
+  background: var(--bg);
+  overflow-y: auto;
+}
+@media (min-width: 1024px) {
+  .layout:fullscreen {
+    overflow: hidden;
+  }
+}
+
+/* Canvas-only fullscreen: canvas + playback bar fill the screen. */
+.stage:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  padding: 12px;
+  background: var(--bg);
+}
+.stage:fullscreen .canvas {
+  min-height: 0;
+}

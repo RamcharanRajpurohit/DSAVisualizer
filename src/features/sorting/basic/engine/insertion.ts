@@ -1,5 +1,5 @@
 import type { BarsStep, Boundary, Marks, Pointer } from "../types";
-import { BarsRecorder, listText, paint } from "./common";
+import { BarsRecorder, paint } from "./common";
 
 /** Insertion sort: lift the key, shift larger prefix elements right, drop the key into the gap. */
 export function recordInsertion(input: readonly number[]): BarsStep[] {
@@ -21,8 +21,8 @@ export function recordInsertion(input: readonly number[]): BarsStep[] {
   r.snap({
     title: `Insertion sort · ${n} elements`,
     detail:
-      "Like sorting a hand of cards: keep a **sorted prefix** (purple) on the left, take the next element (the **key**), " +
-      "slide every bigger prefix element one slot right, then drop the key into the gap.\nA[0] on its own is already a sorted prefix.",
+      "Like a hand of cards: insert each next element, the **key**, into the **sorted prefix** on the left. " +
+      "A[0] alone is already sorted.",
     tone: "info",
     line: 1,
     marks: prefixMarks(0),
@@ -41,7 +41,7 @@ export function recordInsertion(input: readonly number[]): BarsStep[] {
 
     r.snap({
       title: `Pick key = ${key}`,
-      detail: `\`key ← A[${i}]\` lifts **${key}** out of the array, leaving a **gap** at index ${i}. \`j ← ${i - 1}\` starts at the last (largest) element of the sorted prefix and walks left.`,
+      detail: `\`key ← A[${i}]\` lifts **${key}** out, leaving a **gap** at index ${i}. \`j\` walks left through the sorted prefix.`,
       tone: "info",
       line: [2, 3, 4],
       marks: prefixMarks(i - 1),
@@ -104,7 +104,7 @@ export function recordInsertion(input: readonly number[]): BarsStep[] {
           detail:
             `A[${j}] = **${a}** is not bigger than key = **${key}**, so everything left of the gap is ≤ ${key}: the key belongs in the gap at index ${j + 1}.` +
             (a === key
-              ? " Stopping at an **equal** value (instead of moving past it) keeps equal elements in their original order — insertion sort is **stable**."
+              ? " Stopping at an **equal** value keeps equal elements in order: insertion sort is **stable**."
               : ""),
           tone: "ok",
           line: 5,
@@ -124,11 +124,9 @@ export function recordInsertion(input: readonly number[]): BarsStep[] {
     r.snap({
       title: `Insert ${key} at index ${j + 1}`,
       detail:
-        `\`A[${j + 1}] ← key\`. The prefix A[0..${i}] = ${listText(r.values(0, i))} is sorted again` +
-        (moved
-          ? ` after ${moved} ${moved === 1 ? "shift" : "shifts"}.`
-          : " — the key was already in place, so nothing moved. (That's why insertion sort is O(n) on sorted input.)") +
-        (i < n - 1 ? " Prefix elements aren't final yet: a later key may still push them right." : ""),
+        `The prefix A[0..${i}] is sorted again` +
+        (moved ? ` after ${moved} ${moved === 1 ? "shift" : "shifts"}.` : " with nothing moved, which is why sorted input is O(n).") +
+        (i < n - 1 ? " It isn't final yet: later keys may push it right." : ""),
       tone: "ok",
       line: 8,
       marks: { ...prefixMarks(i), [j + 1]: "pivot" },
@@ -142,9 +140,7 @@ export function recordInsertion(input: readonly number[]): BarsStep[] {
   r.snap({
     title: "Sorted!",
     detail:
-      `The sorted prefix now covers the whole array: **${comparisons}** comparisons and **${shifts}** shifts.\n` +
-      `Each shift fixes exactly one inversion (a pair in the wrong order), so this input had ${shifts} inversions — ` +
-      "few inversions ⇒ fast, which is why insertion sort shines on nearly-sorted data.",
+      `**${comparisons}** comparisons and **${shifts}** shifts. Each shift fixes one inversion, so nearly-sorted input is fast.`,
     tone: "ok",
     marks: paint({}, 0, n - 1, "success"),
     done: true,

@@ -82,10 +82,9 @@ const varsOf = (s: CircState): Vars =>
     ? { front: s.front, rear: s.rear, count: s.count, capacity: s.cap }
     : { front: s.front, "rear (next free)": s.rear, size: s.count, capacity: s.cap };
 
+/** " **Wrap-around:** …" when an index steps past the last slot, else "". */
 const wrapNote = (name: string, from: number, cap: number) =>
-  from + 1 === cap
-    ? `\n**Wrap-around!** \`${name}\` was at the last index, so \`(${from} + 1) % ${cap} = 0\` sends it back to the start of the array — no slot is ever wasted.`
-    : "";
+  from + 1 === cap ? ` **Wrap-around:** \`(${from} + 1) % ${cap} = 0\` sends ${name} back to the start.` : "";
 
 // ───────────────────────────── count rule ─────────────────────────────
 
@@ -111,13 +110,13 @@ function enqueueCount(R: R, item: Item): boolean {
     { line: 2, vars: x, fx: { float: { item, tone: "new", at: target }, slot: { index: target, tone: "new" } } });
   R.s = { ...R.s, rear: target, rAbs: s0.rAbs + 1 };
   R.snap(`rear = (${rear} + 1) % ${cap} = ${target}`,
-    `Advance rear **modulo the capacity**: \`rear = (rear + 1) % capacity = (${rear} + 1) % ${cap} = ${target}\`.` + wrapNote("rear", rear, cap) +
-      (count === 0 ? `\nThe queue was empty, so rear lands on front (${front}): one element means front == rear.` : ""),
+    (rear + 1 === cap ? `rear advances **modulo the capacity**.` : `Advance rear **modulo the capacity**: \`(${rear} + 1) % ${cap} = ${target}\`.`) +
+      (rear + 1 === cap ? wrapNote("rear", rear, cap) : count === 0 ? ` The queue was empty, so rear lands on front (${front}).` : ""),
     { line: 4, vars: x, fx: { float: { item, tone: "new", at: target }, slot: { index: target, tone: "new" }, ptr: { rear: "focus" },
       calc: { text: `rear = (${rear} + 1) % ${cap} = ${target}`, wrap: rear + 1 === cap } } });
   R.s = { ...R.s, slots: setAt(R.s.slots, target, item), count: count + 1 };
   R.snap(`A[${target}] = ${v}, count = ${count + 1}`,
-    `**${v}** is stored at the rear and \`count\` goes up to ${count + 1}. O(1).` + (count + 1 === cap ? "\n`count == capacity` now — the queue is **full** with every slot in use." : ""),
+    `**${v}** is stored at the rear and \`count\` becomes ${count + 1}.` + (count + 1 === cap ? " `count == capacity`: the queue is **full**, every slot in use." : ""),
     { tone: "ok", line: [5, 6], vars: x, fx: { hl: { [item.id]: "ok" } } });
   return true;
 }
@@ -138,7 +137,7 @@ function dequeueCount(R: R): boolean {
   R.snap(`x = A[${front}] = ${item.v}`, "The element at **front** is the oldest one — it leaves first (FIFO).", { line: 4, vars: x, fx: { hl: { [item.id]: "active" } } });
   R.s = { ...s0, slots: setAt(s0.slots, front, null), front: nf, fAbs: s0.fAbs + 1 };
   R.snap(`front = (${front} + 1) % ${cap} = ${nf}`,
-    `**${item.v}** leaves; front advances modulo the capacity. Slot ${front} is free again — and unlike the linear queue it is **not wasted**: rear will reach it after wrapping around.` + wrapNote("front", front, cap),
+    `**${item.v}** leaves and front advances modulo the capacity.` + (front + 1 === cap ? wrapNote("front", front, cap) : ` Slot ${front} is **not wasted**: rear reaches it after wrapping.`),
     { line: 5, vars: x, fx: { float: { item, tone: "out", at: front }, ptr: { front: "focus" }, calc: { text: `front = (${front} + 1) % ${cap} = ${nf}`, wrap: front + 1 === cap } } });
   R.s = { ...R.s, count: count - 1 };
   R.snap(`count = ${count - 1}, return ${item.v}`,
@@ -160,8 +159,7 @@ function enqueueGap(R: R, item: Item): boolean {
       `\`(rear + 1) % capacity == front\` → \`(${rear} + 1) % ${cap} = ${next}\` and front is ${front} → **true**.`,
       { tone: "warn", line: 2, vars: x, fx: { float: { item, tone: "new", at: rear }, gap: rear } });
     R.snap("Full — one slot kept empty",
-      `Slot ${rear} is empty, yet we must not use it: rear would then move onto front and \`front == rear\` would mean **empty**. ` +
-        `Keeping one slot free is how this version tells full from empty without a counter — only ${cap - 1} of the ${cap} slots are ever used.`,
+      `Slot ${rear} is empty, but using it would make \`front == rear\`, which means **empty**. So only ${cap - 1} of the ${cap} slots are ever used.`,
       { tone: "danger", line: 3, vars: x, hold: 1.8,
         fx: { float: { item, tone: "danger", at: rear, shake: true }, gap: rear, ptr: { rear: "alert", front: "alert" },
           callout: { text: `(rear + 1) % ${cap} == front → full`, tone: "danger" }, result: { text: `enqueue(${v}) → full`, tone: "danger" } } });
@@ -175,8 +173,8 @@ function enqueueGap(R: R, item: Item): boolean {
     { tone: "ok", line: 4, vars: x, fx: { hl: { [item.id]: "ok" } } });
   R.s = { ...R.s, rear: next, rAbs: s0.rAbs + 1 };
   R.snap(`rear = (${rear} + 1) % ${cap} = ${next}`,
-    `…then advance rear modulo the capacity: \`(${rear} + 1) % ${cap} = ${next}\`.` + wrapNote("rear", rear, cap) +
-      (mod(next + 1, cap) === front ? `\nNow \`(rear + 1) % capacity == front\`: the queue is **full**, with slot ${next} left as the gap.` : ""),
+    (rear + 1 === cap ? `…then advance rear modulo the capacity.${wrapNote("rear", rear, cap)}` : `…then advance rear modulo the capacity: \`(${rear} + 1) % ${cap} = ${next}\`.`) +
+      (mod(next + 1, cap) === front && rear + 1 !== cap ? ` Now the queue is **full**, with slot ${next} left as the gap.` : ""),
     { line: 5, vars: x, fx: { ptr: { rear: "focus" }, calc: { text: `rear = (${rear} + 1) % ${cap} = ${next}`, wrap: rear + 1 === cap }, gap: mod(next + 1, cap) === front ? next : undefined } });
   return true;
 }
@@ -197,7 +195,7 @@ function dequeueGap(R: R): boolean {
   R.snap(`x = A[${front}] = ${item.v}`, "The oldest element sits at front — it leaves first (FIFO).", { line: 4, vars: x, fx: { hl: { [item.id]: "active" } } });
   R.s = { ...s0, slots: setAt(s0.slots, front, null), front: nf, fAbs: s0.fAbs + 1, count: s0.count - 1 };
   R.snap(`front = (${front} + 1) % ${cap} = ${nf}`,
-    `**${item.v}** leaves and front advances modulo the capacity. Slot ${front} can be reused once rear wraps around.` + wrapNote("front", front, cap),
+    `**${item.v}** leaves and front advances modulo the capacity.` + (front + 1 === cap ? wrapNote("front", front, cap) : ` Slot ${front} is reused once rear wraps around.`),
     { line: 5, vars: x, fx: { float: { item, tone: "out", at: front }, ptr: { front: "focus" }, calc: { text: `front = (${front} + 1) % ${cap} = ${nf}`, wrap: front + 1 === cap } } });
   R.snap(`return ${item.v}`, `dequeue() returns **${item.v}** in O(1).` + (nf === rear ? " front == rear again → empty." : ""),
     { tone: "ok", line: 6, vars: x, fx: { result: { text: `dequeue() → ${item.v}`, tone: "ok" } } });
@@ -276,8 +274,7 @@ export function runCirc(state: CircState, ops: readonly CircOp[]): RunResult<Cir
 export function circIntro(state: CircState): CircStep[] {
   const R: R = new Recorder<CircOpKind, CircState, CircFx>(state, "idle", varsOf);
   R.snap("A circular queue: the array's ends are glued together",
-    "Same FIFO queue, but the indices **wrap around** with `i = (i + 1) % capacity`, so the slots freed by dequeue are reused — no wasted space, every operation O(1).\n" +
-      `In this example the queue already wraps: front = ${state.front}, rear = ${state.rear}. Enqueue a value and watch rear continue past the end back to 0.`,
+    `A FIFO queue whose indices **wrap around** with \`i = (i + 1) % capacity\`, so freed slots are reused. Here it already wraps: front = ${state.front}, rear = ${state.rear}.`,
     {});
   return R.steps;
 }

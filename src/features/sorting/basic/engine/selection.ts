@@ -32,9 +32,8 @@ export function recordSelection(input: readonly number[]): BarsStep[] {
   r.snap({
     title: `Selection sort · ${n} elements`,
     detail:
-      "Split the array into a **final** prefix (left) and an unsorted part. Each pass **selects** the smallest value of the " +
-      "unsorted part and swaps it to the front of that part, so the final prefix grows by one.\nIt always does the same number of " +
-      "comparisons, but at most n − 1 swaps — handy when writes are expensive.",
+      "Each pass **selects** the smallest unsorted value and swaps it to the front, growing the **final** prefix by one. " +
+      "Comparisons never change, but there are at most n − 1 swaps.",
     tone: "info",
     line: 1,
     vars: vars(null, null, null),
@@ -101,10 +100,8 @@ export function recordSelection(input: readonly number[]): BarsStep[] {
       r.snap({
         title: `Swap ${front} ↔ ${minV}`,
         detail:
-          `The scan is over: the smallest unsorted value is **${minV}** (index ${min}). \`min ≠ i\`, so swap it to the front of the unsorted part (index ${i}); ${front} takes its old slot.` +
-          (jumped
-            ? `\n⚠ ${front} just jumped over another ${front}: equal values changed their relative order. That is why selection sort is **not stable**.`
-            : ""),
+          `**${minV}** (index ${min}) is the smallest unsorted value, so it swaps to index ${i}.` +
+          (jumped ? `\n⚠ ${front} just jumped over an equal ${front}, so selection sort is **not stable**.` : ""),
         tone: "warn",
         line: [7, 8],
         marks: { ...prefix(), [i]: "active", [min]: "active" },
@@ -152,8 +149,7 @@ export function recordSelection(input: readonly number[]): BarsStep[] {
   r.snap({
     title: "Sorted!",
     detail:
-      `**${comparisons}** comparisons — always n(n−1)/2, because every pass scans the whole unsorted part even when the input is already sorted — ` +
-      `but only **${swaps}** ${swaps === 1 ? "swap" : "swaps"} (never more than n − 1 = ${n - 1}).` +
+      `**${comparisons}** comparisons (always n(n−1)/2) but only **${swaps}** ${swaps === 1 ? "swap" : "swaps"} (at most ${n - 1}).` +
       stabilityNote(r.slots),
     tone: "ok",
     marks: paint({}, 0, n - 1, "success"),

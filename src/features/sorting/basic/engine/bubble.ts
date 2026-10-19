@@ -34,9 +34,8 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
   r.snap({
     title: `Bubble sort · ${n} elements`,
     detail:
-      "Each pass walks left → right comparing **neighbours**. Whenever the left one is bigger they swap, so the largest " +
-      "unsorted value is carried — it **bubbles** — to the end of the unsorted part.\nAfter every pass one more element on " +
-      "the right is final, so each pass can stop one slot earlier.",
+      "Compare **neighbours** left → right and swap them when the left one is bigger. The largest unsorted value " +
+      "**bubbles** to the end, so each pass can stop one slot earlier.",
     tone: "info",
     line: 1,
     vars: vars(null, null, null),
@@ -54,7 +53,7 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
         (i === 0
           ? `Nothing is final yet, so compare every neighbouring pair up to index ${lastJ}.`
           : `The last ${s(i, "element")} ${i === 1 ? "is" : "are"} already final, so this pass only compares pairs up to index ${lastJ}.`) +
-        " `swapped ← false` — we'll remember whether this pass moves anything.",
+        " `swapped ← false` until something moves.",
       tone: "info",
       line: [2, 3],
       marks: finalMarks(),
@@ -88,8 +87,8 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
         r.snap({
           title: `Swap ${a} ↔ ${b}`,
           detail:
-            `${b} moves left and ${a} moves right. ${a} keeps travelling right for as long as it is bigger than its next neighbour.` +
-            " `swapped ← true` — this pass changed something, so we can't stop early yet.",
+            `${a} keeps travelling right while it is bigger than its next neighbour.` +
+            " `swapped ← true`, so this pass can't be the last.",
           tone: "warn",
           line: [6, 7],
           marks: paint(finalMarks(), j, j + 1, "active"),
@@ -106,7 +105,7 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
           detail:
             `A[${j}] = **${a}** is not bigger than A[${j + 1}] = **${b}**, so this pair is fine — no swap.` +
             (a === b
-              ? " Equal values are **never** swapped (the test is `>`, not `≥`), which keeps equal elements in their original order: bubble sort is **stable**."
+              ? " Equal values are **never** swapped (`>`, not `≥`), which keeps bubble sort **stable**."
               : ""),
           tone: "ok",
           line: [4, 5],
@@ -127,11 +126,8 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
     r.snap({
       title: lastPass ? `${placed} and ${r.val(0)} are final` : `${placed} reached its final place`,
       detail:
-        `Pass ${i + 1} carried the largest unsorted value, **${placed}**, to index ${n - 1 - i}. ` +
-        (lastPass
-          ? "Only A[0] is left and it must be the smallest, so it is final as well."
-          : "Everything right of the boundary is final and is never compared again.") +
-        (swapped && !lastPass ? "\n`swapped` is true, so another pass is needed." : ""),
+        `**${placed}** was the largest unsorted value, so index ${n - 1 - i} is final and never compared again.` +
+        (lastPass ? " A[0] is left over, so it is the smallest and final too." : swapped ? " `swapped` is true, so another pass follows." : ""),
       tone: "ok",
       line: swapped || lastPass ? [8, 9] : 8,
       marks: finalMarks(),
@@ -146,8 +142,8 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
       r.snap({
         title: "No swaps → sorted early!",
         detail:
-          `Pass ${i + 1} made **zero swaps**: every neighbouring pair is already in order, so the whole array is sorted. ` +
-          `The \`swapped\` flag lets us stop now and skip ${s(n - 2 - i, "more pass", "more passes")}.`,
+          `Pass ${i + 1} made **zero swaps**, so every neighbouring pair is in order. ` +
+          `The \`swapped\` flag skips the remaining ${s(n - 2 - i, "pass", "passes")}.`,
         tone: "ok",
         line: 9,
         marks: finalMarks(),
@@ -164,8 +160,8 @@ export function recordBubble(input: readonly number[]): BarsStep[] {
   r.snap({
     title: "Sorted!",
     detail:
-      `${n} elements sorted in ${s(passes, "pass", "passes")} with **${comparisons}** comparisons and **${swaps}** swaps.\n` +
-      `Every swap removes exactly one inversion, so this input had ${swaps} pairs out of order (the worst case, a reversed array, has n(n−1)/2 = ${worst}).`,
+      `${s(passes, "pass", "passes")}, **${comparisons}** comparisons and **${swaps}** swaps. ` +
+      `Each swap fixes one inversion: this input had ${swaps} of at most ${worst}.`,
     tone: "ok",
     marks: paint({}, 0, n - 1, "success"),
     done: true,

@@ -3,11 +3,11 @@
 import { AnimatePresence, arc, motion } from "motion/react";
 import { CanvasHint } from "@/components/visualizer";
 import { useElementSize } from "@/lib/hooks/useElementSize";
-import { MONO_FONT, TONE_COLOR, VIZ, type VizState } from "@/lib/theme";
+import { MONO_FONT, PAPER, TONE_COLOR, VIZ, type VizState } from "@/lib/theme";
 import { clamp } from "@/lib/utils";
 import type { SortCanvasProps } from "../../types";
 import type { BarsStep, SortItem } from "../types";
-import { barBorder, Bracket, CalloutBubble, CornerTag, EASE, POINTER_HEX, PointerMark, ValueText, dupTags, fitFont, rgba, stackPointers, stateStyle } from "./parts";
+import { barBorder, Bracket, CalloutBubble, CornerTag, EASE, POINTER_HEX, PointerMark, SOFT_SHADOW, ValueText, dupTags, fitFont, rgba, stackPointers, stateStyle } from "./parts";
 
 /*
  * Animated bar chart for the in-place sorts. Every bar is keyed by its element id, so swaps and
@@ -131,7 +131,7 @@ function BarsScene({ step, animSec, W, H }: { step: BarsStep; animSec: number; W
   // ── boundary (sorted / final region) ───────────────────────────────────────
   const b = step.boundary;
   const bx = b ? cx(b.at) - slotW / 2 : 0;
-  const bColor = b ? VIZ[b.state][1] : "#fff";
+  const bColor = b ? VIZ[b.state][1] : PAPER.ink;
   const regionX = b ? (b.side === "right" ? bx : left) : 0;
   const regionW = b ? Math.max(0, b.side === "right" ? right - bx : bx - left) : 0;
   const tagW = step.tag ? step.tag.length * 6.9 + 26 : 0;
@@ -194,7 +194,7 @@ function BarsScene({ step, animSec, W, H }: { step: BarsStep; animSec: number; W
       </AnimatePresence>
 
       {/* baseline */}
-      <div className="pointer-events-none absolute h-px bg-white/15" style={{ left: left - 4, width: right - left + 8, top: baseY }} />
+      <div className="pointer-events-none absolute h-px bg-line-strong" style={{ left: left - 4, width: right - left + 8, top: baseY }} />
 
       {/* gaps */}
       <AnimatePresence>
@@ -213,7 +213,7 @@ function BarsScene({ step, animSec, W, H }: { step: BarsStep; animSec: number; W
 
       {/* bars */}
       {bars.map((bar) => {
-        const st = stateStyle(bar.state, step.done);
+        const st = stateStyle(bar.state);
         const path = paths.get(bar.item.id);
         const tag = narrow ? undefined : tags.get(bar.item.id);
         const showValue = !narrow || FOCUS.has(bar.state);
@@ -237,7 +237,6 @@ function BarsScene({ step, animSec, W, H }: { step: BarsStep; animSec: number; W
             style={{
               zIndex: path ? 8 : bar.z,
               ...barBorder(2),
-              backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%)",
             }}
           >
             {bar.floatLabel ? (
@@ -249,7 +248,7 @@ function BarsScene({ step, animSec, W, H }: { step: BarsStep; animSec: number; W
                   color: st.text,
                   background: st.fill,
                   border: `1px solid ${st.stroke}`,
-                  boxShadow: `0 0 12px ${rgba(st.stroke, 0.45)}`,
+                  boxShadow: SOFT_SHADOW,
                 }}
               >
                 {narrow ? null : `${bar.floatLabel} = `}
