@@ -36,6 +36,8 @@ export function Button({
   const button = (
     <button
       type={type}
+      // Marks an operation button (VisualizerLayout brings the canvas into view after one on phones).
+      data-variant={variant}
       className={cn(
         "inline-flex select-none items-center justify-center whitespace-nowrap rounded-lg border font-medium transition-all [&>svg]:shrink-0",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/25",

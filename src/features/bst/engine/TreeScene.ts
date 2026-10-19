@@ -6,7 +6,7 @@
  *     shrink out, edges cross-fade and follow their nodes every frame, the world re-fits the canvas
  *   • tweens on the Director's clock (pause / step / skip aware), colour + glow styles, callouts,
  *     path arrows, probes, the traversal output strip
- *   • pan (drag), zoom (wheel / buttons), double-click reset, resize
+ *   • pan (drag, or two fingers), zoom (wheel / pinch / buttons), double-click reset, resize
  *   • the callbacks that report status / pseudocode line / variables / stats to the UI
  *
  * No tree algorithm lives here — see BSTEngine. The scene never touches the DOM outside its container.
@@ -100,7 +100,6 @@ export abstract class TreeScene {
   private readonly ro: ResizeObserver;
   protected destroyed = false;
   private current: Promise<boolean> | null = null;
-  private readonly pointers = new Map<number, Point>();
   private readonly unlisten: (() => void)[] = [];
 
   constructor(K: KonvaLib, container: HTMLDivElement, cb: EngineCallbacks, opts: EngineOptions = {}) {
@@ -254,42 +253,63 @@ export abstract class TreeScene {
   private bindViewControls() {
     const el = this.container;
     el.style.cursor = "grab";
-    el.style.touchAction = "none";
+    // On a phone the canvas fills most of the screen, so one finger scrolls the page (as on the graph
+    // and B-tree canvases); two fingers pan and pinch-zoom the tree. The mouse and pen drag to pan.
+    el.style.touchAction = "pan-x pan-y";
     const local = (e: { clientX: number; clientY: number }) => {
       const r = el.getBoundingClientRect();
       return { x: e.clientX - r.left, y: e.clientY - r.top };
     };
-    // One pointer pans; two pointers (touch) pinch-zoom around their midpoint.
-    const pts = this.pointers;
-    const mid = () => {
-      const [a, b] = [...pts.values()];
-      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 };
-    };
+    let drag: { id: number; at: Point } | null = null;
     const down = (e: PointerEvent) => {
-      if (e.button !== 0 && e.pointerType === "mouse") return;
-      pts.set(e.pointerId, local(e));
+      if (e.pointerType === "touch" || (e.button !== 0 && e.pointerType === "mouse")) return;
+      drag = { id: e.pointerId, at: local(e) };
       el.setPointerCapture?.(e.pointerId);
       el.style.cursor = "grabbing";
     };
     const move = (e: PointerEvent) => {
-      const prev = pts.get(e.pointerId);
-      if (!prev) return;
-      if (pts.size >= 2) {
-        const m0 = mid();
-        pts.set(e.pointerId, local(e));
-        const m1 = mid();
-        this.camera.position({ x: this.camera.x() + m1.x - m0.x, y: this.camera.y() + m1.y - m0.y });
-        this.zoomBy(m1.d / m0.d, m1);
-        return;
-      }
+      if (drag?.id !== e.pointerId) return;
       const p = local(e);
-      pts.set(e.pointerId, p);
-      this.camera.position({ x: this.camera.x() + p.x - prev.x, y: this.camera.y() + p.y - prev.y });
+      this.camera.position({ x: this.camera.x() + p.x - drag.at.x, y: this.camera.y() + p.y - drag.at.y });
+      drag.at = p;
       this.redraw();
     };
     const up = (e: PointerEvent) => {
-      pts.delete(e.pointerId);
-      if (!pts.size) el.style.cursor = "grab";
+      if (drag?.id !== e.pointerId) return;
+      drag = null;
+      el.style.cursor = "grab";
+    };
+    // Two fingers: the tree follows their midpoint and zooms with their spread.
+    let pinch: { x: number; y: number; d: number } | null = null;
+    const fingers = (t: TouchList) => {
+      const r = el.getBoundingClientRect();
+      const [a, b] = [t[0], t[1]];
+      return {
+        x: (a.clientX + b.clientX) / 2 - r.left,
+        y: (a.clientY + b.clientY) / 2 - r.top,
+        d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1,
+      };
+    };
+    const touchStart = (e: TouchEvent) => {
+      if (e.touches.length < 2) return;
+      if (e.cancelable) e.preventDefault();
+      pinch = fingers(e.touches);
+    };
+    const touchMove = (e: TouchEvent) => {
+      if (!pinch || e.touches.length < 2) return;
+      // The second finger landed after the page had started scrolling: the gesture stays a scroll.
+      if (!e.cancelable) {
+        pinch = null;
+        return;
+      }
+      e.preventDefault();
+      const m = fingers(e.touches);
+      this.camera.position({ x: this.camera.x() + m.x - pinch.x, y: this.camera.y() + m.y - pinch.y });
+      this.zoomBy(m.d / pinch.d, m);
+      pinch = m;
+    };
+    const touchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinch = null;
     };
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -302,6 +322,10 @@ export abstract class TreeScene {
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
     el.addEventListener("wheel", wheel, { passive: false });
+    el.addEventListener("touchstart", touchStart, { passive: false });
+    el.addEventListener("touchmove", touchMove, { passive: false });
+    el.addEventListener("touchend", touchEnd);
+    el.addEventListener("touchcancel", touchEnd);
     el.addEventListener("dblclick", dbl);
     this.unlisten.push(() => {
       el.removeEventListener("pointerdown", down);
@@ -309,6 +333,10 @@ export abstract class TreeScene {
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
       el.removeEventListener("wheel", wheel);
+      el.removeEventListener("touchstart", touchStart);
+      el.removeEventListener("touchmove", touchMove);
+      el.removeEventListener("touchend", touchEnd);
+      el.removeEventListener("touchcancel", touchEnd);
       el.removeEventListener("dblclick", dbl);
     });
   }

@@ -1,9 +1,10 @@
 "use client";
 
 import { Expand, GraduationCap, Keyboard, PanelLeftClose, PanelLeftOpen, Shrink } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { trackVisualizerInteraction } from "@/lib/analytics";
 import type { Lesson, LessonActions } from "@/lib/lesson";
+import { onMascot } from "@/lib/mascot-bus";
 import type { ShareParams } from "@/lib/share";
 import { cn } from "@/lib/utils";
 import { LearnPanel } from "./LearnPanel";
@@ -34,6 +35,9 @@ export interface VisualizerLayoutProps {
   /** Page-specific keyboard shortcuts listed in the "?" dialog. */
   shortcuts?: readonly Shortcut[];
 }
+
+/** Same breakpoint as VisualizerLayout.module.css: below it the panels stack under the canvas. */
+const STACKED = "(max-width: 1023px)";
 
 /** Header tools; finger-sized (40px) on touch screens. */
 const toolBtn =
@@ -87,6 +91,33 @@ export function VisualizerLayout({
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  // Stacked layout (phones, tablets): the controls sit under the canvas, so an operation tapped
+  // there would play out of sight. Bring the canvas back into view, unless the input was rejected.
+  const lastInputError = useRef(-1);
+  useEffect(
+    () => onMascot((e) => {
+      if (e.type === "input-error") lastInputError.current = performance.now();
+    }),
+    [],
+  );
+
+  const revealStage = (e: MouseEvent) => {
+    const stage = stageRef.current;
+    const button = (e.target as Element).closest?.("button[data-variant]");
+    if (!stage || !button?.closest('[data-panel="controls"]') || button.matches("[aria-pressed], [aria-expanded]")) return;
+    if (!matchMedia(STACKED).matches) return;
+    const clickedAt = performance.now();
+    // After the button's own handler has run (and reported any input error).
+    setTimeout(() => {
+      if (lastInputError.current >= clickedAt) return;
+      const { top, bottom, height } = stage.getBoundingClientRect();
+      const navbar = parseFloat(getComputedStyle(stage).scrollMarginTop) || 0;
+      if (Math.min(bottom, innerHeight) - Math.max(top, navbar) >= height * 0.6) return;
+      const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      stage.scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+    }, 0);
+  };
+
   // Lessons open only when asked for (progressive disclosure — no pop-ups).
   const [learnState, setLearnOpen] = useState(false);
   const learnOpen = !!lesson && learnState;
@@ -116,7 +147,10 @@ export function VisualizerLayout({
     <div
       ref={rootRef}
       className={cn(styles.layout, focus && styles.focus, filled === "page" && styles.filled)}
-      onClickCapture={(e) => trackVisualizerInteraction(e, title)}
+      onClickCapture={(e) => {
+        trackVisualizerInteraction(e, title);
+        revealStage(e);
+      }}
       onChangeCapture={(e) => trackVisualizerInteraction(e, title)}
     >
       {/* One compact row: title + short subtitle on the left, badges and tools on the right. */}
