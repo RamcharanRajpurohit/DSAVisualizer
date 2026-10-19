@@ -14,13 +14,13 @@ export const TOUR = {
   seconds: 83,
   /** The cut has a soundtrack (it still autoplays muted; the player offers "Sound on"). */
   hasAudio: true,
-  uploadDate: "2026-10-19T19:00:00+05:30",
+  uploadDate: "2026-10-19T20:00:00+05:30",
   width: 1920,
   height: 1080,
-  poster: "/video/algolab-tour-v3-poster.jpg",
+  poster: "/video/algolab-tour-v4-poster.jpg",
   /** AV1 1080p for current browsers, H.264 720p for everything else (the browser takes the first it can play). */
   sources: [
-    { src: "/video/algolab-tour-v3-av1.mp4", type: 'video/mp4; codecs="av01.0.08M.08"' },
-    { src: "/video/algolab-tour-v3.mp4", type: "video/mp4" },
+    { src: "/video/algolab-tour-v4-av1.mp4", type: 'video/mp4; codecs="av01.0.08M.08"' },
+    { src: "/video/algolab-tour-v4.mp4", type: "video/mp4" },
   ],
 } as const;

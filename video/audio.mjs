@@ -63,12 +63,13 @@ function hat(t0, amp, pan = 0.2) {
   let prev = 0;
   add(MUS, t0, 0.12, (t) => { const n = rand(); const hp = n - prev; prev = n; return hp * Math.exp(-t / 0.025); }, { amp, pan });
 }
-function click(t0, amp = 0.55, pan = 0) {
-  add(FX, t0, 0.06, noiseBand(4200, 3600, 2.2, 0.03), { amp: amp * 0.9, pan });
-  add(FX, t0, 0.05, (t) => Math.sin(TAU * 2100 * t) * Math.exp(-t / 0.008), { amp: amp * 0.35, pan });
-  add(FX, t0, 0.06, (t) => Math.sin(TAU * 170 * t) * Math.exp(-t / 0.012), { amp: amp * 0.5, pan });
+/** A soft, rounded tap (felt more than heard) so clicks sit inside the mix instead of poking out. */
+function click(t0, amp = 0.3, pan = 0) {
+  add(FX, t0, 0.09, (t) => Math.sin(TAU * 980 * t) * Math.exp(-t / 0.011) * Math.min(1, t / 0.0015), { amp: amp * 0.55, pan, send: 0.12 });
+  add(FX, t0, 0.12, (t) => Math.sin(TAU * 240 * t) * Math.exp(-t / 0.02) * Math.min(1, t / 0.002), { amp: amp * 0.6, pan });
+  add(FX, t0, 0.04, noiseBand(1800, 1600, 0.9, 0.02), { amp: amp * 0.18, pan });
 }
-const tock = (t0, amp = 0.4, pan = 0) => add(FX, t0, 0.08, (t) => Math.sin(TAU * 720 * t) * Math.exp(-t / 0.018) + 0.4 * Math.sin(TAU * 1450 * t) * Math.exp(-t / 0.008), { amp, pan });
+const tock = (t0, amp = 0.24, pan = 0) => add(FX, t0, 0.12, (t) => (Math.sin(TAU * 520 * t) * Math.exp(-t / 0.02) + 0.25 * Math.sin(TAU * 1040 * t) * Math.exp(-t / 0.01)) * Math.min(1, t / 0.002), { amp, pan, send: 0.1 });
 function whoosh(t0, dur, f0, f1, amp, pan = 0, q = 1.1) {
   const g = noiseBand(f0, f1, q, dur);
   add(FX, t0, dur, (t, i) => g(t, i) * swell(t, dur, 0.62), { amp, pan, send: 0.35 });
@@ -171,8 +172,8 @@ FOOTAGE.forEach((s, i) => {
   if (!prev || prev.url !== s.url) for (let c = 0; c < s.url.length; c += 2) key((i === 0 ? 6.9 : s.start + 0.1) + (c / s.url.length) * 0.45);
   for (const e of sceneClicks(s)) {
     const pan = (e.x - 0.5) * 0.8;
-    if (e.kind === "grab" || e.kind === "release") tock(e.at, 0.35, pan);
-    else click(e.at, 0.5, pan);
+    if (e.kind === "grab" || e.kind === "release") tock(e.at, 0.24, pan);
+    else click(e.at, 0.22, pan);
     if (!s.follow && s.punch !== false && e.kind === "click") whoosh(e.at - 0.45, 0.42, 500, 2200, 0.1, pan, 1.4);
     if (s.follow) whoosh(e.at - 0.5, 0.45, 700, 1500, 0.05, pan, 1.4);
   }
@@ -182,7 +183,7 @@ FOOTAGE.forEach((s, i) => {
     [0, 1, 2].forEach((j) => tick(s.start + 1.6 + j * 0.14, [880, 988, 1175][j], 0.12, j - 1));
     panWhoosh(s.end - 1.05, 0.7, 1800, 600, 0.16, -0.8, 0);
     panWhoosh(s.end - 1.05, 0.7, 1800, 600, 0.16, 0.8, 0);
-    [-0.6, 0.6].forEach((pan) => { tock(s.end - 0.35, 0.3, pan); thump(s.end - 0.35, 0.14); });
+    [-0.6, 0.6].forEach((pan) => { tock(s.end - 0.35, 0.2, pan); thump(s.end - 0.35, 0.14); });
   }
 });
 function HOSTS_PAN(s) { return { right: -0.6, left: 0.6, full: 0.8, explode: 0, grid: 0.8 }[s.layout] ?? 0; }
