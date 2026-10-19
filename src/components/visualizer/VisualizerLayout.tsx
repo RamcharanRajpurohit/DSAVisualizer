@@ -2,6 +2,7 @@
 
 import { Expand, GraduationCap, Keyboard, PanelLeftClose, PanelLeftOpen, Shrink } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { trackVisualizerInteraction } from "@/lib/analytics";
 import type { Lesson, LessonActions } from "@/lib/lesson";
 import type { ShareParams } from "@/lib/share";
 import { cn } from "@/lib/utils";
@@ -112,9 +113,14 @@ export function VisualizerLayout({
   }, [toggleFullscreen]);
 
   return (
-    <div ref={rootRef} className={cn(styles.layout, focus && styles.focus, filled === "page" && styles.filled)}>
+    <div
+      ref={rootRef}
+      className={cn(styles.layout, focus && styles.focus, filled === "page" && styles.filled)}
+      onClickCapture={(e) => trackVisualizerInteraction(e, title)}
+      onChangeCapture={(e) => trackVisualizerInteraction(e, title)}
+    >
       {/* One compact row: title + short subtitle on the left, badges and tools on the right. */}
-      <header className={cn(styles.head, "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-1")}>
+      <header data-panel="header" className={cn(styles.head, "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-1")}>
         {/* Below xl the title keeps its natural width, so the tools wrap under it instead of squeezing it. */}
         <div className="flex min-w-0 flex-[1_1_auto] items-baseline gap-3 xl:flex-1">
           <h1 className="min-w-0 font-serif text-[23px] leading-tight text-fg sm:text-[26px] md:text-[28px] xl:shrink-0 xl:leading-none">{title}</h1>
@@ -164,9 +170,9 @@ export function VisualizerLayout({
         </div>
       </header>
 
-      <aside className={cn(styles.controls, styles.side, "scroll-thin")}>{controls}</aside>
+      <aside data-panel="controls" className={cn(styles.controls, styles.side, "scroll-thin")}>{controls}</aside>
 
-      <section ref={stageRef} className={cn(styles.stage, filled === "canvas" && styles.filled)} aria-label={`${title} — interactive visualization`}>
+      <section ref={stageRef} data-panel="stage" className={cn(styles.stage, filled === "canvas" && styles.filled)} aria-label={`${title} — interactive visualization`}>
         <div className={cn(styles.canvas, "canvas-grid", canvasClassName)} data-viz-canvas>
           {children}
           {learnOpen && lesson && <LearnPanel key={lesson.id} lesson={lesson} actions={lessonActions} onClose={closeLearn} />}
@@ -183,7 +189,7 @@ export function VisualizerLayout({
         {playback && <div className={styles.playbar}>{playback}</div>}
       </section>
 
-      {insight && <aside className={cn(styles.insight, styles.side, "scroll-thin")}>{insight}</aside>}
+      {insight && <aside data-panel="insight" className={cn(styles.insight, styles.side, "scroll-thin")}>{insight}</aside>}
 
       {help && <ShortcutsDialog extra={shortcuts} onClose={() => setHelp(false)} />}
     </div>

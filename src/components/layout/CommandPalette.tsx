@@ -3,6 +3,7 @@
 import { CornerDownLeft, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import { track } from "@/lib/analytics";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { VISUALIZERS } from "@/config/visualizers";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   if (!open) return null;
   const go = (href: string) => {
+    track("search_go", { to: href, query: q.trim().slice(0, 40) });
     onClose();
     setQ("");
     router.push(href);

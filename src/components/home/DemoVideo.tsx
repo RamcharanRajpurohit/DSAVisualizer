@@ -3,6 +3,7 @@
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { TOUR } from "@/config/tour";
+import { track } from "@/lib/analytics";
 
 /**
  * Product tour. Nothing downloads until it scrolls into view (preload="none"), then it plays
@@ -12,6 +13,7 @@ import { TOUR } from "@/config/tour";
 export function DemoVideo() {
   const ref = useRef<HTMLVideoElement>(null);
   const userPaused = useRef(false);
+  const autoplayed = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
 
@@ -26,7 +28,13 @@ export function DemoVideo() {
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          if (!reduced && !userPaused.current) v.play().catch(() => {});
+          if (!reduced && !userPaused.current) {
+            v.play().catch(() => {});
+            if (!autoplayed.current) {
+              autoplayed.current = true;
+              track("tour_video", { action: "autoplay" });
+            }
+          }
         } else if (!v.paused) {
           v.pause();
         }
@@ -51,6 +59,7 @@ export function DemoVideo() {
       userPaused.current = true;
       v.pause();
     }
+    track("tour_video", { action: v.paused ? "pause" : "play", at: Math.round(v.currentTime) });
   };
 
   const toggleSound = () => {
@@ -58,6 +67,7 @@ export function DemoVideo() {
     if (!v) return;
     v.muted = !v.muted;
     setMuted(v.muted);
+    track("tour_video", { action: v.muted ? "mute" : "sound_on", at: Math.round(v.currentTime) });
     if (!v.muted && v.paused) {
       userPaused.current = false;
       v.play().catch(() => {});

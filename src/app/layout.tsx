@@ -4,6 +4,7 @@ import { Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { SiteAgentTools } from "@/components/agents/SiteAgentTools";
+import { AnalyticsLoader } from "@/components/analytics/AnalyticsLoader";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "@/config/site";
 import { MascotLoader } from "@/features/mascot/MascotLoader";
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Footer />
         <MascotLoader />
         <SiteAgentTools />
+        <AnalyticsLoader />
       </body>
     </html>
   );
