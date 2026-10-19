@@ -11,7 +11,7 @@ export interface Example {
 
 export const DEFAULT_INPUT: Record<AppKind, string> = {
   brackets: "{[()()]}",
-  infix: "(3+4)*2-8/4",
+  infix: "a+b*(c^d-e)/f",
   postfix: "5 1 2 + 4 * + 3 -",
   nge: "4 5 2 25 7 8",
 };
@@ -29,6 +29,7 @@ export const EXAMPLES: Record<AppKind, readonly Example[]> = {
   infix: [
     { text: "a+b*c" },
     { text: "(a+b)*c" },
+    { text: "a+b*(c^d-e)/f" },
     { text: "a-b-c", label: "a-b-c (left assoc)" },
     { text: "2^3^2", label: "2^3^2 (right assoc)" },
     { text: "3+4*2/(1-5)^2^3" },

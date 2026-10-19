@@ -9,8 +9,8 @@ import type { AVLEngine } from "../engine/AVLEngine";
 const OPTIONS = DEMO_IDS.map((id) => ({ value: id, label: AVL_DEMOS[id].short, title: AVL_DEMOS[id].title }));
 
 /** Scripted rotation demos: pick a case, play it. The full explanation runs in the status card. */
-export function AVLDemos({ engine, busy }: { engine: AVLEngine | null; busy: boolean }) {
-  const [id, setId] = useState<DemoId>("LL");
+export function AVLDemos({ engine, busy, initial = "LL" }: { engine: AVLEngine | null; busy: boolean; initial?: DemoId }) {
+  const [id, setId] = useState<DemoId>(initial);
   const d = AVL_DEMOS[id];
   return (
     <Section title="Rotation demos">

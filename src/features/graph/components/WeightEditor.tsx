@@ -91,9 +91,9 @@ export function WeightEditor({
           hint={`${WEIGHT_MIN} to ${WEIGHT_MAX}`}
         />
         <div className="mt-2 flex items-center gap-1.5">
-          <button className={chip} onClick={() => nudge((w) => w - 1)} title="Decrease by 1">−1</button>
-          <button className={chip} onClick={() => nudge((w) => w + 1)} title="Increase by 1">+1</button>
-          <button className={chip} onClick={() => nudge((w) => -w)} title="Flip the sign (negative weights break Dijkstra)">±</button>
+          <button className={chip} onClick={() => nudge((w) => w - 1)} title="Decrease by 1" aria-label="Decrease weight by 1">−1</button>
+          <button className={chip} onClick={() => nudge((w) => w + 1)} title="Increase by 1" aria-label="Increase weight by 1">+1</button>
+          <button className={chip} onClick={() => nudge((w) => -w)} title="Flip the sign (negative weights break Dijkstra)" aria-label="Flip the sign of the weight">±</button>
           <button
             className={cn(chip, "ml-auto flex items-center gap-1 border-viz-green/40 bg-viz-green/10 text-viz-green hover:bg-viz-green/20 hover:text-viz-green")}
             onClick={submit}

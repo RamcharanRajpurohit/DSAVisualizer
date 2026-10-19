@@ -275,9 +275,22 @@ export function Mascot() {
     return () => clearTimeout(t);
   }, []);
 
-  // First visit: introduce yourself once. Later page changes: a short hello for that page.
+  // Bit only speaks after the visitor's first real interaction (tap, click, key, scroll). That reads
+  // naturally ("hi" when you start exploring) and keeps speech bubbles out of page-load metrics —
+  // browsers stop measuring Largest Contentful Paint at the first input.
+  const [engaged, setEngaged] = useState(false);
   useEffect(() => {
-    if (!greetKnown || hidden) return;
+    if (engaged) return;
+    const on = () => setEngaged(true);
+    const opts = { once: true, passive: true, capture: true } as const;
+    const events = ["pointerdown", "keydown", "wheel", "touchstart", "scroll"] as const;
+    events.forEach((ev) => window.addEventListener(ev, on, opts));
+    return () => events.forEach((ev) => window.removeEventListener(ev, on, { capture: true }));
+  }, [engaged]);
+
+  // First interaction ever: introduce yourself once. Later page changes: a short hello for that page.
+  useEffect(() => {
+    if (!greetKnown || hidden || !engaged) return;
     const t = setTimeout(() => {
       if (!greeted) {
         show("happy", 1600, 4);
@@ -288,9 +301,9 @@ export function Mascot() {
         if (PAGE_HELLO[pathname]) chat(PAGE_HELLO[pathname], 2600, 0.8);
       }
       go({ kind: "home" });
-    }, 900);
+    }, 600);
     return () => clearTimeout(t);
-  }, [pathname, greetKnown, greeted, hidden, show, say, chat, setGreeted, go]);
+  }, [pathname, greetKnown, greeted, hidden, engaged, show, say, chat, setGreeted, go]);
 
   if (!known) return null;
 
@@ -328,7 +341,7 @@ export function Mascot() {
       onHoverEnd={() => setHover(false)}
     >
       <AnimatePresence>
-        {speech && !muted && (
+        {speech && !muted && engaged && (
           <motion.div
             key={speech.id}
             initial={{ opacity: 0, y: nearTop ? -6 : 6, scale: 0.92 }}

@@ -10,7 +10,7 @@ export function Badge({ children, className, color, title }: { children: ReactNo
         !color && "border-line-strong bg-surface-2 text-fg-dim",
         className,
       )}
-      style={color ? { color, borderColor: `${color}55`, background: `${color}14` } : undefined}
+      style={color ? { color: `color-mix(in srgb, ${color} 62%, #1a1a1a)`, borderColor: `${color}55`, background: `${color}14` } : undefined}
     >
       {children}
     </span>

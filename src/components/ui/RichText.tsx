@@ -32,7 +32,7 @@ function renderInline(line: string): ReactNode[] {
       tok.startsWith("**") ? (
         <strong key={m.index} className="font-semibold text-fg">{tok.slice(2, -2)}</strong>
       ) : tok.startsWith("`") ? (
-        <code key={m.index} className="rounded bg-surface-3 px-1 py-px font-mono text-[0.85em] text-viz-amber">{tok.slice(1, -1)}</code>
+        <code key={m.index} className="rounded bg-surface-2 px-1 py-px font-mono text-[0.85em] text-[#92400e]">{tok.slice(1, -1)}</code>
       ) : (
         <em key={m.index} className="italic text-fg">{tok.slice(1, -1)}</em>
       ),

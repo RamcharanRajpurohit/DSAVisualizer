@@ -11,15 +11,26 @@ import { TraversalOutput } from "./components/TraversalOutput";
 import { TreeDisplay, TreeOperations, TreePresets, TreeTraversals } from "./components/TreeControls";
 import { TreeStage } from "./components/TreeStage";
 import { TreeStats } from "./components/TreeStats";
-import { BST_COMPLEXITY, BST_COMPLEXITY_NOTE, BST_INITIAL, BST_LEGEND, BST_PRESETS } from "./constants";
+import { ExampleCases } from "./components/ExampleCases";
+import { BST_COMPLEXITY, BST_COMPLEXITY_NOTE, BST_INITIAL, BST_LEGEND, BST_PRESETS, TRAVERSAL_TREE } from "./constants";
 import { BSTEngine, TRAVERSAL_NAME, type Scenario } from "./engine/BSTEngine";
 import { TREE_SHORTCUTS, useEngineKeys } from "./hooks/useEngineKeys";
+import { useTreeAgentTools } from "./hooks/useTreeAgentTools";
 import { useTreeEngine, type TreeEngineConfig } from "./hooks/useTreeEngine";
 import { useTreeQuiz } from "./hooks/useTreeQuiz";
 import { BST_LESSON } from "./lessons";
 import type { TraversalKind } from "./model/types";
 
-const CONFIG: TreeEngineConfig = {
+export type BstExample = "traversals" | "deletion";
+
+export interface BSTVisualizerProps {
+  /** The page's single <h1>. */
+  heading?: string;
+  /** Topic sub-page preset: which example opens and which controls come first. */
+  example?: BstExample;
+}
+
+const BASE: TreeEngineConfig = {
   avl: false,
   initial: BST_INITIAL,
   ready: {
@@ -31,14 +42,38 @@ const CONFIG: TreeEngineConfig = {
   idleCode: "bst-insert",
 };
 
+/** Module-level (stable) configs, one per page. */
+const CONFIGS: Record<"hub" | BstExample, TreeEngineConfig> = {
+  hub: BASE,
+  traversals: {
+    ...BASE,
+    initial: TRAVERSAL_TREE,
+    ready: { title: "Pick a traversal", detail: "Each visit lights up and joins the output strip. Compare the four orders on the same tree." },
+    idleCode: "inorder",
+  },
+  deletion: {
+    ...BASE,
+    ready: { title: "Pick a deletion case", detail: "**20** is a leaf, **80** has one child and **30** has two — each case repairs the tree differently." },
+    idleCode: "bst-delete",
+  },
+};
+
+const SUBTITLE: Record<"hub" | BstExample, string> = {
+  hub: "Smaller keys left, larger keys right — every comparison of insert, search, delete and the four traversals.",
+  traversals: "Pre-order, in-order, post-order and level-order on the same tree — every call, visit and queue step.",
+  deletion: "Leaf, one child, two children — watch each case unlink a node, lift a subtree or promote the successor.",
+};
+
 const SORTED = [1, 2, 3, 4, 5, 6, 7];
 const on = (title: string, steps: Scenario["steps"], base: readonly number[] = BST_INITIAL): Scenario => ({ title, base, steps });
 
-export function BSTVisualizer() {
-  const t = useTreeEngine(BSTEngine, CONFIG);
+export function BSTVisualizer({ heading = "Binary Search Tree Visualizer", example }: BSTVisualizerProps) {
+  const page = example ?? "hub";
+  const t = useTreeEngine(BSTEngine, CONFIGS[page]);
   const busy = t.run.phase !== "idle";
   useEngineKeys(t.engine, t.run.phase);
   const quiz = useTreeQuiz(t.engine, false);
+  useTreeAgentTools(t.engine, false);
 
   /** Lesson buttons: fast-forward whatever is running, then play the example. */
   const play = (fn: (e: BSTEngine) => unknown) => () => {
@@ -65,10 +100,12 @@ export function BSTVisualizer() {
     random: play((e) => e.preload(randomValues(8), { title: "Random tree", tone: "ok" })),
   };
 
+  const traversals = <TreeTraversals engine={t.engine} busy={busy} size={t.stats.size} />;
+
   return (
     <VisualizerLayout
-      title="Binary Search Tree"
-      subtitle="Smaller keys left, larger keys right — every comparison of insert, search, delete and the four traversals."
+      title={heading}
+      subtitle={SUBTITLE[page]}
       headerExtra={
         <>
           <Badge color={TONE_COLOR.info}>avg O(log n)</Badge>
@@ -81,8 +118,20 @@ export function BSTVisualizer() {
       shortcuts={TREE_SHORTCUTS}
       controls={
         <>
+          {example === "deletion" && (
+            <ExampleCases
+              title="Deletion cases"
+              disabled={!t.engine || busy}
+              cases={[
+                { id: "leaf", label: "Leaf · delete 20", title: "Case 1: a leaf is simply cut off", run: actions.delLeaf },
+                { id: "one", label: "One child · delete 80", title: "Case 2: the only child moves up into the gap", run: actions.delOne },
+                { id: "two", label: "Two children · delete 30", title: "Case 3: the in-order successor takes its place", run: actions.delTwo },
+              ]}
+            />
+          )}
+          {example === "traversals" && traversals}
           <TreeOperations engine={t.engine} busy={busy} size={t.stats.size} history={t.history} />
-          <TreeTraversals engine={t.engine} busy={busy} size={t.stats.size} />
+          {example !== "traversals" && traversals}
           <TreePresets engine={t.engine} busy={busy} presets={BST_PRESETS} size={t.stats.size} />
           <TreeDisplay showMeta={t.showMeta} onShowMeta={t.setShowMeta} />
         </>

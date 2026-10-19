@@ -52,17 +52,36 @@ Node.js ≥ 20.9 is required.
 
 Old Rails URLs (`/sorting/index`, `/avl_tree/index`, `/link_list/index`, `/stack/index`, …) permanently redirect to the new routes (see `next.config.ts`).
 
+## SEO and AI agents
+
+Live at **https://algolab.rajpurohit.me** (canonical; previews are `noindex`). The launch steps that need your
+Google/Bing accounts are in [`docs/SEO-LAUNCH.md`](docs/SEO-LAUNCH.md).
+
+- **One focused page per topic** (`/sorting/merge-sort`, `/graph/dijkstra`, `/stack-queue/infix-to-postfix`, …): the
+  interactive visualizer on top, a server-rendered article below (definition, steps, explanation, complexity, tested
+  code, FAQ, related links). Content lives in `src/content/topics/*.ts` and drives everything below.
+- **Metadata & structured data:** unique title/description/canonical/OG image per page; JSON-LD WebSite, Person,
+  LearningResource, WebApplication, BreadcrumbList and FAQPage (`src/lib/seo.ts`).
+- **Crawling:** `robots.txt` (open to search engines and AI crawlers, with `Agentmap`), `sitemap.xml`, web manifest,
+  IndexNow (`npm run indexnow` after each deploy).
+- **AI agents:** `llms.txt`, `llms-full.txt`, Markdown copies at `/md/<path>`, `/.well-known/ai-catalog.json`
+  (Agentic Resource Discovery), `/agent-skills.md`, and WebMCP tools registered on every visualizer via
+  `useAgentTools` (Chrome's agentic browsing; checked by Lighthouse's "Agentic Browsing" category).
+
 ## Project structure
 
 ```
 src/
 ├─ app/                       # routes only: one thin page.tsx per visualizer + metadata, sitemap, robots, OG image
 ├─ config/                    # site info + the visualizer registry (drives home page, navbar, sitemap, metadata)
+├─ content/                   # SEO content: one TopicContent per page (articles, FAQs, llms.txt, sitemap)
 ├─ components/
 │  ├─ ui/                     # Button, Input, Select, Toggle, Segmented, Section, Badge, RichText…
 │  ├─ visualizer/             # VisualizerLayout, PlaybackControls, PseudocodePanel, StatusCard,
 │  │                          # VariablesPanel, Legend, ComplexityCard, CanvasHint
 │  ├─ layout/                 # Navbar, Footer, icons
+│  ├─ seo/                    # TopicArticle (server-rendered article + JSON-LD), JsonLd
+│  ├─ agents/                 # site-wide WebMCP tools
 │  └─ home/                   # landing page pieces
 ├─ lib/
 │  ├─ player/                 # useStepPlayer (play/pause/step/scrub/speed + keyboard) and step types

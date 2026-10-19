@@ -1,17 +1,20 @@
 "use client";
 
 import { ArrowLeftToLine, ArrowRightToLine, Eraser, Eye, ListOrdered, MoveLeft, RotateCw, Settings2, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Row, Section } from "@/components/ui";
 import { ValueInput, useValueInput } from "@/components/visualizer";
 import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { randomValue, randomValues } from "@/lib/values";
+import { playbackLine } from "../shared/agent";
 import { implementationsFor } from "../shared/code";
 import { CapacityPicker, StatsBar } from "../shared/components/Controls";
 import { ModeShell } from "../shared/components/ModeShell";
 import { chipLegend, PTR } from "../shared/constants";
 import type { ModeProps } from "../shared/modeProps";
+import { queueDequeueReport, queueDescribe, queueEnqueueReport } from "../shared/report";
+import { useLatest } from "../shared/useLatest";
 import { CAP_MAX } from "../shared/util";
 import { QUEUE_IMPL } from "./code";
 import { createQueue, queueIntro, queueSize, queueValues, runQueue, type QueueOp, type QueueState, type QueueStep } from "./engine";
@@ -44,7 +47,7 @@ const COMPLEXITY = {
 const enq = (v: number): QueueOp => ({ kind: "enqueue", v });
 const deq: QueueOp = { kind: "dequeue" };
 
-export function QueueMode({ tabs, active, init, onSwitch, shortcuts }: ModeProps) {
+export function QueueMode({ heading, tabs, active, init, onSwitch, shortcuts, bindApi }: ModeProps) {
   const [model, setModel] = useState<QueueState>(INITIAL);
   const [steps, setSteps] = useState<readonly QueueStep[]>(INTRO);
   const player = useStepPlayer(steps, { baseMs: 1000, keyboard: active });
@@ -59,6 +62,36 @@ export function QueueMode({ tabs, active, init, onSwitch, shortcuts }: ModeProps
       setSteps(queueIntro(s));
     }
   }
+
+  // WebMCP: agents enqueue / dequeue on the latest structure and get a plain-text report back.
+  const modelRef = useLatest(model);
+  const playerRef = useLatest(player);
+  useEffect(() => {
+    const commit = (r: { state: QueueState; steps: QueueStep[] }) => {
+      modelRef.current = r.state;
+      setModel(r.state);
+      setSteps(r.steps);
+    };
+    return bindApi("queue", {
+      enqueue: (values, { reset, capacity }) => {
+        const before = modelRef.current;
+        const rebuilt = !!reset || capacity != null;
+        const r = runQueue(before, [...(rebuilt ? [{ kind: "new", cap: capacity ?? before.cap } as const] : []), ...values.map(enq)]);
+        commit(r);
+        return queueEnqueueReport(before, values, r.state, rebuilt);
+      },
+      dequeue: (count) => {
+        const before = modelRef.current;
+        const r = runQueue(before, Array.from({ length: count }, () => deq));
+        commit(r);
+        return queueDequeueReport(before, count, r.state);
+      },
+      describe: () => {
+        const p = playerRef.current;
+        return `${queueDescribe(modelRef.current)}\n${playbackLine(p.index, p.total, p.step?.title, p.playing)}`;
+      },
+    });
+  }, [bindApi, modelRef, playerRef]);
 
   const size = queueSize(model);
   const stuck = model.rear === model.cap - 1 && model.front > 0;
@@ -148,6 +181,7 @@ export function QueueMode({ tabs, active, init, onSwitch, shortcuts }: ModeProps
 
   return (
     <ModeShell
+      title={heading}
       tabs={tabs}
       subtitle="A queue in a plain array: enqueue at the rear, dequeue at the front."
       controls={controls}

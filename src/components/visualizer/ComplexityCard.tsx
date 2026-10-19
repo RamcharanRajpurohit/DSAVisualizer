@@ -32,10 +32,10 @@ export function ComplexityCard({ rows, title = "Complexity", note }: { rows: rea
           {rows.map((r) => (
             <tr key={r.op} className="border-t border-line">
               <td className="py-1 pr-2 text-fg">{r.op}</td>
-              {showBest && <td className="py-1 pr-2 text-viz-green">{r.best ?? "—"}</td>}
-              {showAvg && <td className="py-1 pr-2 text-viz-blue">{r.avg ?? "—"}</td>}
-              <td className="py-1 pr-2 text-viz-red">{r.worst}</td>
-              {showSpace && <td className="py-1 text-viz-purple">{r.space ?? "—"}</td>}
+              {showBest && <td className="py-1 pr-2 text-[#166534]">{r.best ?? "—"}</td>}
+              {showAvg && <td className="py-1 pr-2 text-[#1e40af]">{r.avg ?? "—"}</td>}
+              <td className="py-1 pr-2 text-[#991b1b]">{r.worst}</td>
+              {showSpace && <td className="py-1 text-[#5b21b6]">{r.space ?? "—"}</td>}
             </tr>
           ))}
         </tbody>

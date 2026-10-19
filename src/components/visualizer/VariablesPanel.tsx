@@ -24,9 +24,9 @@ export function VariablesPanel({ vars, title = "Variables" }: { vars?: Record<st
   if (!entries.length) return null;
   return (
     <section className="rounded-xl border border-line bg-surface/90 p-3">
-      <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
+      <h2 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
         <Variable size={14} className="text-viz-amber" /> {title}
-      </h3>
+      </h2>
       <div className="grid grid-cols-2 gap-1.5">
         {entries.map(([k, v]) => (
           <div

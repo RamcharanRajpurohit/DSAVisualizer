@@ -15,7 +15,7 @@
   --border-strong: rgba(26, 26, 26, 0.2);
   --text: #1a1a1a;
   --text-dim: #4b463f;
-  --text-faint: #8c8478;
+  --text-faint: #655e54; /* ≥ 4.4:1 on every paper surface (WCAG AA) */
 
   /* "brand" is ink; the one accent is a calm green */
   --brand: #1a1a1a;
@@ -29,7 +29,7 @@
   --viz-amber-soft: #ffe7bf;
   --viz-green: #16a34a;
   --viz-green-deep: #15803d;
-  --viz-red: #dc2626;
+  --viz-red: #b91c1c; /* text-safe red (5.5:1 on paper); canvases use the brighter VIZ stroke */
   --viz-red-deep: #b91c1c;
   --viz-purple: #7c3aed;
   --viz-purple-deep: #5b21b6;
@@ -63,7 +63,7 @@
   --color-viz-purple: var(--viz-purple);
   --color-viz-purple-deep: var(--viz-purple-deep);
   --color-viz-pink: var(--viz-pink);
-  --font-sans: var(--font-inter);
+  --font-sans: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --font-serif: var(--font-instrument-serif);
   --font-mono: var(--font-jetbrains);
 }
@@ -79,7 +79,7 @@ html {
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: var(--font-inter), "Helvetica Neue", system-ui, sans-serif;
+  font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 ::selection {

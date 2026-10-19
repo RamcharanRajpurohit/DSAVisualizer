@@ -44,7 +44,7 @@ const OPTIONS: readonly SortOptionSpec[] = [
 
 export const quickSort: SortAlgorithmDef<QuickStep> = {
   key: "quick",
-  name: "Quick Sort",
+  name: "Quick sort",
   blurb: "Partition around a pivot, then sort each side recursively.",
   family: "Divide & conquer",
   stable: false,

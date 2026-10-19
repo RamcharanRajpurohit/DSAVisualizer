@@ -1,15 +1,18 @@
 "use client";
 
 import { Dices, Play, Sigma } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Section } from "@/components/ui";
 import type { Implementations, LegendItem } from "@/components/visualizer";
 import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { cn } from "@/lib/utils";
+import { playbackLine } from "../shared/agent";
 import { ModeShell } from "../shared/components/ModeShell";
 import { CHIP, INK } from "../shared/constants";
 import type { ModeProps } from "../shared/modeProps";
+import { useLatest } from "../shared/useLatest";
+import { HUB_HEADING } from "../shared/views";
 import { AppView } from "./AppView";
 import { runBrackets } from "./brackets";
 import { APP_IMPL } from "./code";
@@ -20,6 +23,7 @@ import { APPS_LESSON } from "./lesson";
 import { runNge } from "./nge";
 import { PrecedenceTable } from "./PrecedenceTable";
 import { runPostfix } from "./postfix";
+import { appReport } from "./report";
 import { APP_CODE } from "./pseudocode";
 import { appsQuiz } from "./quiz";
 
@@ -41,7 +45,6 @@ function record(kind: AppKind, text: string): AppRun {
   }
 }
 
-const INITIAL_RUN = record("brackets", DEFAULT_INPUT.brackets);
 const KINDS: readonly AppKind[] = ["brackets", "infix", "postfix", "nge"];
 const MAX_TEXT = 80;
 
@@ -90,10 +93,17 @@ const impl = (kind: AppKind): Implementations => {
   return { python: t(c.python), cpp: t(c.cpp), java: t(c.java), javascript: t(c.javascript) };
 };
 
-export function AppsMode({ tabs, active, init, shortcuts }: ModeProps) {
-  const [kind, setKind] = useState<AppKind>("brackets");
+export interface AppsModeProps extends ModeProps {
+  /** Application shown first (its default example is preloaded). */
+  initialApp?: AppKind;
+  /** The application the page heading names; other applications show the hub heading. */
+  headingApp?: AppKind;
+}
+
+export function AppsMode({ heading, tabs, active, init, shortcuts, bindApi, initialApp = "brackets", headingApp }: AppsModeProps) {
+  const [kind, setKind] = useState<AppKind>(initialApp);
   const [texts, setTexts] = useState<Record<AppKind, string>>(DEFAULT_INPUT);
-  const [run, setRun] = useState<AppRun>(INITIAL_RUN);
+  const [run, setRun] = useState<AppRun>(() => record(initialApp, DEFAULT_INPUT[initialApp]));
   const [auto, setAuto] = useState(false);
   const player = useStepPlayer(run.steps, { baseMs: 1000, keyboard: active, autoPlay: auto });
   const maxDepth = useMemo(() => Math.max(1, ...run.steps.map((st) => st.s.stack.length)), [run]);
@@ -113,6 +123,34 @@ export function AppsMode({ tabs, active, init, shortcuts }: ModeProps) {
     const expr = init.get("expr");
     if (k && KINDS.includes(k) && expr && expr.length <= MAX_TEXT) start(k, expr, false);
   }
+
+  // WebMCP: agents load an input (and watch it play) or switch applications.
+  const runRef = useLatest(run);
+  const textsRef = useLatest(texts);
+  const playerRef = useLatest(player);
+  useEffect(() => {
+    const load = (k: AppKind, text: string, autoPlay: boolean) => {
+      const r = record(k, text);
+      runRef.current = r;
+      textsRef.current = { ...textsRef.current, [k]: text };
+      setKind(k);
+      setTexts((t) => ({ ...t, [k]: text }));
+      setRun(r);
+      setAuto(autoPlay);
+    };
+    return bindApi("apps", {
+      run: (k, text) => load(k, text, true),
+      show: (k) => {
+        if (runRef.current.kind !== k) load(k, textsRef.current[k], false);
+      },
+      kind: () => runRef.current.kind,
+      describe: () => {
+        const r = runRef.current;
+        const p = playerRef.current;
+        return `Input: ${r.text || "(empty)"}\n${appReport(r.kind, r.text).result}\n${playbackLine(p.index, p.total, p.step?.title, p.playing)}`;
+      },
+    });
+  }, [bindApi, runRef, textsRef, playerRef]);
 
   const lessonActions: LessonActions = {
     brOk: () => start("brackets", "{[()()]}", true),
@@ -201,6 +239,7 @@ export function AppsMode({ tabs, active, init, shortcuts }: ModeProps) {
 
   return (
     <ModeShell
+      title={!headingApp || run.kind === headingApp ? heading : HUB_HEADING}
       tabs={tabs}
       subtitle={SUBTITLE[run.kind]}
       controls={controls}

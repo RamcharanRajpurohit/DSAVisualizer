@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BTreeEngine, type EngineOptions, type EngineStep, type HistoryEntry } from "./engine/BTreeEngine";
-import { limitsFor, type TreeProps, type TreeStats } from "./model/btree";
+import { plural } from "@/lib/utils";
+import { BTree, limitsFor, type TreeProps, type TreeStats } from "./model/btree";
 import { canRedo, canUndo, commit, emptyHistory, redo, undo, type UndoHistory } from "./model/history";
-import { sameSnapshot, type Snapshot } from "./model/shape";
+import { sameSnapshot, treeFrom, type Snapshot } from "./model/shape";
 import { parseShare } from "./model/share";
 import type { OpKind } from "./pseudocode";
 import { DEFAULT_ORDER, MAX_KEYS, ORDERS, SAMPLE } from "./constants";
@@ -27,6 +28,27 @@ const INITIAL_STEP: EngineStep = {
   vars: {},
 };
 
+/**
+ * The status the engine shows once the opening tree is built (same wording as BTreeEngine.build /
+ * restore), rendered from the first paint so the insight column does not shift when it arrives.
+ */
+function openingStep(opening?: OpeningTree): EngineStep {
+  if (opening) {
+    const st = treeFrom(opening.snapshot).stats();
+    return {
+      ...INITIAL_STEP, title: opening.title, tone: "ok",
+      detail: `${opening.detail}\n${plural(st.keys, "key")} in an order-${opening.snapshot.order} B-tree · ${plural(st.nodes, "node")}, height ${st.height}.`,
+    };
+  }
+  const t = new BTree(DEFAULT_ORDER);
+  SAMPLE.forEach((v) => t.insert(v));
+  const st = t.stats();
+  return {
+    ...INITIAL_STEP, title: "Sample B-tree", tone: "ok",
+    detail: `Insert, search or delete a key to watch it move.\n${plural(st.keys, "key")}, ${plural(st.nodes, "node")}, height ${st.height}.`,
+  };
+}
+
 const EMPTY_STATS: TreeStats = {
   order: DEFAULT_ORDER, ...limitsFor(DEFAULT_ORDER), height: 0, nodes: 0, keys: 0, leaves: 0, fill: 0,
 };
@@ -40,12 +62,22 @@ export async function settle(e: BTreeEngine) {
   }
 }
 
+/** A topic page's opening example (an exact tree) instead of the sample. */
+export interface OpeningTree {
+  snapshot: Snapshot;
+  title: string;
+  detail: string;
+  /** Code listing shown before the first operation. */
+  op: OpKind;
+}
+
 /**
  * Creates the Konva engine (client-only, Konva is imported lazily) inside `containerRef`, mirrors
  * its callbacks into React state, keeps the undo / redo history of settled tree snapshots and
- * destroys the engine on unmount. `params` (null until hydrated) may hold a shared setup.
+ * destroys the engine on unmount. `params` (null until hydrated) may hold a shared setup, which
+ * wins over `opening` (a module-level constant).
  */
-export function useBTreeEngine(params: URLSearchParams | null) {
+export function useBTreeEngine(params: URLSearchParams | null, opening?: OpeningTree) {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BTreeEngine | null>(null);
   const booted = useRef(false);
@@ -57,8 +89,8 @@ export function useBTreeEngine(params: URLSearchParams | null) {
   const [busyLabel, setBusyLabel] = useState("");
   const [waiting, setWaiting] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [step, setStep] = useState<EngineStep>(INITIAL_STEP);
-  const [lastOp, setLastOp] = useState<OpKind>("insert");
+  const [step, setStep] = useState<EngineStep>(() => openingStep(opening));
+  const [lastOp, setLastOp] = useState<OpKind>(opening?.op ?? "insert");
   const [stats, setStats] = useState<TreeStats>(EMPTY_STATS);
   const [props, setProps] = useState<TreeProps>(OK_PROPS);
   const [log, setLog] = useState<HistoryEntry[]>([]);
@@ -114,8 +146,9 @@ export function useBTreeEngine(params: URLSearchParams | null) {
     const shared = parseShare((k) => params.get(k), SHARE_OPTS);
     if (shared.strategy) e.setStrategy(shared.strategy);
     if (shared.snapshot) void e.restore(shared.snapshot, "Shared B-tree", "Opened from a share link.");
+    else if (opening && shared.order === undefined) void e.restore(opening.snapshot, opening.title, opening.detail);
     else void e.build(SAMPLE, "Sample B-tree", "Insert, search or delete a key to watch it move.", shared.order ?? DEFAULT_ORDER);
-  }, [ready, params]);
+  }, [ready, params, opening]);
 
   /** Run something against the engine if it exists (event handlers only). */
   const withEngine = useCallback(<T,>(fn: (e: BTreeEngine) => T): T | undefined => {
@@ -123,22 +156,26 @@ export function useBTreeEngine(params: URLSearchParams | null) {
     return e ? fn(e) : undefined;
   }, []);
 
-  /** Undo / redo one whole operation (a running one is finished first, so Ctrl+Z can be pressed repeatedly). */
-  const travel = useCallback(async (dir: "undo" | "redo") => {
+  /**
+   * Undo / redo one whole operation (a running one is finished first, so Ctrl+Z can be pressed
+   * repeatedly). Resolves with the label of the operation undone / redone, or null.
+   */
+  const travel = useCallback(async (dir: "undo" | "redo"): Promise<string | null> => {
     const e = engineRef.current;
-    if (!e) return;
+    if (!e) return null;
     await settle(e);
     if (dir === "undo") {
       const u = undo(historyRef.current);
-      if (!u) return;
+      if (!u) return null;
       setHistory(u.history);
       await e.restore(u.target.state, `Undo · ${u.undone.label}`, `Back to the tree before **${u.undone.label}**.`, "undo", `Undid ${u.undone.label}`);
-    } else {
-      const r = redo(historyRef.current);
-      if (!r) return;
-      setHistory(r.history);
-      await e.restore(r.target.state, `Redo · ${r.target.label}`, `**${r.target.label}** re-applied instantly.`, "redo", `Redid ${r.target.label}`);
+      return u.undone.label;
     }
+    const r = redo(historyRef.current);
+    if (!r) return null;
+    setHistory(r.history);
+    await e.restore(r.target.state, `Redo · ${r.target.label}`, `**${r.target.label}** re-applied instantly.`, "redo", `Redid ${r.target.label}`);
+    return r.target.label;
   }, [setHistory]);
 
   return {
@@ -151,5 +188,7 @@ export function useBTreeEngine(params: URLSearchParams | null) {
     redoLabel: history.entries[history.index + 1]?.label,
     undo: () => void travel("undo"),
     redo: () => void travel("redo"),
+    /** Awaitable undo / redo for agent tools. */
+    travel,
   };
 }

@@ -33,12 +33,13 @@ export function Pointer({
   dim?: boolean;
 }) {
   const Icon = ICON[dir];
-  const c = alert ? INK.danger : color;
+  // Inactive pointers fade by colour (muted ink), not opacity, so their labels stay readable (WCAG AA).
+  const c = alert ? INK.danger : dim ? "#655e54" : color;
   return (
     <motion.div
       className="pointer-events-none absolute left-0 top-0 z-20"
       initial={false}
-      animate={{ x, y, opacity: dim ? 0.45 : 1 }}
+      animate={{ x, y, opacity: 1 }}
       transition={{ duration: dur, ease: EASE }}
     >
       <div className={cn("absolute left-0 top-0 flex items-center gap-0.5", PLACE[dir])}>

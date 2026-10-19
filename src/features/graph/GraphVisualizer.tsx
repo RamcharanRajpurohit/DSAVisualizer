@@ -18,9 +18,11 @@ import {
   type Shortcut,
 } from "@/components/visualizer";
 import type { LessonActions } from "@/lib/lesson";
+import { useAgentTools } from "@/lib/hooks/useAgentTools";
 import { useUrlParams } from "@/lib/share";
 import { TONE_COLOR } from "@/lib/theme";
 import { randInt } from "@/lib/utils";
+import { graphAgentTools } from "./agentTools";
 import { ALGOS, needsWarning } from "./algorithms";
 import { GRAPH_CODE } from "./code/implementations";
 import { AlgorithmPanel } from "./components/AlgorithmPanel";
@@ -38,12 +40,10 @@ import {
 import { GRAPH_LESSONS, type GraphLessonAction, type LessonTopic } from "./lessons";
 import { graphQuiz } from "./quiz";
 import { encodeGraphShare, parseAlgo } from "./share";
+import { PRESET_ALGO, graphPreview, initialGraph } from "./topics";
 import type { AlgoKey, PresetKind, ReprMode, Tool } from "./types";
 
 const TOOL_KEYS: Record<string, Tool> = { v: "move", n: "node", e: "edge", d: "delete" };
-
-/** Which algorithm a preset is built to show off. */
-const PRESET_ALGO: Partial<Record<PresetKind, AlgoKey>> = { dag: "topo", scc: "scc", negative: "bellmanFord" };
 
 const DEFAULT_COUNT = 7;
 
@@ -72,10 +72,20 @@ function showing(v: GraphView | null, spec: GraphSpec): boolean {
   );
 }
 
-export function GraphVisualizer() {
-  const { hostRef, engine, view } = useGraphEngine();
-  const [algo, setAlgo] = useState<AlgoKey>("dijkstra");
-  const [preset, setPreset] = useState<PresetKind>("random");
+interface GraphVisualizerProps {
+  /** Page heading (the page's only <h1>). */
+  heading?: string;
+  /**
+   * Topic page preset: open with this algorithm selected and a graph that suits it (see ./topics),
+   * ready to Run. A share link in the URL still wins. Default: Dijkstra on the default graph.
+   */
+  algorithm?: AlgoKey;
+}
+
+export function GraphVisualizer({ heading = "Graph Algorithms", algorithm }: GraphVisualizerProps) {
+  const { hostRef, engine, view } = useGraphEngine(initialGraph(algorithm));
+  const [algo, setAlgo] = useState<AlgoKey>(algorithm ?? "dijkstra");
+  const [preset, setPreset] = useState<PresetKind>((algorithm && ALGOS[algorithm].preset) || "random");
   const [repr, setRepr] = useState<ReprMode>("matrix");
   /** The lesson stays on its topic while its "Try it" buttons switch algorithms. */
   const [lessonPin, setLessonPin] = useState<LessonTopic | null>(null);
@@ -92,10 +102,13 @@ export function GraphVisualizer() {
 
   const shown = ALGOS[view?.algoKey ?? algo];
   const step = view?.step ?? null;
-  const nodes = view?.nodes ?? [];
-  const edges = view?.edges ?? [];
-  const directed = view?.directed ?? false;
-  const weighted = view?.weighted ?? true;
+  // Until the canvas engine loads, the panels show the graph it is about to build (no layout shift).
+  const preview = view ? null : graphPreview(initialGraph(algorithm));
+  const nodes = view?.nodes ?? preview?.nodes ?? [];
+  const edges = view?.edges ?? preview?.edges ?? [];
+  const directed = view?.directed ?? preview?.directed ?? false;
+  const weighted = view?.weighted ?? preview?.weighted ?? true;
+  const status = view?.status ?? preview?.status;
   const hasNeg = weighted && edges.some((e) => e.w < 0);
   const disabled = !engine;
   const player = enginePlayer(engine, view);
@@ -196,6 +209,9 @@ export function GraphVisualizer() {
     "scc.demo": () => demo("scc", SCC_DEMO),
     "scc.clusters": () => fresh("scc", "scc", 9),
   };
+  // AI agents (WebMCP): load / generate graphs, run algorithms, read results and steps.
+  useAgentTools(graphAgentTools({ engine, algo, selectAlgo: chooseAlgo, setPreset }));
+
   // Keep the open lesson on its topic, whatever algorithm its buttons switch to.
   const lessonActions: LessonActions = Object.fromEntries(
     Object.entries(actions).map(([k, fn]) => [k, () => {
@@ -293,7 +309,7 @@ export function GraphVisualizer() {
 
   const insight = (
     <div className="flex flex-col gap-3">
-      <StatusCard title={view?.status.title ?? "Loading…"} detail={view?.status.detail} tone={view?.status.tone ?? "info"} />
+      <StatusCard title={status?.title ?? "Loading…"} detail={status?.detail} tone={status?.tone ?? "info"} />
       <CodePanel title={`Code · ${shown.name}`} code={shown.code} active={step?.line} implementations={GRAPH_CODE[shown.key]} />
       <VariablesPanel vars={step?.vars} />
       <StepTimeline
@@ -318,7 +334,7 @@ export function GraphVisualizer() {
 
   return (
     <VisualizerLayout
-      title="Graph Algorithms"
+      title={heading}
       subtitle="Traversals, shortest paths, spanning trees, topological order and SCCs — step by step."
       headerExtra={
         <>

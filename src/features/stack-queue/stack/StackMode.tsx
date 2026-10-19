@@ -1,17 +1,20 @@
 "use client";
 
 import { ArrowDownToLine, ArrowUpFromLine, Eraser, Eye, Layers, Settings2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Row, Section } from "@/components/ui";
 import { ValueInput, useValueInput } from "@/components/visualizer";
 import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { randomValue, randomValues } from "@/lib/values";
+import { playbackLine } from "../shared/agent";
 import { implementationsFor } from "../shared/code";
 import { CapacityPicker, StatsBar } from "../shared/components/Controls";
 import { ModeShell } from "../shared/components/ModeShell";
 import { chipLegend, CHIP, INK, PTR } from "../shared/constants";
 import type { ModeProps } from "../shared/modeProps";
+import { stackDescribe, stackPopReport, stackPushReport } from "../shared/report";
+import { useLatest } from "../shared/useLatest";
 import { CAP_MAX } from "../shared/util";
 import { STACK_IMPL } from "./code";
 import { createStack, runStack, stackIntro, stackSize, stackValues, type StackOp, type StackState, type StackStep } from "./engine";
@@ -43,7 +46,7 @@ const COMPLEXITY = {
 
 const push = (v: number): StackOp => ({ kind: "push", v });
 
-export function StackMode({ tabs, active, init, onSwitch, shortcuts }: ModeProps) {
+export function StackMode({ heading, tabs, active, init, onSwitch, shortcuts, bindApi }: ModeProps) {
   const [model, setModel] = useState<StackState>(INITIAL);
   const [steps, setSteps] = useState<readonly StackStep[]>(INTRO);
   const player = useStepPlayer(steps, { baseMs: 1000, keyboard: active });
@@ -59,6 +62,36 @@ export function StackMode({ tabs, active, init, onSwitch, shortcuts }: ModeProps
       setSteps(stackIntro(s));
     }
   }
+
+  // WebMCP: agents push / pop on the latest structure and get a plain-text report back.
+  const modelRef = useLatest(model);
+  const playerRef = useLatest(player);
+  useEffect(() => {
+    const commit = (r: { state: StackState; steps: StackStep[] }) => {
+      modelRef.current = r.state;
+      setModel(r.state);
+      setSteps(r.steps);
+    };
+    return bindApi("stack", {
+      push: (values, { reset, capacity }) => {
+        const before = modelRef.current;
+        const rebuilt = !!reset || capacity != null;
+        const r = runStack(before, [...(rebuilt ? [{ kind: "new", cap: capacity ?? before.cap } as const] : []), ...values.map(push)]);
+        commit(r);
+        return stackPushReport(before, values, r.state, rebuilt);
+      },
+      pop: (count) => {
+        const before = modelRef.current;
+        const r = runStack(before, Array.from({ length: count }, () => ({ kind: "pop" as const })));
+        commit(r);
+        return stackPopReport(before, count, r.state);
+      },
+      describe: () => {
+        const p = playerRef.current;
+        return `${stackDescribe(modelRef.current)}\n${playbackLine(p.index, p.total, p.step?.title, p.playing)}`;
+      },
+    });
+  }, [bindApi, modelRef, playerRef]);
 
   const size = stackSize(model);
   const empty = size === 0;
@@ -136,6 +169,7 @@ export function StackMode({ tabs, active, init, onSwitch, shortcuts }: ModeProps
 
   return (
     <ModeShell
+      title={heading}
       tabs={tabs}
       subtitle="Array-backed stack: push and pop at the top, last in first out."
       controls={controls}

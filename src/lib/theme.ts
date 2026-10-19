@@ -40,11 +40,11 @@ export const VIZ: Record<VizState, Triple> = {
 
 /** Accent colour per tone, used for status titles, labels and badges (readable on paper). */
 export const TONE_COLOR: Record<Tone, string> = {
-  info: "#1d4ed8",
-  ok: "#15803d",
-  warn: "#b45309",
-  danger: "#b91c1c",
-  merge: "#6d28d9",
+  info: "#1e40af",
+  ok: "#166534",
+  warn: "#92400e",
+  danger: "#991b1b",
+  merge: "#5b21b6",
   muted: "#4b463f",
 };
 

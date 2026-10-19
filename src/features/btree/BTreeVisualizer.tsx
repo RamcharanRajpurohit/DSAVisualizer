@@ -12,6 +12,7 @@ import { pickOne, randomValue, randomValues } from "@/lib/values";
 import { IMPLEMENTATIONS } from "./code";
 import { ControlsPanel, type PresetId } from "./components/ControlsPanel";
 import { CanvasOverlay } from "./components/CanvasOverlay";
+import { ExampleCases } from "./components/ExampleCases";
 import { EngineBar } from "./components/EngineBar";
 import { HistoryLog } from "./components/HistoryLog";
 import { TreeStatsCard } from "./components/TreeStatsCard";
@@ -20,12 +21,13 @@ import type { BTreeEngine } from "./engine/BTreeEngine";
 import { COMPLEXITY, COMPLEXITY_NOTE, LEGEND } from "./info";
 import { BTREE_LESSON } from "./lesson";
 import type { ReplaceStrategy } from "./model/btree";
-import { BORROW_TREE, MERGE_TREE, SAMPLE_TREE } from "./model/examples";
+import { BORROW_TREE, DELETE_TREE, INSERT_TREE, MERGE_TREE, SAMPLE_TREE } from "./model/examples";
 import { makeQuestion } from "./model/quiz";
 import { snapshotKey, type Snapshot } from "./model/shape";
 import { parseShare, shareParams } from "./model/share";
 import { CODE, OP_TITLE } from "./pseudocode";
-import { ENGINE_DEFAULTS, SHARE_OPTS, settle, useBTreeEngine } from "./useBTreeEngine";
+import { useBTreeAgentTools } from "./useBTreeAgentTools";
+import { ENGINE_DEFAULTS, SHARE_OPTS, settle, useBTreeEngine, type OpeningTree } from "./useBTreeEngine";
 
 const SHORTCUTS = [
   { keys: ["Ctrl", "Z"], label: "Undo the last operation" },
@@ -34,9 +36,40 @@ const SHORTCUTS = [
   { keys: ["End"], label: "Finish the running operation" },
 ] as const;
 
-export function BTreeVisualizer() {
+export type BTreeExample = "insertion" | "deletion";
+
+export interface BTreeVisualizerProps {
+  /** The page's single <h1>. */
+  heading?: string;
+  /** Topic sub-page preset: which example tree opens and which controls come first. */
+  example?: BTreeExample;
+}
+
+/** Module-level (stable) opening trees for the topic sub-pages. */
+const OPENINGS: Record<BTreeExample, OpeningTree> = {
+  insertion: {
+    snapshot: INSERT_TREE,
+    title: "Ready to split",
+    detail: "[60, 65] is full, and so is every node from [97, 99] up to the root. Pick a case under **Insert cases**.",
+    op: "insert",
+  },
+  deletion: {
+    snapshot: DELETE_TREE,
+    title: "Ready to delete",
+    detail: "Deleting 10 can borrow from [30, 35]; deleting 70 must merge. Pick a case under **Delete cases**.",
+    op: "delete",
+  },
+};
+
+const SUBTITLE: Record<"hub" | BTreeExample, string> = {
+  hub: "A multi-way search tree that stays perfectly balanced.",
+  insertion: "New keys go into a leaf; a full node splits and its median moves up — sometimes all the way to the root.",
+  deletion: "Remove a key, then repair any node below the minimum: borrow through the parent or merge with a sibling.",
+};
+
+export function BTreeVisualizer({ heading = "B-Tree Visualizer", example }: BTreeVisualizerProps) {
   const params = useUrlParams();
-  const bt = useBTreeEngine(params);
+  const bt = useBTreeEngine(params, example ? OPENINGS[example] : undefined);
   const { containerRef, withEngine, ready, busy, busyLabel, waiting, paused, step, lastOp, stats, props, log } = bt;
   const input = useValueInput({ mode: "multi", maxCount: MAX_BATCH });
   const [rate, setRate] = useState(ENGINE_DEFAULTS.rate);
@@ -94,6 +127,31 @@ export function BTreeVisualizer() {
 
   const toOrder = (o: number) => () => void scenario(null, (e) => (e.order === o ? undefined : e.setOrder(o)));
 
+  useBTreeAgentTools({ engine: () => withEngine((e) => e), travel: bt.travel, strategy });
+
+  const cases =
+    example === "insertion" ? (
+      <ExampleCases
+        title="Insert cases"
+        disabled={locked}
+        cases={[
+          { id: "fits", label: "Insert 25 · fits", title: "Leaf [30] has room: no split", run: () => void scenario(INSERT_TREE, (e) => e.insert([25])) },
+          { id: "split", label: "Insert 62 · one split", title: "Leaf [60, 65] overflows; 62 moves up into [55]", run: () => void scenario(INSERT_TREE, (e) => e.insert([62])) },
+          { id: "root", label: "Insert 98 · root split", title: "Splits climb to the root and the tree grows a level", run: () => void scenario(INSERT_TREE, (e) => e.insert([98])) },
+        ]}
+      />
+    ) : example === "deletion" ? (
+      <ExampleCases
+        title="Delete cases"
+        disabled={locked}
+        cases={[
+          { id: "borrow", label: "Delete 10 · borrow", title: "Leaf [10] empties; its sibling [30, 35] lends a key through the parent", run: () => void scenario(DELETE_TREE, (e) => e.delete([10])) },
+          { id: "merge", label: "Delete 70 · merge", title: "Both siblings are at the minimum, so [50] and separator 60 merge", run: () => void scenario(DELETE_TREE, (e) => e.delete([70])) },
+          { id: "internal", label: "Delete 40 · internal key", title: "An internal key is replaced by its predecessor or successor from a leaf", run: () => void scenario(DELETE_TREE, (e) => e.delete([40])) },
+        ]}
+      />
+    ) : null;
+
   const lessonActions: LessonActions = {
     sample: () => void scenario(SAMPLE_TREE, () => undefined, "Sample B-tree"),
     order3: toOrder(3),
@@ -145,8 +203,8 @@ export function BTreeVisualizer() {
 
   return (
     <VisualizerLayout
-      title="B-Tree"
-      subtitle="A multi-way search tree that stays perfectly balanced."
+      title={heading}
+      subtitle={SUBTITLE[example ?? "hub"]}
       headerExtra={
         <>
           <Badge color={TONE_COLOR.info}>order {stats.order}</Badge>
@@ -159,29 +217,32 @@ export function BTreeVisualizer() {
       share={() => (current ? shareParams(current, strategy) : {})}
       shortcuts={SHORTCUTS}
       controls={
-        <ControlsPanel
-          input={input}
-          locked={locked}
-          empty={empty}
-          order={stats.order}
-          rate={rate}
-          strategy={strategy}
-          canUndo={bt.canUndo}
-          canRedo={bt.canRedo}
-          undoLabel={bt.undoLabel}
-          redoLabel={bt.redoLabel}
-          onUndo={bt.undo}
-          onRedo={bt.redo}
-          onInsert={() => runOp("insert")}
-          onSearch={() => runOp("search")}
-          onDelete={() => runOp("delete")}
-          onDice={() => input.fill(randomValues(DICE_COUNT, { exclude: existing() }))}
-          onOrder={onOrder}
-          onRate={(r) => { setRate(r); withEngine((e) => e.setRate(r)); }}
-          onStrategy={(s) => { setStrategy(s); withEngine((e) => e.setStrategy(s)); }}
-          onPreset={onPreset}
-          onClear={() => { if (!locked) withEngine((e) => e.clear()); }}
-        />
+        <>
+          {cases}
+          <ControlsPanel
+            input={input}
+            locked={locked}
+            empty={empty}
+            order={stats.order}
+            rate={rate}
+            strategy={strategy}
+            canUndo={bt.canUndo}
+            canRedo={bt.canRedo}
+            undoLabel={bt.undoLabel}
+            redoLabel={bt.redoLabel}
+            onUndo={bt.undo}
+            onRedo={bt.redo}
+            onInsert={() => runOp("insert")}
+            onSearch={() => runOp("search")}
+            onDelete={() => runOp("delete")}
+            onDice={() => input.fill(randomValues(DICE_COUNT, { exclude: existing() }))}
+            onOrder={onOrder}
+            onRate={(r) => { setRate(r); withEngine((e) => e.setRate(r)); }}
+            onStrategy={(s) => { setStrategy(s); withEngine((e) => e.setStrategy(s)); }}
+            onPreset={onPreset}
+            onClear={() => { if (!locked) withEngine((e) => e.clear()); }}
+          />
+        </>
       }
       playback={
         <EngineBar

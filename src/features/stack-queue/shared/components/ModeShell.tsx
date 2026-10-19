@@ -13,6 +13,8 @@ import type { ShareParams } from "@/lib/share";
 import type { PseudoBlock } from "../types";
 
 export interface ModeShellProps<S extends StepBase> {
+  /** The page's <h1>. */
+  title: string;
   /** The mode tabs (rendered in the page header). */
   tabs: ReactNode;
   subtitle: ReactNode;
@@ -41,14 +43,14 @@ export interface ModeShellProps<S extends StepBase> {
 
 /** Layout shared by every mode: controls | canvas + playback | status, code, variables, then the secondary cards. */
 export function ModeShell<S extends StepBase>({
-  tabs, subtitle, controls, player, code, implementations, legend, complexity, insightExtra, playbackLabel, hint,
+  title, tabs, subtitle, controls, player, code, implementations, legend, complexity, insightExtra, playbackLabel, hint,
   lesson, lessonActions, share, shortcuts, quiz, quizEmpty, children,
 }: ModeShellProps<S>) {
   const [ref, size] = useElementSize();
   const step = player.step;
   return (
     <VisualizerLayout
-      title="Stack & Queue"
+      title={title}
       subtitle={subtitle}
       headerExtra={tabs}
       controls={<div className="flex shrink-0 flex-col gap-3">{controls}</div>}

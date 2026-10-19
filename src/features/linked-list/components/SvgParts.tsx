@@ -171,7 +171,7 @@ export function Tag({ t, dur }: { t: SceneTag; dur: number }) {
       {t.below
         ? <path d="M-4 -8 L0 -13 L4 -8 Z" fill={t.color} />
         : <path d="M-4 8 L0 13 L4 8 Z" fill={t.color} />}
-      <text textAnchor="middle" dominantBaseline="middle" y={0.5} fontSize={10.5} fontWeight={700} fill={t.color} fontFamily="var(--font-inter), system-ui, sans-serif">
+      <text textAnchor="middle" dominantBaseline="middle" y={0.5} fontSize={10.5} fontWeight={700} fill={t.color} fontFamily="'Helvetica Neue', system-ui, sans-serif">
         {t.name}
       </text>
       {t.chip && (

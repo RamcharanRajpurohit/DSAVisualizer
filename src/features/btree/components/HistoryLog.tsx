@@ -16,6 +16,7 @@ const TAG: Record<HistoryOp, string> = {
   undo: "UNDO",
   redo: "REDO",
   load: "LOAD",
+  traverse: "WALK",
 };
 
 /** The last few operations, newest first. */

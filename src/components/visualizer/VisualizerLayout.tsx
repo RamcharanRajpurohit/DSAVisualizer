@@ -99,7 +99,7 @@ export function VisualizerLayout({
       {/* One compact row: title + short subtitle on the left, badges and tools on the right. */}
       <header className={cn(styles.head, "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-1")}>
         <div className="flex min-w-0 flex-1 items-baseline gap-3">
-          <h1 className="shrink-0 font-serif text-[26px] leading-none text-fg md:text-[28px]">{title}</h1>
+          <h1 className="min-w-0 font-serif text-[23px] leading-tight text-fg sm:text-[26px] md:text-[28px] xl:shrink-0 xl:leading-none">{title}</h1>
           {subtitle && !focus && <p className="hidden min-w-0 truncate text-[13px] text-fg-faint xl:block">{subtitle}</p>}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -141,7 +141,7 @@ export function VisualizerLayout({
 
       <aside className={cn(styles.controls, styles.side, "scroll-thin")}>{controls}</aside>
 
-      <main ref={stageRef} className={styles.stage}>
+      <section ref={stageRef} className={styles.stage} aria-label={`${title} — interactive visualization`}>
         <div className={cn(styles.canvas, "canvas-grid", canvasClassName)} data-viz-canvas>
           {children}
           {learnOpen && lesson && <LearnPanel key={lesson.id} lesson={lesson} actions={lessonActions} onClose={closeLearn} />}
@@ -156,7 +156,7 @@ export function VisualizerLayout({
           </button>
         </div>
         {playback}
-      </main>
+      </section>
 
       {insight && <aside className={cn(styles.insight, styles.side, "scroll-thin")}>{insight}</aside>}
 

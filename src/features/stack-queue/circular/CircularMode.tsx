@@ -1,17 +1,20 @@
 "use client";
 
 import { ArrowLeftToLine, ArrowRightToLine, Eraser, Eye, RotateCw, Settings2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Field, Row, Section, Segmented } from "@/components/ui";
 import { ValueInput, useValueInput } from "@/components/visualizer";
 import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { randomValue, randomValues } from "@/lib/values";
+import { playbackLine } from "../shared/agent";
 import { implementationsFor } from "../shared/code";
 import { CapacityPicker, StatsBar } from "../shared/components/Controls";
 import { ModeShell } from "../shared/components/ModeShell";
 import { chipLegend, INK, PTR } from "../shared/constants";
 import type { ModeProps } from "../shared/modeProps";
+import { circDequeueReport, circDescribe, circEnqueueReport } from "../shared/report";
+import { useLatest } from "../shared/useLatest";
 import { CAP_MAX } from "../shared/util";
 import { CIRC_IMPL } from "./code";
 import {
@@ -52,7 +55,7 @@ const COMPLEXITY = {
 const enq = (v: number): CircOp => ({ kind: "enqueue", v });
 const deq: CircOp = { kind: "dequeue" };
 
-export function CircularMode({ tabs, active, init, shortcuts }: ModeProps) {
+export function CircularMode({ heading, tabs, active, init, shortcuts, bindApi }: ModeProps) {
   const [model, setModel] = useState<CircState>(INITIAL);
   const [steps, setSteps] = useState<readonly CircStep[]>(INTRO);
   const player = useStepPlayer(steps, { baseMs: 1050, keyboard: active });
@@ -67,6 +70,37 @@ export function CircularMode({ tabs, active, init, shortcuts }: ModeProps) {
       setSteps(circIntro(s));
     }
   }
+
+  // WebMCP: agents enqueue / dequeue on the latest ring and get a plain-text report back.
+  const modelRef = useLatest(model);
+  const playerRef = useLatest(player);
+  useEffect(() => {
+    const commit = (r: { state: CircState; steps: CircStep[] }) => {
+      modelRef.current = r.state;
+      setModel(r.state);
+      setSteps(r.steps);
+    };
+    return bindApi("circular", {
+      enqueue: (values, { reset, capacity }) => {
+        const before = modelRef.current;
+        const rebuilt = !!reset || capacity != null;
+        const rebuild: CircOp[] = rebuilt ? [{ kind: "new", cap: capacity ?? before.cap, rule: before.rule }] : [];
+        const r = runCirc(before, [...rebuild, ...values.map(enq)]);
+        commit(r);
+        return circEnqueueReport(before, values, r.state, rebuilt);
+      },
+      dequeue: (count) => {
+        const before = modelRef.current;
+        const r = runCirc(before, Array.from({ length: count }, () => deq));
+        commit(r);
+        return circDequeueReport(before, count, r.state);
+      },
+      describe: () => {
+        const p = playerRef.current;
+        return `${circDescribe(modelRef.current)}\n${playbackLine(p.index, p.total, p.step?.title, p.playing)}`;
+      },
+    });
+  }, [bindApi, modelRef, playerRef]);
 
   const usable = circUsable(model);
   const full = circFull(model);
@@ -143,6 +177,7 @@ export function CircularMode({ tabs, active, init, shortcuts }: ModeProps) {
 
   return (
     <ModeShell
+      title={heading}
       tabs={tabs}
       subtitle="A ring buffer: indices advance with (i + 1) % capacity, so freed slots are reused."
       controls={controls}

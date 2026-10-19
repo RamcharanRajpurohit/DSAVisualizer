@@ -1,8 +1,17 @@
-import { visualizerMetadata } from "@/config/metadata";
+import { TopicArticle } from "@/components/seo/TopicArticle";
+import { getTopic } from "@/content/registry";
 import { StackQueueVisualizer } from "@/features/stack-queue/StackQueueVisualizer";
+import { topicMetadata } from "@/lib/seo";
 
-export const metadata = visualizerMetadata("stack-queue");
+const topic = getTopic("/stack-queue")!;
+
+export const metadata = topicMetadata(topic);
 
 export default function Page() {
-  return <StackQueueVisualizer />;
+  return (
+    <>
+      <StackQueueVisualizer heading={topic.h1} />
+      <TopicArticle topic={topic} />
+    </>
+  );
 }

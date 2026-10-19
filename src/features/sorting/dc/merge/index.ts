@@ -7,7 +7,7 @@ import { recordMergeSort, type MergeStep } from "./record";
 
 export const mergeSort: SortAlgorithmDef<MergeStep> = {
   key: "merge",
-  name: "Merge Sort",
+  name: "Merge sort",
   blurb: "Split in half, sort each half recursively, then merge the sorted halves.",
   family: "Divide & conquer",
   stable: true,

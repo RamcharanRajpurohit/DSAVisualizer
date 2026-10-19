@@ -144,6 +144,7 @@ export function ValueInput({ input, onEnter, onRandom, label, placeholder, hint,
             if (e.key === "Enter" && onEnter) { e.preventDefault(); onEnter(); }
           }}
           aria-invalid={!!input.error}
+          aria-label={label ?? (input.mode === "list" ? "Array values" : input.mode === "multi" ? "Value or values" : "Value")}
           title={defaultHint}
           className={cn(
             "h-9 w-full rounded-lg border bg-bg-elev pl-3 text-sm text-fg placeholder:text-fg-faint transition-colors",

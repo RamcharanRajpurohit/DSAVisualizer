@@ -1,17 +1,20 @@
 "use client";
 
 import { ArrowLeftFromLine, ArrowLeftToLine, ArrowRightFromLine, ArrowRightLeft, ArrowRightToLine, Eraser, Settings2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Row, Section } from "@/components/ui";
 import { ValueInput, useValueInput } from "@/components/visualizer";
 import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { randomValue, randomValues } from "@/lib/values";
+import { playbackLine } from "../shared/agent";
 import { implementationsFor } from "../shared/code";
 import { CapacityPicker, StatsBar } from "../shared/components/Controls";
 import { ModeShell } from "../shared/components/ModeShell";
 import { chipLegend, INK, PTR } from "../shared/constants";
 import type { ModeProps } from "../shared/modeProps";
+import { dequeDescribe, dequePopReport, dequePushReport } from "../shared/report";
+import { useLatest } from "../shared/useLatest";
 import { CAP_MAX } from "../shared/util";
 import { DEQUE_IMPL } from "./code";
 import { createDeque, dequeIntro, dequeValues, runDeque, type DequeOp, type DequeState, type DequeStep } from "./engine";
@@ -42,7 +45,7 @@ const COMPLEXITY = {
 const pf = (v: number): DequeOp => ({ kind: "pushFront", v });
 const pb = (v: number): DequeOp => ({ kind: "pushBack", v });
 
-export function DequeMode({ tabs, active, init, shortcuts }: ModeProps) {
+export function DequeMode({ heading, tabs, active, init, shortcuts, bindApi }: ModeProps) {
   const [model, setModel] = useState<DequeState>(INITIAL);
   const [steps, setSteps] = useState<readonly DequeStep[]>(INTRO);
   const player = useStepPlayer(steps, { baseMs: 1000, keyboard: active });
@@ -57,6 +60,37 @@ export function DequeMode({ tabs, active, init, shortcuts }: ModeProps) {
       setSteps(dequeIntro(s));
     }
   }
+
+  // WebMCP: agents push / pop at either end of the latest deque and get a plain-text report back.
+  const modelRef = useLatest(model);
+  const playerRef = useLatest(player);
+  useEffect(() => {
+    const commit = (r: { state: DequeState; steps: DequeStep[] }) => {
+      modelRef.current = r.state;
+      setModel(r.state);
+      setSteps(r.steps);
+    };
+    return bindApi("deque", {
+      push: (end, values, { reset, capacity }) => {
+        const before = modelRef.current;
+        const rebuilt = !!reset || capacity != null;
+        const rebuild: DequeOp[] = rebuilt ? [{ kind: "new", cap: capacity ?? before.cap }] : [];
+        const r = runDeque(before, [...rebuild, ...values.map(end === "front" ? pf : pb)]);
+        commit(r);
+        return dequePushReport(before, end, values, r.state, rebuilt);
+      },
+      pop: (end, count) => {
+        const before = modelRef.current;
+        const r = runDeque(before, Array.from({ length: count }, (): DequeOp => ({ kind: end === "front" ? "popFront" : "popBack" })));
+        commit(r);
+        return dequePopReport(before, end, count, r.state);
+      },
+      describe: () => {
+        const p = playerRef.current;
+        return `${dequeDescribe(modelRef.current)}\n${playbackLine(p.index, p.total, p.step?.title, p.playing)}`;
+      },
+    });
+  }, [bindApi, modelRef, playerRef]);
 
   const empty = model.size === 0;
   const full = model.size === model.cap;
@@ -130,6 +164,7 @@ export function DequeMode({ tabs, active, init, shortcuts }: ModeProps) {
 
   return (
     <ModeShell
+      title={heading}
       tabs={tabs}
       subtitle="Double-ended queue: O(1) at both ends, stored in a circular array."
       controls={controls}

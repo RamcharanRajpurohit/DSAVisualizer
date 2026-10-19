@@ -15,7 +15,7 @@
  *   • insertCodeId / deleteCodeId / treeName / shapeNote  — labels and pseudocode listings
  */
 import { plural } from "@/lib/utils";
-import { TreeHistory, type TreeSnapshot } from "../model/history";
+import { TreeHistory, type HistoryInfo, type TreeSnapshot } from "../model/history";
 import { buildExact, preorderKeys } from "../model/share";
 import {
   bstInsertSilent, cloneTree, collect, hOf, keysInOrder, minPossibleHeight, promoteSuccessor, replaceChild, size, update,
@@ -155,6 +155,11 @@ export class BSTEngine extends TreeScene {
   /** Pre-order keys of the last completed state — a share link rebuilds this exact shape. */
   shareKeys(): readonly number[] {
     return this.history.current?.keys ?? preorderKeys(this.root);
+  }
+
+  /** Undo / redo availability right now (the React mirror may lag one render behind). */
+  historyInfo(): HistoryInfo {
+    return this.history.info();
   }
 
   insert(values: readonly number[]): Promise<boolean> {

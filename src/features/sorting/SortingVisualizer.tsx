@@ -43,10 +43,11 @@ import {
   usesSeed,
   type SortRunOptions,
 } from "./shared/options";
-import { DEFAULT_VALUES, PRESETS, makePreset, type PresetKind } from "./shared/presets";
+import { PRESETS, exampleFor, makePreset, type PresetKind } from "./shared/presets";
 import { scenario, type ScenarioNote } from "./shared/scenarios";
 import { parseStepShare, stepShareParams } from "./shared/share";
 import type { AnySortAlgorithm } from "./types";
+import { useSortingAgentTools } from "./agent/useSortingAgentTools";
 
 const DEFAULT_ALGO: AnySortAlgorithm | undefined = SORT_ALGORITHMS.find((a) => a.key === "merge") ?? SORT_ALGORITHMS[0];
 const MIN_SIZE = 2;
@@ -100,18 +101,28 @@ function freshRun(algo: AnySortAlgorithm, values: readonly number[], opts: SortR
   return makeRun(algo, values, opts, autoplay, seed);
 }
 
-export function SortingVisualizer() {
-  if (!DEFAULT_ALGO) {
+export interface SortingVisualizerProps {
+  /** Page heading (the page's only <h1>), e.g. "Merge Sort Visualizer". */
+  heading?: string;
+  /** Algorithm key the page opens on (e.g. "merge"), with that algorithm's example array ready to play. */
+  initialAlgorithm?: string;
+}
+
+const DEFAULT_HEADING = "Sorting Algorithm Visualizer";
+
+export function SortingVisualizer({ heading = DEFAULT_HEADING, initialAlgorithm }: SortingVisualizerProps) {
+  const initialAlgo = (initialAlgorithm && SORT_ALGORITHMS.find((a) => a.key === initialAlgorithm)) || DEFAULT_ALGO;
+  if (!initialAlgo) {
     return (
-      <VisualizerLayout title="Sorting Algorithms" controls={null}>
+      <VisualizerLayout title={heading} controls={null}>
         <CanvasHint>No sorting algorithms are registered.</CanvasHint>
       </VisualizerLayout>
     );
   }
-  return <SortingWorkspace initialAlgo={DEFAULT_ALGO} />;
+  return <SortingWorkspace initialAlgo={initialAlgo} heading={heading} />;
 }
 
-function SortingWorkspace({ initialAlgo }: { initialAlgo: AnySortAlgorithm }) {
+function SortingWorkspace({ initialAlgo, heading }: { initialAlgo: AnySortAlgorithm; heading: string }) {
   const [view, setView] = useState<View>("step");
   const [algoKey, setAlgoKey] = useState(initialAlgo.key);
   const algo = findAlgo(algoKey) ?? initialAlgo;
@@ -119,7 +130,7 @@ function SortingWorkspace({ initialAlgo }: { initialAlgo: AnySortAlgorithm }) {
   const opts = useMemo(() => ({ ...defaultOptions(algo), ...optsByAlgo[algo.key] }), [algo, optsByAlgo]);
   const [preset, setPreset] = useState<PresetKind | null>(null);
   // Deterministic first recording, ready to play the moment the page opens.
-  const [run, setRun] = useState<Run>(() => makeRun(initialAlgo, DEFAULT_VALUES, defaultOptions(initialAlgo), false));
+  const [run, setRun] = useState<Run>(() => makeRun(initialAlgo, exampleFor(initialAlgo.key), defaultOptions(initialAlgo), false));
 
   const runAlgo = findAlgo(run.algoKey) ?? algo;
   const values = run.values;
@@ -138,7 +149,7 @@ function SortingWorkspace({ initialAlgo }: { initialAlgo: AnySortAlgorithm }) {
     if (shared) {
       setAlgoKey(shared.algo.key);
       setOptsByAlgo((m) => ({ ...m, [shared.algo.key]: shared.opts }));
-      setRun(makeRun(shared.algo, shared.values ?? (shared.algo.key === initialAlgo.key ? DEFAULT_VALUES : DEFAULT_VALUES.slice(0, shared.algo.maxSize)), shared.opts, false));
+      setRun(makeRun(shared.algo, shared.values ?? exampleFor(shared.algo.key).slice(0, shared.algo.maxSize), shared.opts, false));
     }
     if (params.get("view") === "compare") {
       setView("compare");
@@ -245,6 +256,27 @@ function SortingWorkspace({ initialAlgo }: { initialAlgo: AnySortAlgorithm }) {
     setView(v);
   };
 
+  // WebMCP: agents can sort, step through, inspect, compare and race (feature-detected; no-op elsewhere).
+  useSortingAgentTools({
+    view,
+    runAlgo,
+    values,
+    runOpts: run.opts,
+    player,
+    compare,
+    optsFor: (a) => ({ ...defaultOptions(a), ...optsByAlgo[a.key] }),
+    load: (next, vals, nextOpts, autoplay, note) => {
+      const fresh = withNote(freshRun(next, vals, nextOpts, autoplay), note);
+      setView("step");
+      setAlgoKey(next.key);
+      setOptsByAlgo((m) => ({ ...m, [next.key]: nextOpts }));
+      setPreset(null);
+      setRun(fresh);
+      return fresh.steps;
+    },
+    showCompare: () => switchView("compare"),
+  });
+
   // Esc rewinds to the first step (the shortcut PlaybackControls advertises for Stop); in Compare
   // mode Esc resets the race and Space plays / pauses every cell.
   const rewind = player.first;
@@ -298,7 +330,7 @@ function SortingWorkspace({ initialAlgo }: { initialAlgo: AnySortAlgorithm }) {
   );
 
   const layoutCommon = {
-    title: "Sorting Algorithms",
+    title: heading,
     lesson,
     lessonActions,
     share,

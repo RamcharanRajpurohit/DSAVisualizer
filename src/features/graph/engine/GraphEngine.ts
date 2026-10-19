@@ -237,7 +237,8 @@ export class GraphEngine {
     this.chooseArea();
     this.fit();
     this.updateHud();
-    this.build(opts.initial ?? DEFAULT_GRAPH);
+    // First paint: place the starting graph instantly (the pop-in intro is for user actions only).
+    this.build(opts.initial ?? DEFAULT_GRAPH, true);
   }
 
   destroy() {
@@ -1545,7 +1546,7 @@ export class GraphEngine {
     };
   }
 
-  private build(spec: GraphSpec) {
+  private build(spec: GraphSpec, instant = false) {
     this.stopAlgorithm(true);
     this.cancelPending();
     this.closeWeightEdit();
@@ -1570,6 +1571,7 @@ export class GraphEngine {
       n.x = p.x;
       n.y = p.y;
       const v = this.makeNodeView(n);
+      if (instant) return;
       v.group.scale({ x: 0.01, y: 0.01 });
       this.later(() => void this.tween(v.group, { scaleX: 1, scaleY: 1 }, 0.45, this.K.Easings.BackEaseOut), stagger * i);
     });
@@ -1578,7 +1580,8 @@ export class GraphEngine {
       const e: GEdge = { id: `e${++this.uid}`, u: ids[a], v: ids[b], w: w ?? randWeight() };
       this.edges.set(e.id, e);
       this.makeEdgeView(e);
-      this.growEdge(e, edgeStart + this.sec(0.05) * 1000 * j);
+      if (instant) this.placeEdge(e);
+      else this.growEdge(e, edgeStart + this.sec(0.05) * 1000 * j);
     });
     this.startId = ids[spec.start ?? 0] ?? ids[0] ?? null;
     this.graphChanged();

@@ -10,7 +10,7 @@ export default function Error({ error, retry }: { error: unknown; retry: () => v
 
   const message = error instanceof globalThis.Error ? error.message : String(error);
   return (
-    <main className="flex min-h-[calc(100dvh-var(--navbar-h))] flex-col items-center justify-center gap-4 p-6 text-center">
+    <div className="flex min-h-[calc(100dvh-var(--navbar-h))] flex-col items-center justify-center gap-4 p-6 text-center">
       <p className="font-mono text-sm text-viz-red">runtime error</p>
       <h1 className="text-2xl font-bold">The visualizer tripped over a step.</h1>
       <p className="max-w-lg font-mono text-xs text-fg-faint">{message}</p>
@@ -22,6 +22,6 @@ export default function Error({ error, retry }: { error: unknown; retry: () => v
           All visualizers
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

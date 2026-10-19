@@ -64,9 +64,9 @@ export function CodePanel({ code, active, title = "Code", implementations, class
   return (
     <section className={cn("rounded-xl border border-line bg-surface/90 p-3", className)}>
       <header className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="flex min-w-0 items-center gap-2 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
+        <h2 className="flex min-w-0 items-center gap-2 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
           <Code2 size={14} className="shrink-0 text-viz-purple" /> <span className="truncate">{title}</span>
-        </h3>
+        </h2>
         {source && (
           <button
             onClick={copy}

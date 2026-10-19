@@ -4,6 +4,8 @@ import { EDGE, VIZ } from "@/lib/theme";
 /** Trees the pages open with (deterministic, so there is something to play with immediately). */
 export const BST_INITIAL = [50, 30, 70, 20, 40, 60, 80, 35, 45, 90] as const;
 export const AVL_INITIAL = [50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43] as const;
+/** /bst/tree-traversals: an irregular 9-node tree, so all four visit orders differ clearly. */
+export const TRAVERSAL_TREE = [60, 20, 70, 10, 40, 90, 30, 50, 80] as const;
 
 export type PresetId = "balanced" | "skewed" | "zigzag" | "random";
 

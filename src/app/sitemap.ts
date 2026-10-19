@@ -1,10 +1,17 @@
 import type { MetadataRoute } from "next";
-import { SITE } from "@/config/site";
-import { VISUALIZERS } from "@/config/visualizers";
+import { absoluteUrl } from "@/config/site";
+import { TOPICS } from "@/content/registry";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const newest = TOPICS.reduce((d, t) => (t.updated > d ? t.updated : d), "2026-10-19");
   return [
-    { url: SITE.url, changeFrequency: "monthly", priority: 1 },
-    ...VISUALIZERS.map((v) => ({ url: `${SITE.url}${v.href}`, changeFrequency: "monthly" as const, priority: 0.8 })),
+    { url: absoluteUrl("/"), lastModified: newest, changeFrequency: "weekly", priority: 1 },
+    ...TOPICS.map((t) => ({
+      url: absoluteUrl(t.path),
+      lastModified: t.updated,
+      changeFrequency: "monthly" as const,
+      priority: t.parent ? 0.8 : 0.9,
+    })),
+    { url: absoluteUrl("/about"), lastModified: newest, changeFrequency: "yearly", priority: 0.4 },
   ];
 }

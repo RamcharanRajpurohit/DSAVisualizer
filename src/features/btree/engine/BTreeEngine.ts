@@ -21,6 +21,7 @@ import {
   BTree, describeNode, fmtKeys,
   type BKey, type BNode, type Located, type PathStep, type ReplaceStrategy, type TreeProps, type TreeStats,
 } from "../model/btree";
+import { traversalVisits, type BTreeTraversal } from "../model/agent";
 import { snapshotOf, type Snapshot } from "../model/shape";
 import { CODE, type OpKind } from "../pseudocode";
 import { GEO, INK, KEY_STYLE, MAX_KEYS, NODE_STYLE, type KeyStyle, type NodeStyle } from "../constants";
@@ -42,7 +43,7 @@ export interface EngineStep {
   vars: Vars;
 }
 
-export type HistoryOp = OpKind | "build" | "clear" | "order" | "undo" | "redo" | "load";
+export type HistoryOp = OpKind | "build" | "clear" | "order" | "undo" | "redo" | "load" | "traverse";
 
 export interface HistoryEntry {
   id: number;
@@ -257,6 +258,43 @@ export class BTreeEngine {
   insert(values: readonly number[]) { return this.batch("insert", values, (v) => this.doInsert(v)); }
   search(values: readonly number[]) { return this.batch("search", values, (v) => this.doSearch(v)); }
   delete(values: readonly number[]) { return this.batch("delete", values, (v) => this.doDelete(v)); }
+
+  /**
+   * Walk the tree without changing it: in-order (child 0, key 0, child 1, …: sorted output) or
+   * level-order (node by node from the root). Each key lights up as it is visited.
+   */
+  traverse(kind: BTreeTraversal) {
+    const name = kind === "inorder" ? "In-order" : "Level-order";
+    return this.run(`${name} traversal`, async () => {
+      const visits = traversalVisits(this.tree, kind);
+      if (!visits.length) {
+        this.say(`${name} traversal`, "The tree is empty — there is nothing to visit.", "danger");
+        return;
+      }
+      this.say(`${name} traversal`, kind === "inorder"
+        ? "Visit child 0, then key 0, then child 1, then key 1, … — on a B-tree that lists every key in **sorted** order."
+        : "Visit the nodes **level by level** from the root, left to right — a breadth-first walk.", "info");
+      await this.hold(0.6);
+      const out: number[] = [];
+      let at: BNode | null = null;
+      for (const { key, node } of visits) {
+        if (node !== at) {
+          if (at) void this.nodeStyle(at, "base", 0.2);
+          void this.nodeStyle(node, "visit", 0.2);
+          at = node;
+        }
+        out.push(key.v);
+        void this.pulseKey(key);
+        await this.keyStyle(key, "success", 0.18);
+        this.say(`Visit ${key.v}`, `Output so far: **${out.join(" → ")}**`, "info", undefined, { visited: out.length });
+        await this.hold(0.32);
+      }
+      if (at) void this.nodeStyle(at, "base", 0.2);
+      this.say(`✓ ${name} traversal`, `Output: **${out.join(", ")}**` + (kind === "inorder" ? "\nSorted — the B-tree ordering rule at work." : ""), "ok");
+      this.log("traverse", undefined, `${name} · ${plural(out.length, "key")}`, "info");
+      await this.wait(1);
+    });
+  }
 
   /** Replace the tree with `values`, inserted silently, then let everything grow into place. */
   build(values: readonly number[], title: string, detail?: string, order = this.tree.order) {

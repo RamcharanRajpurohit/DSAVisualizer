@@ -17,9 +17,9 @@ export interface PseudocodePanelProps {
 export function PseudocodePanel({ code, active, title = "Pseudocode", className }: PseudocodePanelProps) {
   return (
     <section className={cn("rounded-xl border border-line bg-surface/90 p-3", className)}>
-      <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
+      <h2 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
         <Code2 size={14} className="text-viz-purple" /> {title}
-      </h3>
+      </h2>
       <PseudoLines code={code} active={active} />
     </section>
   );
@@ -53,7 +53,7 @@ export function PseudoLines({ code, active }: { code: readonly string[]; active?
             className={cn("flex pr-3 transition-colors duration-200", on ? "bg-viz-blue/10 text-fg" : "text-fg-dim")}
             style={on ? { boxShadow: "inset 3px 0 0 var(--viz-blue)" } : undefined}
           >
-            <span className={cn("w-8 shrink-0 select-none pr-2.5 text-right tabular-nums", on ? "text-viz-blue" : "text-fg-faint/70")}>
+            <span className={cn("w-8 shrink-0 select-none pr-2.5 text-right tabular-nums", on ? "text-viz-blue-deep" : "text-fg-faint")}>
               {i + 1}
             </span>
             {/* Soft-wrap long lines with a hanging indent; leading spaces still indent. */}

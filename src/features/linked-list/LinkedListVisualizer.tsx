@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CodePanel, ComplexityCard, Legend, PlaybackControls, QuizCard, StatusCard, StepTimeline, VariablesPanel, VisualizerLayout,
 } from "@/components/visualizer";
@@ -9,6 +9,7 @@ import type { LessonActions } from "@/lib/lesson";
 import { useStepPlayer } from "@/lib/player/useStepPlayer";
 import { useUrlParams } from "@/lib/share";
 import { randomValue } from "@/lib/values";
+import { useLinkedListAgentTools } from "./agentTools";
 import { implementationsFor, IMPL_TITLE } from "./code";
 import { Controls } from "./components/Controls";
 import { ListCanvas } from "./components/ListCanvas";
@@ -18,10 +19,10 @@ import {
   idle, listFrom, MAX_NODES, record, type ListKind, type ListState, type OpRequest, type Recording,
 } from "./engine";
 import { LESSONS, type LessonAction } from "./lessons";
+import { pageStart, type LinkedListPage } from "./pages";
 import { makeQuiz } from "./quiz";
 import { fromShareParams, toShareParams } from "./share";
 
-const INITIAL: ListState = listFrom(DEFAULT_VALUES, "singly", false);
 const KIND_SHORT: Record<ListKind, string> = { singly: "Singly", doubly: "Doubly", circular: "Circular" };
 
 /** Most slots each drawing line needs during a recording, so the layout doesn't jump between steps. */
@@ -40,32 +41,63 @@ const bytesPerNode = (kind: ListKind) => 4 + 8 * (kind === "doubly" ? 2 : 1);
 /** Values the lesson's try-it buttons insert / search for (deterministic, not already in the list). */
 const FRESH = [99, 42, 64, 17, 88, 50, 73, 26, 81, 9];
 
-export function LinkedListVisualizer() {
-  const [list, setList] = useState<ListState>(INITIAL);
-  const [rec, setRec] = useState<Recording>(() => idle(INITIAL));
+export interface LinkedListVisualizerProps {
+  /** Page heading (the page's only <h1>). */
+  heading?: string;
+  /** Topic page to open on: its list kind with the matching operation ready to play. */
+  page?: LinkedListPage;
+}
+
+export function LinkedListVisualizer({ heading = "Linked List", page }: LinkedListVisualizerProps) {
+  const start = pageStart(page);
+  const [list, setList] = useState<ListState>(start.list);
+  const [rec, setRec] = useState<Recording>(start.rec);
+  /**
+   * The committed list for agent tools. Every operation writes it synchronously (so back-to-back tool
+   * calls chain); it is synced from state only when a share link replaces the list during render.
+   */
+  const live = useRef(list);
+  /** The latest recording, also written synchronously (tools report its step until the page re-renders). */
+  const liveRec = useRef(rec);
 
   // Restore a shared link once the URL is known (?kind=doubly&tail=1&values=12,7,33).
   const params = useUrlParams();
   const [applied, setApplied] = useState(false);
+  const [sharedState, setSharedState] = useState<{ list: ListState; rec: Recording } | null>(null);
   if (params && !applied) {
     setApplied(true);
     const shared = fromShareParams(params);
     if (shared) {
+      const opened = idle(shared, "Opened from a shared link");
       setList(shared);
-      setRec(idle(shared, "Opened from a shared link"));
+      setRec(opened);
+      setSharedState({ list: shared, rec: opened });
     }
   }
+  useEffect(() => {
+    if (!sharedState) return;
+    live.current = sharedState.list;
+    liveRec.current = sharedState.rec;
+  }, [sharedState]);
 
   const player = useStepPlayer(rec.steps, { baseMs: 1050 });
   const step = player.step;
 
-  const runOn = useCallback((state: ListState, req: OpRequest) => {
+  const show = useCallback((state: ListState, req: OpRequest) => {
     const r = record(state, req);
     setRec(r);
     setList(r.final);
-    return r.op !== "invalid";
+    live.current = r.final;
+    liveRec.current = r;
+    return r;
   }, []);
+  const runOn = useCallback((state: ListState, req: OpRequest) => show(state, req).op !== "invalid", [show]);
   const run = useCallback((req: OpRequest) => runOn(list, req), [list, runOn]);
+
+  const currentList = useCallback(() => live.current, []);
+  const runLive = useCallback((req: OpRequest) => show(live.current, req), [show]);
+  const stepTitle = useCallback(() => (liveRec.current === rec ? step?.title : liveRec.current.steps[0]?.title), [rec, step]);
+  useLinkedListAgentTools({ current: currentList, run: runLive, stepTitle });
 
   const lineSlots = useMemo(() => lineSlotsOf(rec), [rec]);
   const pitchKind: ListKind = useMemo(
@@ -114,8 +146,8 @@ export function LinkedListVisualizer() {
 
   return (
     <VisualizerLayout
-      title="Linked List"
-      subtitle="Singly, doubly and circular lists — every pointer write animated in order."
+      title={heading}
+      subtitle={start.subtitle}
       headerExtra={
         <>
           <Badge color="#2563EB" title={list.tailPtr ? "Keeps a tail pointer" : "No tail pointer"}>

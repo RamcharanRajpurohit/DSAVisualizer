@@ -9,7 +9,8 @@ import type { BSTEngine, KonvaLib, StartOptions } from "../engine/BSTEngine";
 import type { CodeFocus, EngineCallbacks, EngineOptions, RunInfo, StatusInfo, TraversalInfo, Vars } from "../engine/types";
 import { EMPTY_HISTORY, type HistoryInfo } from "../model/history";
 import { decodeShare, encodeShare } from "../model/share";
-import type { TreeStats } from "../model/types";
+import { avlInsertSilent, bstInsertSilent, computeStats, nodeFactory } from "../model/tree";
+import type { TreeNode, TreeStats } from "../model/types";
 import type { CodeId } from "../pseudocode";
 
 export type EngineCtor<E extends BSTEngine> = new (K: KonvaLib, el: HTMLDivElement, cb: EngineCallbacks, opts?: EngineOptions) => E;
@@ -25,7 +26,13 @@ export interface TreeEngineConfig {
   idleCode: CodeId;
 }
 
-const EMPTY_STATS: TreeStats = { size: 0, height: 0, min: null, max: null, balanced: true, minHeight: 0, rotations: 0 };
+/** Stats of the page's default tree, so the first paint already shows the numbers the engine will report. */
+function openingStats(config: TreeEngineConfig): TreeStats {
+  const make = nodeFactory("s");
+  let root: TreeNode | null = null;
+  for (const k of config.initial) root = config.avl ? avlInsertSilent(root, k, make) : bstInsertSilent(root, k, make);
+  return computeStats(root);
+}
 
 /** What to build first: the tree from a share link (validated) or the page's default example. */
 function openingTree(config: TreeEngineConfig, params: URLSearchParams) {
@@ -56,9 +63,10 @@ function openingTree(config: TreeEngineConfig, params: URLSearchParams) {
 export function useTreeEngine<E extends BSTEngine>(Ctor: EngineCtor<E>, config: TreeEngineConfig) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<E | null>(null);
-  const [status, setStatus] = useState<StatusInfo>({ title: "Loading the canvas…", tone: "muted" });
+  // Start with the ready text so the status card already has its final size (no layout shift).
+  const [status, setStatus] = useState<StatusInfo>({ title: config.ready.title, detail: config.ready.detail, tone: "info" });
   const [run, setRun] = useState<RunInfo>({ phase: "idle", stepMode: false, op: "" });
-  const [stats, setStats] = useState<TreeStats>(EMPTY_STATS);
+  const [stats, setStats] = useState<TreeStats>(() => openingStats(config));
   const [code, setCode] = useState<CodeFocus>({ main: { id: config.idleCode }, sub: null });
   const [vars, setVars] = useState<Vars | undefined>(undefined);
   const [traversal, setTraversal] = useState<TraversalInfo | null>(null);
