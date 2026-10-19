@@ -49,20 +49,38 @@
   #chapters span { position: relative; color: var(--ink); }
   #chapters i { position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; border-radius: 2px; background: var(--red); transform-origin: 0 50%; }
 
-  /* browser window */
-  #win {
-    left: 600px; top: 176px; width: 1240px; height: 748px; border-radius: 22px; background: var(--elev); overflow: hidden;
+  /* browser windows (#win2 is the one floating away during "float" transitions) */
+  .win {
+    left: 600px; top: 176px; width: 1240px; height: 748px; border-radius: 22px; background: var(--elev); overflow: hidden; transform-origin: 50% 50%;
     box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 40px 90px -30px rgba(40, 28, 12, .45), 0 0 0 1.5px rgba(26, 26, 26, .16);
   }
-  #bar { position: absolute; left: 0; right: 0; top: 0; height: 50px; display: flex; align-items: center; gap: 18px; padding: 0 20px; background: var(--surface); border-bottom: 1.5px solid var(--line); }
-  #bar .dots { display: flex; gap: 8px; }
-  #bar .dots i { width: 13px; height: 13px; border-radius: 50%; background: #d8cfc1; box-shadow: inset 0 0 0 1.2px rgba(26, 26, 26, .18); }
-  #url { flex: 1; max-width: 640px; margin: 0 auto; height: 32px; border-radius: 16px; background: var(--elev); box-shadow: inset 0 0 0 1.4px var(--line); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; color: var(--ink); }
-  #url .path { color: var(--faint); }
+  #win2, .lift { visibility: hidden; }
+  .bar { position: absolute; left: 0; right: 0; top: 0; height: 50px; display: flex; align-items: center; gap: 18px; padding: 0 20px; background: var(--surface); border-bottom: 1.5px solid var(--line); }
+  .bar .dots { display: flex; gap: 8px; }
+  .bar .dots i { width: 13px; height: 13px; border-radius: 50%; background: #d8cfc1; box-shadow: inset 0 0 0 1.2px rgba(26, 26, 26, .18); }
+  .url { flex: 1; max-width: 640px; margin: 0 auto; height: 32px; border-radius: 16px; background: var(--elev); box-shadow: inset 0 0 0 1.4px var(--line); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; color: var(--ink); white-space: nowrap; }
+  .url .path { color: var(--faint); }
   #caret { display: inline-block; width: 2px; height: 18px; margin-left: 1px; background: var(--red); vertical-align: -3px; }
-  #view { position: absolute; left: 0; right: 0; top: 50px; bottom: 0; overflow: hidden; background: var(--bg); }
-  #view img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .view { position: absolute; left: 0; right: 0; top: 50px; bottom: 0; overflow: hidden; background: var(--bg); }
+  .view .layer { position: absolute; inset: 0; overflow: hidden; }
+  .view img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
   #edge { position: absolute; top: 0; bottom: 0; width: 5px; margin-left: -2.5px; background: var(--red); box-shadow: 0 0 22px rgba(185, 28, 28, .45); }
+
+  /* anatomy: side panes lifted out of the window */
+  .slot { position: absolute; border-radius: 12px; background: var(--s2); box-shadow: inset 0 3px 14px rgba(40, 28, 12, .22); }
+  .lift { position: absolute; overflow: hidden; border-radius: 14px; background: var(--elev); transform-origin: 50% 50%; }
+  .lift img { position: absolute; }
+  .xlab { width: 380px; }
+  .xlab .k { font-size: 15px; letter-spacing: .2em; text-transform: uppercase; color: var(--red); font-weight: 700; }
+  .xlab .t { margin-top: 6px; font-size: 50px; line-height: 1; }
+  .xlab .s { margin-top: 8px; font-size: 17px; color: var(--dim); }
+
+  /* 2×2 grid */
+  #gtitle { left: 0; right: 0; top: 40px; text-align: center; font-size: 62px; line-height: 1; }
+  #gtitle .mono { display: block; margin-top: 12px; font-size: 16px; letter-spacing: .18em; color: var(--faint); text-transform: uppercase; }
+  .cell { position: absolute; width: 760px; height: 428px; border-radius: 18px; overflow: hidden; background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--line), 0 26px 54px -30px rgba(40, 28, 12, .5); }
+  .cell img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+  .cell .tag { position: absolute; left: 16px; top: 14px; padding: 7px 16px; border-radius: 999px; background: var(--ink); color: var(--elev); font-size: 19px; }
 
   /* scene labels */
   .label { left: 96px; top: 300px; width: 470px; }
@@ -71,6 +89,10 @@
   .label .t { margin-top: 18px; font-size: 92px; line-height: .95; letter-spacing: -.01em; }
   .label .s { margin-top: 16px; font-size: 40px; line-height: 1.1; font-style: italic; color: var(--dim); }
   .label .chips { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .label.lt { width: auto; max-width: 640px; padding: 22px 30px 26px; border-radius: 22px; background: rgba(251, 248, 242, .95); box-shadow: inset 0 0 0 1.5px var(--line), 0 28px 60px -30px rgba(40, 28, 12, .55); }
+  .label.lt .t { margin-top: 10px; font-size: 66px; }
+  .label.lt .s { margin-top: 8px; font-size: 32px; }
+  .label.lt .chips { margin-top: 18px; }
   .chip { display: inline-block; padding: 9px 16px; border-radius: 999px; background: var(--elev); box-shadow: inset 0 0 0 1.5px var(--line); font-size: 17px; color: var(--ink); }
 
   /* Bit */
@@ -119,21 +141,45 @@
   <div class="abs fx" id="brand"><span class="serif">AlgoLab</span><span class="mono">DSA VISUALIZER</span></div>
   <div class="abs mono fx" id="chapters"></div>
 
-  <div class="abs fx" id="win">
-    <div id="bar">
+  <div class="abs win" id="win2">
+    <div class="bar">
       <div class="dots"><i></i><i></i><i></i></div>
-      <div id="url" class="mono">
+      <div class="url mono">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#655e54" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        <span>algolab.rajpurohit.me<span class="path" id="path2"></span></span>
+      </div>
+      <div style="width:61px"></div>
+    </div>
+    <div class="view"><div class="layer"><img id="i2" alt=""></div></div>
+  </div>
+  <div class="abs win" id="win">
+    <div class="bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url mono">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#655e54" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
         <span>algolab.rajpurohit.me<span class="path" id="path"></span><span id="caret"></span></span>
       </div>
       <div style="width:61px"></div>
     </div>
-    <div id="view">
-      <img id="fa" alt="">
-      <img id="fb" alt="">
+    <div class="view" id="view">
+      <div class="layer" id="la"><img alt=""></div>
+      <div class="layer" id="lb"><img alt=""></div>
+      <div class="slot" id="slotL"></div>
+      <div class="slot" id="slotR"></div>
       <div id="edge"></div>
     </div>
   </div>
+
+  <!-- anatomy: the two side panes, lifted out -->
+  <div class="lift" id="liftL"><img alt=""></div>
+  <div class="lift" id="liftR"><img alt=""></div>
+  <div class="abs xlab fx" id="xL" style="left:110px; top:168px"><div class="k mono">Left pane</div><div class="t serif">Controls &amp; input</div><div class="s mono">pick an algorithm · type values · run</div></div>
+  <div class="abs xlab fx" id="xC" style="left:770px; top:96px; text-align:center"><div class="k mono">Centre</div><div class="t serif">The canvas</div><div class="s mono">every step, animated</div></div>
+  <div class="abs xlab fx" id="xR" style="left:1430px; top:168px; text-align:right"><div class="k mono">Right pane</div><div class="t serif">Live insight</div><div class="s mono">the step · pseudocode · variables</div></div>
+
+  <!-- 2×2 grid -->
+  <div class="abs serif fx" id="gtitle"></div>
+  <div id="cells"></div>
 
   <div id="labels"></div>
 

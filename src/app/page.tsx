@@ -112,7 +112,7 @@ export default function Home() {
       <section id="tour" className="mt-16 scroll-mt-24" aria-labelledby="tour-title">
         <div className="mb-5 flex items-end justify-between gap-3 border-b border-line pb-4">
           <h2 id="tour-title" className="font-serif text-4xl text-fg">{TOUR.heading}</h2>
-          <span className="font-mono text-xs text-fg-faint">no sound needed</span>
+          <span className="font-mono text-xs text-fg-faint">{TOUR.hasAudio ? "best with sound on" : "no sound needed"}</span>
         </div>
         <DemoVideo />
       </section>

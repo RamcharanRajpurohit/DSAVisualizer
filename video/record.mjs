@@ -24,12 +24,18 @@ const CURSOR = () => {
     const c = document.createElement("div");
     c.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24"><path d="M4 2.5 19.5 12l-7 1.6L9 20.5z" fill="#1a1a1a" stroke="#fbf8f2" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
     Object.assign(c.style, { position: "fixed", left: "0", top: "0", zIndex: "2147483647", pointerEvents: "none", transform: "translate(-200px,-200px)", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.25))" });
-    document.documentElement.appendChild(c);
+    const host = () => document.fullscreenElement ?? document.documentElement;
+    host().appendChild(c);
+    document.addEventListener("fullscreenchange", () => host().appendChild(c));
     addEventListener("mousemove", (e) => { c.style.transform = `translate(${e.clientX - 4}px,${e.clientY - 2}px)`; }, true);
+    // Log every press for the sound design (same wall clock as the screencast frame timestamps).
+    const log = (kind, e) => (window.__clicks ||= []).push({ t: Date.now() / 1000, kind, x: e.clientX / innerWidth, y: e.clientY / innerHeight });
+    addEventListener("mouseup", (e) => { if (e.target?.type === "range") log("release", e); }, true);
     addEventListener("mousedown", (e) => {
+      log(e.target?.type === "range" ? "grab" : "click", e);
       const r = document.createElement("div");
       Object.assign(r.style, { position: "fixed", left: `${e.clientX - 18}px`, top: `${e.clientY - 18}px`, width: "36px", height: "36px", borderRadius: "50%", border: "2.5px solid #b91c1c", zIndex: "2147483646", pointerEvents: "none" });
-      document.documentElement.appendChild(r);
+      host().appendChild(r);
       r.animate([{ transform: "scale(.3)", opacity: 1 }, { transform: "scale(1.5)", opacity: 0 }], { duration: 520, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => r.remove();
     }, true);
   });
@@ -48,6 +54,31 @@ async function click(page, locator, { pause = 260 } = {}) {
 }
 
 const btn = (page, name) => page.getByRole("button", { name, exact: true }).first();
+
+/** Pick an option in a native <select>: the popup never renders headless, so glide + ripple, then set it. */
+async function pick(page, select, value) {
+  const box = await select.boundingBox();
+  const to = { x: box.x + box.width * 0.7, y: box.y + box.height / 2 };
+  await page.mouse.move(to.x, to.y, { steps: 26 });
+  await page.waitForTimeout(220);
+  await page.evaluate(({ x, y }) => document.documentElement.dispatchEvent(new MouseEvent("mousedown", { clientX: x, clientY: y, bubbles: true })), to);
+  await page.waitForTimeout(260);
+  await select.selectOption(value);
+}
+
+/** Drag a range slider's thumb from where it is to `frac` of its width. */
+async function drag(page, range, frac) {
+  const box = await range.boundingBox();
+  const { value, min, max } = await range.evaluate((el) => ({ value: +el.value, min: +el.min, max: +el.max }));
+  const from = box.x + ((value - min) / (max - min || 1)) * box.width;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(from, y, { steps: 24 });
+  await page.waitForTimeout(200);
+  await page.mouse.down();
+  await page.mouse.move(box.x + frac * box.width, y, { steps: 45 });
+  await page.waitForTimeout(150);
+  await page.mouse.up();
+}
 
 const SHOTS = {
   merge: {
@@ -83,7 +114,49 @@ const SHOTS = {
   },
   list: {
     path: "/linked-list/reverse-linked-list", speed: 2,
-    async run(page) { await click(page, btn(page, "Reverse")); await page.waitForTimeout(18000); },
+    async run(page) {
+      await click(page, btn(page, "Reverse"));
+      await page.waitForTimeout(14500);
+      await click(page, page.getByRole("tab", { name: "Doubly", exact: true }));
+      await page.waitForTimeout(1700);
+      await click(page, page.getByRole("tab", { name: "Circular", exact: true }));
+      await page.waitForTimeout(1900);
+    },
+  },
+  graphs: {
+    path: "/graph", speed: 4,
+    async run(page) {
+      const algo = page.getByRole("combobox", { name: "Algorithm" });
+      for (const a of ["bfs", "dfs", "prim", "kruskal"]) {
+        await pick(page, algo, a);
+        await page.waitForTimeout(350);
+        await click(page, page.getByRole("button", { name: /^Run/ }).first());
+        await page.waitForTimeout(3300);
+      }
+    },
+  },
+  controls: {
+    path: "/sorting/quick-sort", speed: 1,
+    async run(page) {
+      await click(page, btn(page, "Sort"));
+      await page.waitForTimeout(1600);
+      await click(page, btn(page, "4×"));
+      await page.waitForTimeout(1500);
+      await click(page, btn(page, "Pause"));
+      await page.waitForTimeout(450);
+      for (let i = 0; i < 3; i++) { await click(page, btn(page, "Previous step"), { pause: 120 }); await page.waitForTimeout(380); }
+      for (let i = 0; i < 2; i++) { await click(page, btn(page, "Next step"), { pause: 120 }); await page.waitForTimeout(380); }
+      await drag(page, page.getByRole("slider", { name: "Scrub through steps" }), 0.82);
+      await page.waitForTimeout(600);
+      await click(page, btn(page, "0.25×"));
+      await click(page, btn(page, "Play"));
+      await page.waitForTimeout(2000);
+      await click(page, btn(page, "Pause"));
+      for (const tab of ["Python", "C++", "Java", "JS", "Pseudocode"]) {
+        await click(page, page.getByRole("tab", { name: tab, exact: true }), { pause: 140 });
+        await page.waitForTimeout(650);
+      }
+    },
   },
   heap: {
     path: "/heap/build-heap", speed: 2,
@@ -95,6 +168,33 @@ const SHOTS = {
       await click(page, page.getByRole("button", { name: /^Insert 98/ }).first());
       await page.waitForTimeout(30000);
     },
+  },
+  mergeFs: {
+    path: "/sorting/merge-sort", speed: 2,
+    async run(page) { await click(page, btn(page, "Sort")); await page.waitForTimeout(500); await click(page, btn(page, "Fullscreen canvas")); await page.waitForTimeout(44000); },
+  },
+  heapFs: {
+    path: "/heap/build-heap", speed: 2,
+    async run(page) { await click(page, btn(page, "Build heap")); await page.waitForTimeout(500); await click(page, btn(page, "Fullscreen canvas")); await page.waitForTimeout(19000); },
+  },
+  avlFs: {
+    path: "/avl-tree/rotations", speed: 1,
+    async run(page) {
+      await click(page, page.getByRole("button", { name: /^Insert 35/ }).first());
+      await page.waitForTimeout(1200);
+      await click(page, btn(page, "2×"));
+      await page.waitForTimeout(400);
+      await click(page, btn(page, "Fullscreen canvas"));
+      await page.waitForTimeout(30000);
+    },
+  },
+  btreeFs: {
+    path: "/btree/insertion", speed: 1,
+    async run(page) { await click(page, page.getByRole("button", { name: /^Insert 98/ }).first()); await page.waitForTimeout(500); await click(page, btn(page, "Fullscreen canvas")); await page.waitForTimeout(30000); },
+  },
+  dijkstraFs: {
+    path: "/graph/dijkstra", speed: 2,
+    async run(page) { await click(page, btn(page, "Run")); await page.waitForTimeout(500); await click(page, btn(page, "Fullscreen canvas")); await page.waitForTimeout(25000); },
   },
   postfix: {
     path: "/stack-queue/infix-to-postfix", speed: 2,
@@ -128,6 +228,7 @@ async function record(browser, name, shot) {
   await page.waitForTimeout(700); // a still beat before the first click
   await shot.run(page);
   await cdp.send("Page.stopScreencast");
+  const clicks = await page.evaluate(() => window.__clicks ?? []);
   await ctx.close();
 
   // Frames arrive only when pixels change: hold each one until the next, then resample to 30 fps.
@@ -147,6 +248,10 @@ async function record(browser, name, shot) {
   execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", join(dir, "list.txt"),
     "-vf", `fps=${FPS},scale=1920:1080:flags=lanczos,format=yuv420p`, "-c:v", "libx264", "-preset", "slow", "-crf", "14", mp4]);
   rmSync(dir, { recursive: true, force: true });
+  // Click times on the clip's own timeline (frame 0 = 0 s), for video/audio.mjs.
+  const t0 = frames[0]?.t ?? 0;
+  const events = clicks.map((c) => ({ t: +(c.t - t0).toFixed(3), kind: c.kind, x: +c.x.toFixed(4), y: +c.y.toFixed(4) })).filter((c) => c.t >= 0);
+  writeFileSync(join(OUT, `${name}.clicks.json`), JSON.stringify(events));
   const secs = frames.length ? (frames.at(-1).t - frames[0].t).toFixed(1) : 0;
   console.log(`${name}: ${frames.length} frames over ${secs}s → ${mp4}`);
 }
