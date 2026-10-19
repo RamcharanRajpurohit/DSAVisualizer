@@ -1,13 +1,13 @@
 # AlgoLab tour video
 
-The 50-second product tour on the home page (`public/video/algolab-tour.*`) is built from code:
+The one-minute product tour on the home page (`public/video/algolab-tour.*`) is built from code:
 real footage of the live site, composed in HTML/CSS and rendered frame by frame — the same idea as
 [HyperFrames](https://github.com/heygen-com/hyperframes) (HTML → headless Chrome → FFmpeg), with no
 extra dependencies. Needs Node 22+, FFmpeg and Google Chrome; `playwright-core` is picked up from the
 npx cache (or set `PLAYWRIGHT_CORE`).
 
 ```bash
-node video/record.mjs          # 1. record each shot from the live site → video/footage/*.mp4
+node video/record.mjs          # 1. record each shot (merge, quick, race, list, postfix, heap, avl, btree, dijkstra) from the live site → video/footage/*.mp4
 node video/build-frames.mjs    # 2. cut the frames each scene needs     → video/build/frames/
 node video/render.mjs --stills 4.6,21,34,49.5   # spot-check frames     → video/out/still-*.jpg
 node video/render.mjs          # 3. render the master                  → video/out/algolab-demo-master.mp4
@@ -28,3 +28,6 @@ ffmpeg -y -ss 4.9 -i $M -frames:v 1 -vf scale=1280:-1 -q:v 3 public/video/algola
 
 Replace `vN` with the cut number and point `src/config/tour.ts` at it. `footage/`, `build/` and `out/` are git-ignored; keep `TOUR` in `src/config/tour.ts` in sync with the
 duration in `scenes.js`.
+
+Cuts: **v1** (52 s, sorting-heavy) is commit `1794187`; **v2** (56 s) gives each family one beat —
+sorting, linked lists, stacks & queues, heaps, trees, B-trees, graphs.

@@ -28,7 +28,7 @@ function put(el, { x = 0, y = 0, s = 1, r = 0, o = 1, blur = 0 } = {}) {
 
 // ---------- scene data ----------
 FOOTAGE.forEach((s, i) => { s.end = i < FOOTAGE.length - 1 ? FOOTAGE[i + 1].start : FEATURES_AT; });
-const AREAS = ["Sorting", "Graphs", "Trees", "Stacks"];
+const AREAS = [...new Set(FOOTAGE.map((s) => s.area))];
 
 const FEATURES = [
   ["Code in sync", "pseudocode highlights every step", '<path d="M8 6 2 12l6 6M16 6l6 6-6 6"/>'],
@@ -87,10 +87,10 @@ const BIT_PATH = [
   { t: 2.5, x: 1600, y: 965, s: 1.9, ease: "back" },
   { t: 5.85, x: 1600, y: 965, s: 1.9 },
   { t: 6.75, x: 190, y: 968, s: 1.05, ease: "inOut", hop: 210 },
-  { t: 41.55, x: 190, y: 968, s: 1.05 },
-  { t: 42.35, x: 960, y: 1018, s: 1.05, ease: "inOut", hop: 150 },
-  { t: 46.35, x: 960, y: 1018, s: 1.05 },
-  { t: 47.25, x: 1400, y: 835, s: 1.25, ease: "inOut", hop: 150 },
+  { t: FEATURES_AT - 0.25, x: 190, y: 968, s: 1.05 },
+  { t: FEATURES_AT + 0.55, x: 960, y: 1018, s: 1.05, ease: "inOut", hop: 150 },
+  { t: END_AT - 0.25, x: 960, y: 1018, s: 1.05 },
+  { t: END_AT + 0.65, x: 1400, y: 790, s: 1.25, ease: "inOut", hop: 150 },
 ];
 function bitPos(t) {
   if (t <= BIT_PATH[0].t) return { ...BIT_PATH[0], land: 99 };
@@ -109,11 +109,11 @@ function bitPos(t) {
 const SAYINGS = [
   { t0: 4.35, t1: 5.7, text: "let me show you!" },
   ...FOOTAGE.map((s) => ({ t0: s.start + 0.45, t1: s.start + 2.9, text: s.say })),
-  { t0: 42.7, t1: 45.6, text: "and lots more ✦" },
-  { t0: 48.3, t1: 51.4, text: "see you there!", side: "beside" },
+  { t0: FEATURES_AT + 0.9, t1: FEATURES_AT + 3.8, text: "and lots more ✦" },
+  { t0: END_AT + 1.7, t1: DURATION - 0.6, text: "see you there!", side: "beside" },
 ];
-const HOPS = [3.95, ...FOOTAGE.map((s) => s.start + 0.3), 44.1];
-const HAPPY = [[3.98, 5.65], ...FOOTAGE.map((s) => [s.start + 0.35, s.start + 1.5]), [42.4, 46.3], [47.3, 52]];
+const HOPS = [3.95, ...FOOTAGE.map((s) => s.start + 0.3), FEATURES_AT + 2.3];
+const HAPPY = [[3.98, 5.65], ...FOOTAGE.map((s) => [s.start + 0.35, s.start + 1.5]), [FEATURES_AT + 0.6, END_AT - 0.3], [END_AT + 0.7, DURATION]];
 
 function renderBit(t) {
   const pos = bitPos(t);
@@ -125,7 +125,7 @@ function renderBit(t) {
     if (k > 0 && k < 1) y -= Math.sin(Math.PI * k) * 34 * s;
   }
   const happy = HAPPY.some(([a, b]) => t >= a && t <= b);
-  const celebrating = t > 42.4;
+  const celebrating = t > FEATURES_AT + 0.6;
   // squash on landings
   let sy = 1, sx = 1;
   for (const k of BIT_PATH) if (k.ease) { const d = (t - k.t) / 0.28; if (d > 0 && d < 1) { sy -= 0.12 * Math.sin(Math.PI * d); sx += 0.08 * Math.sin(Math.PI * d); } }
@@ -136,7 +136,7 @@ function renderBit(t) {
   const wave = celebrating || happy ? Math.sin(t * 11) * 24 : Math.sin(t * 2.6) * 6;
   $("bant").setAttribute("transform", `rotate(${wave} 0 -37)`);
   // gaze: at the hook text while it reads, then at the window, then at the viewer
-  const gaze = t < 5.85 ? { x: -0.9, y: -0.2 } : t < 41.6 ? { x: 0.9, y: -0.15 } : { x: 0, y: 0.1 };
+  const gaze = t < 5.85 ? { x: -0.9, y: -0.2 } : t < FEATURES_AT - 0.2 ? { x: 0.9, y: -0.15 } : { x: 0, y: 0.1 };
   $("bface").setAttribute("transform", `translate(${gaze.x * 4.5} ${gaze.y * 3.5})`);
   const blink = !happy && (t * 1000) % 3300 < 120;
   $("beyes").setAttribute("transform", `translate(0 -4) scale(1 ${blink ? 0.1 : 1}) translate(0 4)`);
@@ -192,7 +192,7 @@ function renderAt(t) {
 
   // 3 · montage chrome
   {
-    const i = p(t, 6.3, 0.6, "out5"), o = p(t, 41.3, 0.4, "in");
+    const i = p(t, 6.3, 0.6, "out5"), o = p(t, FEATURES_AT - 0.5, 0.4, "in");
     put($("brand"), { y: mix(-20, 0, i) - o * 20, o: i * (1 - o) });
     put($("chapters"), { y: mix(-20, 0, i) - o * 20, o: i * (1 - o) });
     for (const el of chapterEls) {
@@ -206,9 +206,9 @@ function renderAt(t) {
   // 4 · browser window with footage
   {
     const win = $("win");
-    const wi = p(t, 6.0, 0.9, "back"), wo = p(t, 41.4, 0.55, "in");
+    const wi = p(t, 6.0, 0.9, "back"), wo = p(t, FEATURES_AT - 0.4, 0.55, "in");
     put(win, { y: mix(260, 0, wi) - wo * 60, s: mix(0.86, 1, wi) * mix(1, 0.94, wo), o: p(t, 6.0, 0.25) * (1 - wo), blur: wo * 6 });
-    if (t > 5.9 && t < 42.1) {
+    if (t > 5.9 && t < FEATURES_AT + 0.3) {
       let ci = 0;
       FOOTAGE.forEach((s, i) => { if (t >= s.start) ci = i; });
       const cur = FOOTAGE[ci];

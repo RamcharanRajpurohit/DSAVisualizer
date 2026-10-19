@@ -81,6 +81,21 @@ const SHOTS = {
       await page.waitForTimeout(30000);
     },
   },
+  list: {
+    path: "/linked-list/reverse-linked-list", speed: 2,
+    async run(page) { await click(page, btn(page, "Reverse")); await page.waitForTimeout(18000); },
+  },
+  heap: {
+    path: "/heap/build-heap", speed: 2,
+    async run(page) { await click(page, btn(page, "Build heap")); await page.waitForTimeout(20000); },
+  },
+  btree: {
+    path: "/btree/insertion", speed: 1,
+    async run(page) {
+      await click(page, page.getByRole("button", { name: /^Insert 98/ }).first());
+      await page.waitForTimeout(30000);
+    },
+  },
   postfix: {
     path: "/stack-queue/infix-to-postfix", speed: 2,
     async run(page) {
