@@ -1,113 +1,113 @@
 # DSA Visualizer
 
-DSA Visualizer is a web-based application designed to help users visualize and interact with various data structures and algorithms, such as Binary Search Trees (BST), AVL Trees, Stacks, Heaps, and more. The project is built using Ruby on Rails and includes interactive visualizations powered by JavaScript and Konva.js.
+Interactive, step-by-step visualizations of data structures and algorithms — built with **Next.js**, deployable to **Vercel** with zero configuration.
 
-## Features
+Every visualizer records the algorithm as a list of snapshots, so you can **play, pause, step backwards, scrub and change speed**, while the **pseudocode line that is executing lights up**, the **variables** update in a watch panel, and every step **explains why** the algorithm did what it did.
 
-- **Binary Search Tree (BST):**
-  - Insert, delete, and search nodes.
-  - Visualize tree traversal (preorder, inorder, postorder, level order).
-  - Zoom and pan functionality for better visualization.
+| Visualizer | Highlights |
+| --- | --- |
+| **Sorting** (`/sorting`) | Bubble, selection, insertion, shell, counting, radix (LSD) · **merge sort split/merge tree** with call stack and stable-tie tags · **quick sort** with Lomuto or Hoare partitioning, 5 pivot rules, live `i`/`j` pointers and the recursion tree · live comparison / swap / write counters |
+| **Stack & Queue** (`/stack-queue`) | Array stack (overflow / underflow), linear queue (the "wasted space" problem), circular queue drawn as a ring (count vs. one-slot-gap), deque · applications: bracket matching, infix → postfix (shunting-yard with precedence table), postfix evaluation, next greater element |
+| **Linked List** (`/linked-list`) | Singly / doubly / circular, optional tail pointer · insert & delete at head / tail / index / value, search, in-place reversal, middle (slow/fast), Floyd cycle detection, remove duplicates, merge two sorted lists, and a "wrong pointer order" bug demo — every pointer write animated in order |
+| **Heap** (`/heap`) | Min/max heap shown as tree **and** array with index arithmetic · insert, extract, peek, delete at index, update key · Floyd build-heap with the O(n) argument · in-place heap sort |
+| **BST** (`/bst`) | Search walk, insert, all three delete cases, pre/in/post/level-order traversals with recursion, balanced / skewed / zig-zag presets, step mode |
+| **AVL Tree** (`/avl-tree`) | Live heights & balance factors · LL / RR / LR / RL rotations played out phase by phase · one-click rotation demos · rotation counter |
+| **B-Tree** (`/btree`) | Order 3–7 · keys keep their identity: medians rise on split, separators drop on merge, borrow through the parent · predecessor / successor / smart delete · live invariant checks · step mode |
+| **Graphs** (`/graph`) | Build or generate graphs · BFS, DFS, Dijkstra, Bellman-Ford, Kruskal, Prim, topological sort (Kahn), SCC (Kosaraju) · adjacency matrix/list synced to each step · inline weight editor |
 
-- **AVL Tree:**
-  - Visualize rotations (left, right, left-right, right-left) during insertions and deletions.
-  - Interactive controls for tree operations.
+### Same input everywhere
 
-- **Stack and Queue:**
-  - Push, pop, and clear operations.
-  - Visual representation of stack and queue states.
+Every page uses one input box (`ValueInput`) with the same rules, so there is nothing new to learn per page:
 
-- **Heap:**
-  - Max heap visualization with insert and delete operations.
-  - Auto-insert random values for testing.
+- Whole numbers **0–999**; random and preset data use **1–99** so nodes and bars stay compact.
+- **Enter** runs the main action, the 🎲 button fills random values, and `5, 12, 8` applies a whole sequence.
+- An **empty box is never a dead end**: insert/push adds a random value, search/delete picks a random existing one.
+- Every page opens with an example already built, and presets are one click away.
 
+## Tech stack
 
+- [Next.js 16](https://nextjs.org) (App Router) + React 19 + TypeScript (strict)
+- Tailwind CSS v4 (design tokens in `src/app/globals.css`) + CSS modules for layout
+- [`motion`](https://motion.dev) for SVG/HTML animation, [`konva`](https://konvajs.org) for the canvas engines (graph, trees)
+- `lucide-react` icons
 
-## Getting Started
+## Getting started
 
-### Prerequisites
-
-- Ruby (>= 3.0.0)
-- Rails (>= 8.0.1)
-- Node.js and Yarn
-- PostgreSQL (for production) or SQLite (for development)
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/RamcharanRajpurohit/DSAVisualizer.git
-   cd DSAVisualizer
-   ```
-
-2. Install dependencies:
-   ```bash
-   bundle install
-   yarn install
-   ```
-
-3. Set up the database:
-   ```bash
-   rails db:create
-   rails db:migrate
-   ```
-
-4. Start the server:
-   ```bash
-   rails server
-   ```
-
-5. Open the application in your browser at `http://localhost:3000`.
-
-## Project Structure
-
-- **`app/controllers`**: Contains Rails controllers for handling requests.
-- **`app/models`**: Contains models for data structures and algorithms.
-- **`app/views`**: Contains HTML/ERB templates for rendering the UI.
-- **`app/javascript`**: Contains JavaScript files for interactive visualizations.
-- **`app/assets`**: Contains stylesheets and other static assets.
-- **`config`**: Contains configuration files for the Rails application.
-- **`db`**: Contains database schema and migrations.
-
-## Key Files
-
-- **`app/javascript/bst.js`**: Handles BST operations and visualization.
-- **`app/javascript/konva_setup.js`**: Sets up the Konva.js stage and layer.
-- **`app/javascript/bst_operations.js`**: Implements BST operations like insert, delete, and find.
-- **`app/views/bst/index.html.erb`**: View for the BST visualization page.
-- **`app/views/heap/index.html.txt`**: View for the heap visualization page.
-- **`code_formatter.html`**: Standalone page for the C code formatter.
-
-## Testing
-
-Run the test suite using:
 ```bash
-rails test
+npm install
+npm run dev        # http://localhost:3000
+npm run lint
+npm run typecheck
+npm run build      # production build
 ```
 
-## Deployment
+Node.js ≥ 20.9 is required.
 
-1. Precompile assets:
-   ```bash
-   rails assets:precompile
-   ```
+## Deploying to Vercel
 
-2. Deploy to your preferred hosting platform (e.g., Heroku, AWS, etc.).
+1. Push the repository to GitHub.
+2. In Vercel, **Add New → Project**, import the repository. The framework preset is detected as **Next.js** — no settings to change.
+3. (Optional) set `NEXT_PUBLIC_SITE_URL` to your production URL so the sitemap, canonical URLs and Open Graph tags use it.
+4. Deploy. Every page is statically pre-rendered, so it runs entirely on Vercel's free tier with no server time limits.
 
-## Contributing
+Old Rails URLs (`/sorting/index`, `/avl_tree/index`, `/link_list/index`, `/stack/index`, …) permanently redirect to the new routes (see `next.config.ts`).
 
-Contributions are welcome! Please follow these steps:
+## Project structure
 
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Commit your changes and push them to your fork.
-4. Submit a pull request.
+```
+src/
+├─ app/                       # routes only: one thin page.tsx per visualizer + metadata, sitemap, robots, OG image
+├─ config/                    # site info + the visualizer registry (drives home page, navbar, sitemap, metadata)
+├─ components/
+│  ├─ ui/                     # Button, Input, Select, Toggle, Segmented, Section, Badge, RichText…
+│  ├─ visualizer/             # VisualizerLayout, PlaybackControls, PseudocodePanel, StatusCard,
+│  │                          # VariablesPanel, Legend, ComplexityCard, CanvasHint
+│  ├─ layout/                 # Navbar, Footer, icons
+│  └─ home/                   # landing page pieces
+├─ lib/
+│  ├─ player/                 # useStepPlayer (play/pause/step/scrub/speed + keyboard) and step types
+│  ├─ hooks/                  # useElementSize
+│  ├─ theme.ts                # shared visualizer palette (mirrors the CSS tokens)
+│  └─ utils.ts
+└─ features/                  # one self-contained module per visualizer
+   ├─ sorting/                #   types.ts contract · basic/ (simple + non-comparison sorts) · dc/ (merge, quick)
+   ├─ stack-queue/
+   ├─ linked-list/
+   ├─ heap/
+   ├─ bst/                    #   BST + AVL share one engine (AVL extends BST)
+   ├─ btree/
+   └─ graph/
+legacy-rails/                 # the original Ruby on Rails app, kept for reference (ignored by Vercel)
+```
 
-## License
+## How a visualizer works
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+```
+input ──► algorithm recorder (pure TS) ──► Step[] ──► useStepPlayer ──► renderer (SVG / Konva) + insight panels
+```
 
-## Acknowledgments
+1. **Record** — the algorithm runs once on the input and pushes a full snapshot after every meaningful action:
+   `{ title, detail, tone, line, vars, …state }`. Recorders are plain TypeScript with no React, so they are easy to test.
+2. **Play** — `useStepPlayer(steps)` owns the current index, play/pause, speed and keyboard shortcuts
+   (`←` `→` step, `Space` play/pause, `Home` / `End`).
+3. **Render** — a renderer draws one step. Elements are keyed by identity, so moving from one snapshot to the next
+   animates every element to its new place — forwards *and* backwards.
+4. **Explain** — `StatusCard`, `PseudocodePanel` (highlighting `step.line`), `VariablesPanel` (`step.vars`), `Legend`
+   and `ComplexityCard` sit around the canvas inside `VisualizerLayout`.
 
-- Built with Ruby on Rails and Konva.js.
-- Inspired by the need for interactive data structure visualizations.
+The tree and graph pages use imperative Konva engines (ported from the original app) wrapped in React components; they
+expose the same playback / pseudocode / status hooks so the UI is identical everywhere.
+
+Pure recorders and models are fuzz-tested against reference implementations (random operation sequences plus edge
+cases such as empty input, one element, duplicates, sorted and reversed data).
+
+### Adding a new visualizer
+
+1. Add an entry to `src/config/visualizers.ts`.
+2. Create `src/features/<name>/` with a recorder, a renderer and a `<Name>Visualizer.tsx` that composes `VisualizerLayout`.
+3. Add `src/app/<slug>/page.tsx` that exports `visualizerMetadata("<slug>")` and renders the component.
+
+## Legacy Rails app
+
+The original Ruby on Rails version lives in `legacy-rails/`. It is excluded from TypeScript, ESLint and Vercel deployments
+and can be deleted once you no longer need it for reference.

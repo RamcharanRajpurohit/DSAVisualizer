@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Graph Algorithms - DSA Visualizer</title>
+   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+   <nav class="navbar">
+      <a href="/" class="back-button"><i class="fas fa-arrow-left"></i> Back</a>
+      <div class="logo">DSA<span>Visualizer</span></div>
+   </nav>
+
+   <div class="main-container">
+      <div class="visualization-area" id="graph-canvas">
+         <div id="info-panel">
+            <h3>Current Operation:</h3>
+            <div id="operation-details">None</div>
+         </div>
+      </div>
+
+      <div class="control-panel">
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-project-diagram"></i> Graph</h3>
+            <div class="toggle-container">
+               <span>Directed</span>
+               <label class="switch"><input type="checkbox" id="directed-toggle"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-container">
+               <span>Weighted</span>
+               <label class="switch"><input type="checkbox" id="weighted-toggle" checked><span class="slider"></span></label>
+            </div>
+            <div class="control-item">
+               <div class="control-group">
+                  <select id="preset-select">
+                     <option value="random">Random connected</option>
+                     <option value="dag">Random DAG (no cycles)</option>
+                     <option value="scc">Clusters (SCC demo)</option>
+                     <option value="negative">Negative edge demo</option>
+                  </select>
+                  <input type="number" id="node-count" min="3" max="12" value="7" title="Number of nodes">
+               </div>
+            </div>
+            <div class="control-item">
+               <button id="generate-btn" class="primary-btn operation-btn"><i class="fas fa-dice"></i> Generate</button>
+            </div>
+            <div class="control-item">
+               <div class="control-group">
+                  <button id="arrange-btn" class="operation-btn"><i class="fas fa-magic"></i> Arrange</button>
+                  <button id="clear-btn" class="operation-btn"><i class="fas fa-trash-alt"></i> Clear</button>
+               </div>
+            </div>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-pen"></i> Edit</h3>
+            <div class="tool-grid">
+               <button class="tool-btn active" data-tool="move" title="Move / pick start (V)"><i class="fas fa-hand-pointer"></i><span>Move</span></button>
+               <button class="tool-btn" data-tool="node" title="Add node (N)"><i class="fas fa-plus-circle"></i><span>Node</span></button>
+               <button class="tool-btn" data-tool="edge" title="Add edge (E)"><i class="fas fa-link"></i><span>Edge</span></button>
+               <button class="tool-btn" data-tool="delete" title="Delete (D)"><i class="fas fa-eraser"></i><span>Delete</span></button>
+            </div>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-route"></i> Algorithm</h3>
+            <div class="control-item">
+               <select id="algorithm-select">
+                  <optgroup label="Traversal">
+                     <option value="bfs">Breadth-First Search</option>
+                     <option value="dfs">Depth-First Search</option>
+                  </optgroup>
+                  <optgroup label="Shortest paths">
+                     <option value="dijkstra">Dijkstra</option>
+                     <option value="bellmanFord">Bellman-Ford</option>
+                  </optgroup>
+                  <optgroup label="Minimum spanning tree">
+                     <option value="kruskal">Kruskal</option>
+                     <option value="prim">Prim</option>
+                  </optgroup>
+                  <optgroup label="Directed graphs">
+                     <option value="topo">Topological Sort (Kahn)</option>
+                     <option value="scc">Strongly Connected Components</option>
+                  </optgroup>
+               </select>
+            </div>
+            <div class="control-item">
+               <div class="control-group">
+                  <select id="start-select" title="Start node"></select>
+                  <button id="run-btn" class="primary-btn operation-btn"><i class="fas fa-play"></i> Run</button>
+               </div>
+            </div>
+            <div id="algo-info" class="algo-info"></div>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-film"></i> Playback</h3>
+            <div class="step-counter" id="step-counter">No algorithm running</div>
+            <div class="control-item">
+               <input type="range" id="step-slider" min="0" max="0" value="0" disabled>
+            </div>
+            <div class="control-item">
+               <div class="control-group playback">
+                  <button id="first-btn" title="First step"><i class="fas fa-step-backward"></i></button>
+                  <button id="prev-btn" title="Previous step (←)"><i class="fas fa-chevron-left"></i></button>
+                  <button id="play-btn" class="primary-btn" title="Play / pause (Space)"><i class="fas fa-play"></i></button>
+                  <button id="next-btn" title="Next step (→)"><i class="fas fa-chevron-right"></i></button>
+                  <button id="stop-btn" title="Exit algorithm (Esc)"><i class="fas fa-stop"></i></button>
+               </div>
+            </div>
+            <div class="control-item">
+               <select id="animation-speed">
+                  <option value="turbo">Very Fast Animation</option>
+                  <option value="fast">Fast Animation</option>
+                  <option value="medium" selected>Medium Animation</option>
+                  <option value="slow">Slow Animation</option>
+               </select>
+            </div>
+            <div class="legend">
+               <div class="legend-item"><span class="legend-swatch" style="background:#0b6fb8;border-color:#5ab4ff"></span>Waiting</div>
+               <div class="legend-item"><span class="legend-swatch" style="background:#ffb000;border-color:#ffd466"></span>Current</div>
+               <div class="legend-item"><span class="legend-swatch" style="background:#00a854;border-color:#5cffa8"></span>Done</div>
+               <div class="legend-item"><span class="legend-line" style="border-color:#2ee68a"></span>Chosen edge</div>
+               <div class="legend-item"><span class="legend-line dashed" style="border-color:#ffb000"></span>Tentative</div>
+               <div class="legend-item"><span class="legend-line dashed" style="border-color:#ff5c5c"></span>Rejected</div>
+            </div>
+            <p class="panel-hint"><kbd>←</kbd> <kbd>→</kbd> step · <kbd>Space</kbd> play/pause · <kbd>Esc</kbd> stop · <kbd>V</kbd> <kbd>N</kbd> <kbd>E</kbd> <kbd>D</kbd> tools</p>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-table"></i> Representation</h3>
+            <div class="repr-tabs">
+               <button class="repr-tab active" data-repr="matrix">Adjacency Matrix</button>
+               <button class="repr-tab" data-repr="list">Adjacency List</button>
+            </div>
+            <div id="repr-view" class="repr-view"></div>
+         </div>
+      </div>
+   </div>
+
+   <%= javascript_import_module_tag "graph" %>
+</body>
+</html>

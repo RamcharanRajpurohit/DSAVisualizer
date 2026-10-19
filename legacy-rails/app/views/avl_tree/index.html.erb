@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>AVL Tree Visualization - DSA Visualizer</title>
+   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+   <nav class="navbar">
+      <a href="/" class="back-button"><i class="fas fa-arrow-left"></i> Back</a>
+      <div class="logo">DSA<span>Visualizer</span></div>
+   </nav>
+
+   <div class="main-container">
+      <div class="visualization-area" id="avl-canvas">
+         <div id="info-panel">
+            <h3>Current Operation:</h3>
+            <div id="operation-details">None</div>
+         </div>
+      </div>
+
+      <div class="control-panel">
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-code-branch"></i> Operations</h3>
+            <div class="control-item">
+               <input type="number" id="value-input" placeholder="Enter value">
+            </div>
+            <div class="control-item">
+               <div class="control-group">
+                  <button id="insert-btn" class="operation-btn"><i class="fas fa-plus"></i> Insert</button>
+                  <button id="search-btn" class="operation-btn"><i class="fas fa-search"></i> Search</button>
+               </div>
+            </div>
+            <div class="control-item">
+               <button id="delete-btn" class="operation-btn"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-layer-group"></i> Insert Sequence</h3>
+            <div class="control-item">
+               <input type="text" id="array-input" placeholder="e.g. 10, 20, 30, 40, 50">
+            </div>
+            <div class="control-item">
+               <button id="array-btn" class="primary-btn operation-btn"><i class="fas fa-play"></i> Run Sequence</button>
+            </div>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-sync-alt"></i> Rotation Demos</h3>
+            <div class="control-item">
+               <select id="demo-select">
+                  <option value="LL">Left-Left → right rotation</option>
+                  <option value="RR">Right-Right → left rotation</option>
+                  <option value="LR">Left-Right → double rotation</option>
+                  <option value="RL">Right-Left → double rotation</option>
+                  <option value="DEL">Delete → rebalance</option>
+               </select>
+            </div>
+            <div class="control-item">
+               <button id="demo-btn" class="operation-btn"><i class="fas fa-film"></i> Play Demo</button>
+            </div>
+            <div class="legend">
+               <div class="legend-item"><span class="legend-swatch" style="background:#d93636;border-color:#ff8a8a"></span>z · unbalanced</div>
+               <div class="legend-item"><span class="legend-swatch" style="background:#ffb000;border-color:#ffd466"></span>y · pivot</div>
+               <div class="legend-item"><span class="legend-swatch" style="background:#7a45b8;border-color:#d2adff"></span>T2 · moves over</div>
+               <div class="legend-item"><span class="legend-swatch" style="background:#1e6fb8;border-color:#7cc4ff"></span>x · grandchild</div>
+            </div>
+            <p class="panel-hint">Badge = balance factor (height left − height right). h = node height.</p>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-list-ol"></i> Traversals</h3>
+            <div class="control-item">
+               <div class="control-group">
+                  <select id="traversal-select">
+                     <option value="inorder">In-order</option>
+                     <option value="preorder">Pre-order</option>
+                     <option value="postorder">Post-order</option>
+                     <option value="levelorder">Level-order</option>
+                  </select>
+                  <button id="traverse-btn" class="operation-btn"><i class="fas fa-play"></i> Go</button>
+               </div>
+            </div>
+         </div>
+
+         <div class="panel-section">
+            <h3 class="section-title"><i class="fas fa-tools"></i> Utilities</h3>
+            <div class="toggle-container">
+               <span>Show height &amp; balance</span>
+               <label class="switch"><input type="checkbox" id="meta-toggle" checked><span class="slider"></span></label>
+            </div>
+            <div class="control-item">
+               <button id="auto-insert-btn" class="primary-btn"><i class="fas fa-random"></i> Add Random</button>
+            </div>
+            <div class="control-item">
+               <button id="preload-btn" class="operation-btn"><i class="fas fa-database"></i> Preload Data</button>
+            </div>
+            <div class="control-item">
+               <button id="clear-btn" class="operation-btn"><i class="fas fa-trash-alt"></i> Clear All</button>
+            </div>
+            <div class="control-item">
+               <select id="animation-speed">
+                  <option value="fast">Fast Animation</option>
+                  <option value="medium" selected>Medium Animation</option>
+                  <option value="slow">Slow Animation</option>
+               </select>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <%= javascript_import_module_tag "avl_tree" %>
+</body>
+</html>

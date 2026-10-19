@@ -1,0 +1,21 @@
+# Development image — mirrors the project's Dockerfile but runs Rails dev server
+FROM docker.io/library/ruby:3.3.7-slim
+
+WORKDIR /rails
+
+# Packages needed to build native gems (pg, puma, nio4r, etc.)
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential git pkg-config libyaml-dev libpq-dev libsqlite3-dev curl && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Install application gems
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+COPY . .
+
+ENV RAILS_ENV="development"
+
+EXPOSE 3000
+CMD ["./bin/rails", "server", "-b", "0.0.0.0"]

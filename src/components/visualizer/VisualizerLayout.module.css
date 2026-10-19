@@ -1,0 +1,67 @@
+/*
+ * Workspace grid for every visualizer page.
+ *   ≥1280px  controls | canvas + playback | insight      (three columns, full height)
+ *   ≥1024px  canvas + playback | controls then insight   (two columns)
+ *   smaller  everything stacked
+ */
+.layout {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "stage"
+    "controls"
+    "insight";
+}
+
+.head { grid-area: head; }
+.stage { grid-area: stage; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+.controls { grid-area: controls; }
+.insight { grid-area: insight; }
+
+.canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 62vh;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* Cards keep their natural height; the column scrolls instead of squashing them. */
+.side > * {
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    height: calc(100dvh - var(--navbar-h));
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "head head"
+      "stage controls"
+      "stage insight";
+  }
+  .canvas { min-height: 0; }
+  .controls, .insight { overflow-y: auto; }
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: 300px minmax(0, 1fr) 340px;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "head head head"
+      "controls stage insight";
+  }
+}

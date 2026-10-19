@@ -1,0 +1,115 @@
+"use client";
+
+import { FastForward, Footprints, Pause, Play, StepForward } from "lucide-react";
+import { Kbd } from "@/components/ui";
+import { SPEED_OPTIONS } from "@/lib/player/useStepPlayer";
+import { cn } from "@/lib/utils";
+import type { BSTEngine } from "../engine/BSTEngine";
+import type { RunInfo } from "../engine/types";
+
+const btn =
+  "flex h-9 w-9 items-center justify-center rounded-lg border border-line-strong bg-surface-2 text-fg-dim transition " +
+  "hover:bg-surface-3 hover:text-fg disabled:pointer-events-none disabled:opacity-35 active:scale-95";
+
+const PHASE_TEXT: Record<RunInfo["phase"], string> = {
+  idle: "Ready",
+  running: "Running",
+  paused: "Paused",
+  waiting: "Waiting for Next",
+};
+
+const PHASE_DOT: Record<RunInfo["phase"], string> = {
+  idle: "bg-fg-faint",
+  running: "bg-viz-green animate-pulse",
+  paused: "bg-viz-amber",
+  waiting: "bg-viz-blue animate-pulse",
+};
+
+/**
+ * Live-engine playback bar (styled like the shared PlaybackControls): pause / resume, next step,
+ * finish instantly, step mode and speed.
+ */
+export function StepBar({
+  engine, run, speed, onSpeed,
+}: { engine: BSTEngine | null; run: RunInfo; speed: number; onSpeed: (s: number) => void }) {
+  const busy = run.phase !== "idle";
+  const running = run.phase === "running";
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-surface/90 px-3 py-2.5 backdrop-blur">
+      <div className="flex items-center gap-1.5">
+        <button
+          className={cn(btn, "w-11 border-transparent bg-gradient-to-r from-[#0b6fb8] to-[#6a2bd0] text-white hover:text-white hover:brightness-110")}
+          onClick={() => engine?.togglePause()}
+          disabled={!busy}
+          title={running ? "Pause (Space)" : "Resume (Space)"}
+          aria-label={running ? "Pause" : "Resume"}
+        >
+          {running || !busy ? <Pause size={16} /> : <Play size={16} />}
+        </button>
+        <button className={btn} onClick={() => engine?.step()} disabled={!busy} title="Next step (→) — run to the next phase and stop" aria-label="Next step">
+          <StepForward size={16} />
+        </button>
+        <button className={btn} onClick={() => engine?.skip()} disabled={!busy} title="Finish now (Esc)" aria-label="Finish now">
+          <FastForward size={16} />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        role="switch"
+        aria-checked={run.stepMode}
+        onClick={() => engine?.setStepMode(!run.stepMode)}
+        disabled={!engine}
+        title="Stop at every phase of an operation and wait for Next step"
+        className={cn(
+          "flex h-9 items-center gap-2 rounded-lg border px-2.5 text-xs font-medium transition disabled:opacity-40",
+          run.stepMode ? "border-viz-blue/50 bg-viz-blue/15 text-fg" : "border-line-strong bg-surface-2 text-fg-dim hover:text-fg",
+        )}
+      >
+        <Footprints size={14} className={run.stepMode ? "text-viz-blue" : ""} />
+        Step mode
+        <span className={cn("relative h-4 w-7 rounded-full transition-colors", run.stepMode ? "bg-viz-blue" : "bg-surface-3")}>
+          <span className={cn("absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform", run.stepMode && "translate-x-3")} />
+        </span>
+      </button>
+
+      <div className="flex min-w-[140px] flex-1 items-center gap-2 overflow-hidden text-xs">
+        <span className={cn("h-2 w-2 shrink-0 rounded-full", PHASE_DOT[run.phase])} />
+        <span className={cn("whitespace-nowrap font-semibold", run.phase === "waiting" ? "text-viz-blue" : run.phase === "paused" ? "text-viz-amber" : "text-fg-dim")}>
+          {PHASE_TEXT[run.phase]}
+        </span>
+        {run.op && <span className="truncate font-mono text-fg-faint">· {run.op}</span>}
+      </div>
+
+      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-elev p-0.5">
+        {SPEED_OPTIONS.map((s) => (
+          <button
+            key={s}
+            onClick={() => onSpeed(s)}
+            className={cn(
+              "rounded-md px-2 py-1 font-mono text-[11px] transition-colors",
+              speed === s ? "bg-surface-3 text-fg" : "text-fg-faint hover:text-fg-dim",
+            )}
+            title={`Speed ${s}×`}
+          >
+            {s}×
+          </button>
+        ))}
+      </div>
+
+      <div className="flex w-full items-center justify-between gap-2 text-[11px] text-fg-faint">
+        <span className="truncate">
+          {run.stepMode
+            ? "Step mode: every phase waits for Next step."
+            : busy
+              ? "Pause any time, or press Next step to stop at the next phase."
+              : "Run an operation — it animates live; turn on Step mode to go phase by phase."}
+        </span>
+        <span className="hidden items-center gap-1 sm:flex">
+          <Kbd>Space</Kbd> pause · <Kbd>→</Kbd> next · <Kbd>Esc</Kbd> finish
+        </span>
+      </div>
+    </div>
+  );
+}

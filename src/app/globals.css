@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. The visualizer palette (--viz-*) mirrors src/lib/theme.ts so that
+ * canvas (Konva) drawings, SVG drawings and HTML panels all speak the same colours.
+ */
+:root {
+  --bg: #07070a;
+  --bg-elev: #0f0f14;
+  --surface: #15151c;
+  --surface-2: #1c1c25;
+  --surface-3: #262631;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #ececf1;
+  --text-dim: #a3a3b2;
+  --text-faint: #6c6c7a;
+
+  --brand: #00f2ff;
+  --brand-alt: #8a2be2;
+
+  --viz-base: #454552;
+  --viz-base-stroke: #6c6c78;
+  --viz-blue: #39aaff;
+  --viz-blue-deep: #0b6fb8;
+  --viz-amber: #ffb000;
+  --viz-amber-soft: #ffd466;
+  --viz-green: #2ee68a;
+  --viz-green-deep: #00a854;
+  --viz-red: #ff5c5c;
+  --viz-red-deep: #d93636;
+  --viz-purple: #c08bff;
+  --viz-purple-deep: #7a45b8;
+  --viz-pink: #ff7ac6;
+  --viz-edge: #5c5c6a;
+
+  --navbar-h: 60px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-fg-dim: var(--text-dim);
+  --color-fg-faint: var(--text-faint);
+  --color-brand: var(--brand);
+  --color-brand-alt: var(--brand-alt);
+  --color-viz-base: var(--viz-base);
+  --color-viz-blue: var(--viz-blue);
+  --color-viz-blue-deep: var(--viz-blue-deep);
+  --color-viz-amber: var(--viz-amber);
+  --color-viz-green: var(--viz-green);
+  --color-viz-green-deep: var(--viz-green-deep);
+  --color-viz-red: var(--viz-red);
+  --color-viz-red-deep: var(--viz-red-deep);
+  --color-viz-purple: var(--viz-purple);
+  --color-viz-purple-deep: var(--viz-purple-deep);
+  --color-viz-pink: var(--viz-pink);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  background-image:
+    radial-gradient(circle at 8% 12%, rgba(0, 242, 255, 0.07) 0%, transparent 28%),
+    radial-gradient(circle at 92% 88%, rgba(138, 43, 226, 0.08) 0%, transparent 30%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(57, 170, 255, 0.35);
+}
+
+/* Thin, dark scrollbars for the side panels. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 8px;
+}
+
+.text-gradient {
+  background: linear-gradient(45deg, var(--brand), var(--brand-alt));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Native range input styled to match the theme. */
+input[type="range"].range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  outline: none;
+}
+input[type="range"].range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--viz-blue);
+  border: 2px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(57, 170, 255, 0.2);
+}
+input[type="range"].range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--viz-blue);
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+input[type="range"].range:disabled {
+  opacity: 0.4;
+}
+
+/* Dotted grid behind every visualization canvas. */
+.canvas-grid {
+  background-color: #0b0b10;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
