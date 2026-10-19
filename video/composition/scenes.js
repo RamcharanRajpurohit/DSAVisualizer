@@ -1,5 +1,5 @@
-// Timeline of the AlgoLab tour video (v4 = v3 with the canvas in the site's own fullscreen
-// mode for merge sort, heap, AVL, B-tree and Dijkstra), shared by the composition (browser) and
+// Timeline of the AlgoLab tour video (v4 = v3 with merge sort, heap, AVL, B-tree and Dijkstra in
+// the site's own canvas fullscreen, shown edge to edge), shared by the composition (browser) and
 // build-frames.mjs (Node). Times are seconds of the final video. Earlier cuts: v1 = 1794187,
 // v2 = c0516fc, v3 = fbc24cf.
 //
@@ -23,6 +23,8 @@ export const LAYOUTS = {
   left: { x: 80, y: 176, w: 1240 },
   full: { x: 150, y: 98, w: 1620 },
   explode: { x: 410, y: 214, w: 1100 },
+  /** True fullscreen: the canvas edge to edge, browser bar pushed off the top. */
+  fs: { x: 0, y: -50, w: 1920 },
 };
 
 /** Where Bit waits during each layout (bottom-centre anchor). */
@@ -32,6 +34,7 @@ export const HOSTS = {
   full: { x: 1850, y: 1040, s: 0.8 },
   explode: { x: 960, y: 1046, s: 0.9 },
   grid: { x: 1850, y: 1046, s: 0.8 },
+  fs: { x: 1845, y: 985, s: 0.8 },
 };
 
 /** The workspace's three panes, as fractions of a recorded frame. */
@@ -47,10 +50,10 @@ export const FOOTAGE = [
     url: "/sorting/merge-sort", say: "three panes. that's it.", punch: false,
   },
   {
-    id: "merge", clip: "mergeFs", layout: "right", enter: "zoom", start: 12.6, dur: 5.4, parts: [{ src: 4.4, rate: 3.0 }],
+    id: "merge", clip: "mergeFs", layout: "fs", enter: "zoom", start: 12.6, dur: 5.4, parts: [{ src: 4.9, rate: 3.0 }], punch: false,
     chapter: "01", area: "Sorting", title: "Merge sort", sub: "split it, then merge it back.",
     chips: ["divide", "conquer", "F for fullscreen"], url: "/sorting/merge-sort", say: "split… split… merge!",
-    cam: [[0, 1.25, 0.5, 0.5], [0.9, 1.15, 0.38, 0.42], [5.4, 1.2, 0.38, 0.5]],
+    cam: [[0, 1.0, 0.5, 0.5], [0.9, 1.06, 0.42, 0.45], [5.4, 1.12, 0.4, 0.5]],
   },
   {
     id: "race", clip: "race", layout: "full", enter: "float", start: 18.0, dur: 4.6, parts: [{ src: 5.2, rate: 1.8 }],
@@ -71,25 +74,25 @@ export const FOOTAGE = [
     cam: [[0, 1.3, 0.45, 0.42], [1.2, 1.7, 0.5, 0.33], [2.6, 1.75, 0.27, 0.55], [4.0, 1.6, 0.42, 0.45], [5.0, 1.35, 0.45, 0.45]],
   },
   {
-    id: "heap", clip: "heapFs", layout: "right", enter: "float", start: 34.6, dur: 4.8, parts: [{ src: 5.3, rate: 3.0 }],
+    id: "heap", clip: "heapFs", layout: "fs", enter: "float", start: 34.6, dur: 4.8, parts: [{ src: 5.3, rate: 3.0 }],
     chapter: "04", area: "Heaps", title: "Build a heap", sub: "sift down, bottom-up, in O(n).",
     chips: ["min · max", "heap sort", "priority queue"], url: "/heap/build-heap", say: "bubble down!",
     cam: [[0, 1.05, 0.5, 0.45], [4.8, 1.18, 0.5, 0.42]], punch: false,
   },
   {
-    id: "avl", clip: "avlFs", layout: "left", enter: "wipe", start: 39.4, dur: 5.0, parts: [{ src: 9.6, rate: 2.2 }],
+    id: "avl", clip: "avlFs", layout: "fs", enter: "wipe", start: 39.4, dur: 5.0, parts: [{ src: 9.6, rate: 2.2 }],
     chapter: "05", area: "Trees", title: "AVL rotations", sub: "watch the tree re-balance.",
     chips: ["BST · AVL", "LL · RR · LR · RL"], url: "/avl-tree/rotations", say: "rotate!",
-    cam: [[0, 1.45, 0.34, 0.33], [3, 1.45, 0.42, 0.3], [5, 1.4, 0.5, 0.3]], punch: false,
+    cam: [[0, 1.25, 0.36, 0.36], [3, 1.25, 0.43, 0.34], [5, 1.2, 0.5, 0.34]], punch: false,
   },
   {
-    id: "btree", clip: "btreeFs", layout: "full", enter: "float", start: 44.4, dur: 5.2, parts: [{ src: 6.0, rate: 5.2 }],
+    id: "btree", clip: "btreeFs", layout: "fs", enter: "push", start: 44.4, dur: 5.2, parts: [{ src: 6.0, rate: 5.2 }],
     chapter: "06", area: "B-trees", title: "B-tree split", sub: "a full node pushes its median up.",
     chips: ["order m = 3 to 7", "insert · delete"], url: "/btree/insertion", say: "split the root!",
     cam: [[0, 1.25, 0.5, 0.45], [5.2, 1.12, 0.5, 0.42]], punch: false,
   },
   {
-    id: "dijkstra", clip: "dijkstraFs", layout: "right", enter: "push", start: 49.6, dur: 4.6, parts: [{ src: 5.0, rate: 3.6 }],
+    id: "dijkstra", clip: "dijkstraFs", layout: "fs", enter: "zoom", start: 49.6, dur: 4.6, parts: [{ src: 5.0, rate: 3.6 }],
     chapter: "07", area: "Graphs", title: "Dijkstra", sub: "shortest paths, edge by edge.",
     chips: ["priority queue", "weighted edges"], url: "/graph/dijkstra", say: "nearest node first!",
     cam: [[0, 1.1, 0.48, 0.52], [4.6, 1.2, 0.48, 0.52]], punch: false,

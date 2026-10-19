@@ -14,7 +14,7 @@ export const TOUR = {
   seconds: 83,
   /** The cut has a soundtrack (it still autoplays muted; the player offers "Sound on"). */
   hasAudio: true,
-  uploadDate: "2026-10-19T20:00:00+05:30",
+  uploadDate: "2026-10-19T21:30:00+05:30",
   width: 1920,
   height: 1080,
   poster: "/video/algolab-tour-v4-poster.jpg",

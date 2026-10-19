@@ -53,8 +53,9 @@ const FEATURES = [
 $("chapters").innerHTML = AREAS.map((a) => `<span data-a="${a}">${a}<i></i></span>`).join("");
 const LABEL_POS = { right: "left:96px; top:300px", left: "left:1370px; top:300px" };
 $("labels").innerHTML = FOOTAGE.filter((s) => s.title && s.layout !== "grid").map((s) => {
-  const lt = s.layout === "full";
-  const pos = lt ? (s.lt === "top" ? "left:186px; top:170px" : "left:186px; top:auto; bottom:52px") : LABEL_POS[s.layout];
+  const lt = s.layout === "full" || s.layout === "fs";
+  const pos = s.layout === "fs" ? "left:56px; top:auto; bottom:112px"
+    : lt ? (s.lt === "top" ? "left:186px; top:170px" : "left:186px; top:auto; bottom:52px") : LABEL_POS[s.layout];
   return `
   <div class="abs label${lt ? " lt" : ""}" id="lab-${s.id}" style="${pos}">
     <div class="k mono fx"><b>${s.chapter}</b>${s.area}</div>
@@ -240,6 +241,9 @@ function renderWindow(t) {
   if (!g || (g.out ?? 0) >= 1) { win.style.visibility = "hidden"; return null; }
   const W = g.w, H = W * 9 / 16;
   Object.assign(win.style, { left: `${g.x}px`, top: `${g.y}px`, width: `${W}px`, height: `${H + 50}px`, visibility: "visible" });
+  const framed = cl((1900 - W) / 120); // 0 once it is edge to edge
+  win.style.borderRadius = `${22 * framed}px`;
+  win.style.boxShadow = framed > 0.01 ? "" : "none";
   // entrance (3D tilt-up for the very first reveal), grid hand-offs, final exit
   const first = p(t, 6.0, 1.0, "out5"), exit = p(t, FEATURES_AT - 0.4, 0.55, "in");
   const inn = g.inn ?? 1, out = g.out ?? 0;
@@ -391,10 +395,13 @@ function renderAt(t) {
 
   // 3 · montage
   const gridVis = renderGrid(t);
+  let fsVis = 0;
+  for (const s of FOOTAGE) if (s.layout === "fs") fsVis = Math.max(fsVis, p(t, s.start, 0.45) * (1 - p(t, s.end - 0.2, 0.35)));
   {
     const i = p(t, 6.3, 0.6, "out5"), o = p(t, FEATURES_AT - 0.5, 0.4, "in");
-    put($("brand"), { y: mix(-20, 0, i) - o * 20, o: i * (1 - o) * (1 - gridVis) });
-    put($("chapters"), { y: mix(-20, 0, i) - o * 20, o: i * (1 - o) * (1 - gridVis) });
+    const aside = 1 - Math.max(gridVis, fsVis);
+    put($("brand"), { y: mix(-20, 0, i) - o * 20, o: i * (1 - o) * aside });
+    put($("chapters"), { y: mix(-20, 0, i) - o * 20, o: i * (1 - o) * aside });
     for (const el of chapterEls) {
       let a = 0;
       for (const s of FOOTAGE) if (s.area === el.dataset.a) a = Math.max(a, p(t, s.start, 0.35) * (1 - p(t, s.end - 0.1, 0.35)));

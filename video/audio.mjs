@@ -82,6 +82,26 @@ function panWhoosh(t0, dur, f0, f1, amp, p0, p1) {
     FX.L[i] += v * Math.cos((pan + 1) * Math.PI / 4); FX.R[i] += v * Math.sin((pan + 1) * Math.PI / 4); SEND[i] += v * 0.3;
   }
 }
+/** Low-passed noise whose cutoff glides f0 → f1: soft "air", no hiss. */
+function airy(f0, f1, dur) {
+  let a = 0, b = 0;
+  return (t) => {
+    const f = f0 * (f1 / f0) ** Math.min(1, t / dur), k = 1 - Math.exp(-TAU * f / SR);
+    a += k * (rand() - a); b += k * (a - b);
+    return b * 2.4;
+  };
+}
+/** The scene-swap sound: a smooth swish (filtered air + a quiet pitched glide), panned p0 → p1. */
+function swap(t0, dur, { up = true, amp = 0.12, p0 = 0, p1 = 0 } = {}) {
+  const g = up ? airy(380, 1300, dur) : airy(1300, 380, dur);
+  const s0 = Math.round(t0 * SR);
+  for (let i = Math.max(0, s0); i < Math.min(N, s0 + Math.round(dur * SR)); i++) {
+    const t = (i - s0) / SR, u = t / dur;
+    const glide = Math.sin(TAU * (up ? 170 * t + 110 * t * u : 280 * t - 110 * t * u)) * 0.3;
+    const v = (g(t) + glide) * swell(t, dur, 0.55) * amp, pan = p0 + (p1 - p0) * u;
+    FX.L[i] += v * Math.cos((pan + 1) * Math.PI / 4); FX.R[i] += v * Math.sin((pan + 1) * Math.PI / 4); SEND[i] += v * 0.45;
+  }
+}
 function pop(t0, amp = 0.45, pan = 0) {
   add(FX, t0, 0.25, (t) => Math.sin(TAU * (160 * t + (800 * 0.03) * (1 - Math.exp(-t / 0.03)))) * Math.exp(-t / 0.07), { amp, pan, send: 0.2 });
   add(FX, t0, 0.03, noiseBand(2500, 2500, 1.5, 0.02), { amp: amp * 0.4, pan });
@@ -133,17 +153,17 @@ pluck(END_AT + 1.15, note(36), { amp: 0.2, dec: 1.6 });
 whoosh(0.1, 0.9, 300, 900, 0.08);
 [0.3, 0.4, 0.5].forEach((t, i) => tick(t + 0.08, [784, 880, 988][i], 0.14, -0.2 + i * 0.2));
 [0.85, 0.95].forEach((t, i) => tick(t + 0.08, [1047, 1175][i], 0.14));
-whoosh(1.45, 0.6, 900, 3400, 0.16, 0.2, 1.6); // underline swish
+whoosh(1.45, 0.6, 700, 2000, 0.09, 0.2, 1.1); // underline swish (pen)
 boing(1.85, 0.26);
 thump(2.48, 0.25);
-whoosh(2.95, 0.5, 2000, 500, 0.12);
+swap(2.95, 0.55, { up: false, amp: 0.08 });
 [3.35, 3.43, 3.51, 3.59].forEach((t, i) => tick(t + 0.08, [659, 784, 880, 988][i], 0.13));
 pop(3.95, 0.5, 0.1);
 ding(4.08, 0.12, 2637);
-whoosh(5.75, 0.5, 1800, 400, 0.12);
+swap(5.75, 0.55, { up: false, amp: 0.08 });
 
 // montage: window reveal, transitions, labels, URL typing, clicks and camera moves
-whoosh(5.95, 0.95, 200, 1400, 0.22);
+swap(5.95, 1.0, { amp: 0.13 });
 thump(6.75, 0.32);
 const sceneClicks = (s) => {
   const first = s.parts[0];
@@ -154,17 +174,16 @@ FOOTAGE.forEach((s, i) => {
   const prev = FOOTAGE[i - 1];
   if (prev) {
     if (s.layout === "grid") {
-      whoosh(s.start, 0.5, 1500, 400, 0.14);
-      s.parts.forEach((_, k) => { pop(s.start + 0.1 + k * 0.12, 0.32, k % 2 ? 0.4 : -0.4); pluck(s.start + 0.12 + k * 0.12, note([72, 76, 79, 84][k]), { bus: FX, amp: 0.09, dec: 0.5 }); });
-      whoosh(s.end - 0.35, 0.45, 1200, 300, 0.12);
+      swap(s.start, 0.6, { up: false, amp: 0.1 });
+      s.parts.forEach((_, k) => { pop(s.start + 0.1 + k * 0.12, 0.22, k % 2 ? 0.4 : -0.4); pluck(s.start + 0.12 + k * 0.12, note([72, 76, 79, 84][k]), { bus: FX, amp: 0.07, dec: 0.5 }); });
+      swap(s.end - 0.35, 0.55, { up: false, amp: 0.08 });
     } else if (s.enter === "float") {
-      whoosh(s.start, 1.1, 1600, 300, 0.2, prev.layout === "left" ? -0.5 : 0.5, 0.8);
-      whoosh(s.start + 0.3, 0.8, 300, 1300, 0.14);
-      ding(s.start + 0.95, 0.05, 1568);
-    } else if (s.enter === "push") panWhoosh(s.start, 0.6, 500, 1800, 0.24, 0.8, -0.8);
-    else if (s.enter === "zoom") { whoosh(s.start, 0.6, 250, 1600, 0.22); thump(s.start + 0.45, 0.2); }
-    else if (s.enter === "morph") whoosh(s.start, 0.8, 400, 900, 0.12);
-    else panWhoosh(s.start, 0.6, 900, 2800, 0.2, -0.7, 0.7); // wipe
+      swap(s.start, 1.1, { up: false, amp: 0.11, p0: 0, p1: prev.layout === "left" ? -0.5 : 0.5 });
+      swap(s.start + 0.3, 0.9, { up: true, amp: 0.08 });
+    } else if (s.enter === "push") swap(s.start, 0.7, { amp: 0.12, p0: 0.6, p1: -0.6 });
+    else if (s.enter === "zoom") { swap(s.start, 0.7, { amp: 0.12 }); thump(s.start + 0.45, 0.1); }
+    else if (s.enter === "morph") swap(s.start, 0.8, { amp: 0.08 });
+    else swap(s.start, 0.7, { amp: 0.11, p0: -0.6, p1: 0.6 }); // wipe
     bloop(s.start + 0.3, 0.1, HOSTS_PAN(s));
   }
   if (s.title && s.layout !== "grid") tick(s.start + 0.2, 1175, 0.09, -0.3);
@@ -174,26 +193,26 @@ FOOTAGE.forEach((s, i) => {
     const pan = (e.x - 0.5) * 0.8;
     if (e.kind === "grab" || e.kind === "release") tock(e.at, 0.24, pan);
     else click(e.at, 0.22, pan);
-    if (!s.follow && s.punch !== false && e.kind === "click") whoosh(e.at - 0.45, 0.42, 500, 2200, 0.1, pan, 1.4);
-    if (s.follow) whoosh(e.at - 0.5, 0.45, 700, 1500, 0.05, pan, 1.4);
+    if (!s.follow && s.punch !== false && e.kind === "click") swap(e.at - 0.45, 0.45, { amp: 0.05, p0: pan, p1: pan });
+    if (s.follow) swap(e.at - 0.5, 0.45, { amp: 0.03, p0: pan, p1: pan });
   }
   if (s.layout === "explode") {
-    panWhoosh(s.start + 1.05, 0.7, 600, 1800, 0.2, 0, -0.8);
-    panWhoosh(s.start + 1.05, 0.7, 600, 1800, 0.2, 0, 0.8);
+    swap(s.start + 1.05, 0.75, { amp: 0.1, p0: 0, p1: -0.8 });
+    swap(s.start + 1.05, 0.75, { amp: 0.1, p0: 0, p1: 0.8 });
     [0, 1, 2].forEach((j) => tick(s.start + 1.6 + j * 0.14, [880, 988, 1175][j], 0.12, j - 1));
-    panWhoosh(s.end - 1.05, 0.7, 1800, 600, 0.16, -0.8, 0);
-    panWhoosh(s.end - 1.05, 0.7, 1800, 600, 0.16, 0.8, 0);
+    swap(s.end - 1.05, 0.75, { up: false, amp: 0.08, p0: -0.8, p1: 0 });
+    swap(s.end - 1.05, 0.75, { up: false, amp: 0.08, p0: 0.8, p1: 0 });
     [-0.6, 0.6].forEach((pan) => { tock(s.end - 0.35, 0.2, pan); thump(s.end - 0.35, 0.14); });
   }
 });
 function HOSTS_PAN(s) { return { right: -0.6, left: 0.6, full: 0.8, explode: 0, grid: 0.8 }[s.layout] ?? 0; }
 
 // features and end card
-whoosh(FEATURES_AT - 0.4, 0.6, 1500, 300, 0.16);
-whoosh(FEATURES_AT + 0.05, 0.6, 400, 1500, 0.12);
+swap(FEATURES_AT - 0.4, 0.65, { up: false, amp: 0.1 });
+swap(FEATURES_AT + 0.05, 0.65, { amp: 0.08 });
 blip(FEATURES_AT + 0.9, 0.12);
 for (let j = 0; j < 6; j++) { pop(FEATURES_AT + 0.35 + j * 0.09, 0.22, (j % 3 - 1) * 0.5); pluck(FEATURES_AT + 0.37 + j * 0.09, note([72, 74, 76, 79, 81, 84][j]), { bus: FX, amp: 0.08, dec: 0.45 }); }
-whoosh(END_AT - 0.5, 0.5, 1400, 300, 0.14);
+swap(END_AT - 0.5, 0.6, { up: false, amp: 0.09 });
 for (let j = 0; j < 7; j++) tick(END_AT + 0.15 + j * 0.055, [523, 587, 659, 784, 880, 1047, 1175][j], 0.08, (j - 3) * 0.12);
 pop(END_AT + 1.15, 0.4);
 ding(END_AT + 1.2, 0.3);
