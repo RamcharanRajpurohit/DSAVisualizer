@@ -134,9 +134,11 @@ and can be deleted once you no longer need it for reference.
 ## Analytics
 
 Product analytics run on PostHog (EU cloud, project "AlgoLab"), set up to be privacy-first:
-loaded only after the page is idle, **cookieless** (no cookies, no local/session storage, so no
-consent banner), IPs anonymised, Do Not Track / Global Privacy Control respected, session replay
-off, and only the production domain reports. Events go through a first-party relay
+loaded only after the page is idle, **cookieless** (state lives in memory only: no cookies, no
+local/session storage, so no consent banner; a reload or new tab counts as a new visitor), IPs
+anonymised, Do Not Track / Global Privacy Control respected, and only the production domain
+reports. Session replay is on with every input masked (recording is allowed for the production
+domain only, set in the PostHog project). Events go through a first-party relay
 (`/relay-a7`, see `next.config.ts`). What is sent: page views, web vitals, `viz_control` (which
 control was used, on which visualizer and panel; typed values are never sent), `tour_video`,
 `search_go`, `quiz_answered`, `lesson_opened`, `input_error`. Code: `src/lib/analytics.ts`,

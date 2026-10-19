@@ -5,8 +5,10 @@ import { onMascot } from "@/lib/mascot-bus";
 
 /**
  * Privacy-first product analytics. posthog-js loads after the page is idle (never on the
- * critical path), runs cookieless (no cookies, no local/session storage — no consent banner),
+ * critical path), keeps its state in memory only (no cookies, no local/session storage — no
+ * consent banner),
  * respects Do Not Track / Global Privacy Control, and only reports from the production domain.
+ * Session replay is on, with every input masked.
  * Local testing: set localStorage "dsaviz:analytics-dev" = "1".
  */
 type Props = Record<string, string | number | boolean | null | undefined>;
@@ -46,14 +48,19 @@ export async function startAnalytics() {
     api_host: ANALYTICS.apiPath,
     ui_host: ANALYTICS.uiHost,
     defaults: "2026-08-30",
-    cookieless_mode: "always",
+    // Memory-only persistence: no cookies and nothing in local/session storage (no consent banner),
+    // yet a session lives for the whole visit, which session replay needs (cookieless_mode
+    // "always" rules replay out). Trade-off: a reload or new tab counts as a new visitor.
+    persistence: "memory",
     person_profiles: "identified_only",
     capture_pageview: "history_change",
     capture_pageleave: true,
     capture_performance: { web_vitals: true, network_timing: false },
     autocapture: false,
     rageclick: true,
-    disable_session_recording: true,
+    // Session replay (sampling, 2 s minimum and allowed domain are set in the PostHog project).
+    disable_session_recording: false,
+    session_recording: { maskAllInputs: true, recordCrossOriginIframes: false },
     disable_surveys: true,
     disable_web_experiments: true,
     advanced_disable_feature_flags: true,
