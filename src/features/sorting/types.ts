@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
-import type { ComplexityRow, LegendItem } from "@/components/visualizer";
+import type { ComplexityRow, Implementations, LegendItem } from "@/components/visualizer";
+import type { Lesson } from "@/lib/lesson";
 import type { StepBase } from "@/lib/player/types";
 
 /**
@@ -17,6 +18,10 @@ export interface SortAlgorithmDef<S extends StepBase = StepBase> {
   inPlace: boolean;
   complexity: readonly ComplexityRow[];
   pseudocode: readonly string[];
+  /** Real code (Python / C++ / Java / JavaScript) shown in the Code panel's language tabs. */
+  implementations?: Implementations;
+  /** Guided lesson for this algorithm (Learn mode). */
+  lesson?: Lesson;
   legend: readonly LegendItem[];
   /** Largest input this visualization stays readable for. */
   maxSize: number;

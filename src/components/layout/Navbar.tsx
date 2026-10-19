@@ -2,15 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Menu, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { VISUALIZERS } from "@/config/visualizers";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "./CommandPalette";
 import { VisualizerIcon } from "./VisualizerIcon";
 
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [palette, setPalette] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPalette((p) => !p);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 h-[var(--navbar-h)] border-b border-line bg-black/75 backdrop-blur-xl">
@@ -39,7 +52,17 @@ export function Navbar() {
         </div>
 
         <button
-          className="ml-auto rounded-lg p-2 text-fg-dim hover:bg-surface-2 lg:hidden"
+          onClick={() => setPalette(true)}
+          className="ml-auto flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-xs text-fg-faint transition hover:border-line-strong hover:text-fg lg:ml-2"
+          aria-label="Search visualizers"
+        >
+          <Search size={14} />
+          <span className="hidden xl:inline">Search</span>
+          <kbd className="hidden rounded border border-line-strong px-1 font-mono text-[10px] xl:inline">Ctrl K</kbd>
+        </button>
+
+        <button
+          className="rounded-lg p-2 text-fg-dim hover:bg-surface-2 lg:hidden"
           onClick={() => setOpen((o) => !o)}
           aria-label="Toggle navigation"
         >
@@ -65,6 +88,7 @@ export function Navbar() {
           ))}
         </div>
       )}
+      <CommandPalette open={palette} onClose={() => setPalette(false)} />
     </nav>
   );
 }

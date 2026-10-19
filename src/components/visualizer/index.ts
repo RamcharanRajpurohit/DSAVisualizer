@@ -1,9 +1,15 @@
 export { VisualizerLayout, type VisualizerLayoutProps } from "./VisualizerLayout";
 export { PlaybackControls, type PlaybackControlsProps } from "./PlaybackControls";
-export { PseudocodePanel, type PseudocodePanelProps } from "./PseudocodePanel";
+export { PseudocodePanel, PseudoLines, type PseudocodePanelProps } from "./PseudocodePanel";
+export { CodePanel, CODE_LANGS, type CodePanelProps, type Implementations, type CodeLang } from "./CodePanel";
 export { StatusCard } from "./StatusCard";
 export { VariablesPanel } from "./VariablesPanel";
 export { Legend, type LegendItem } from "./Legend";
 export { ComplexityCard, type ComplexityRow } from "./ComplexityCard";
 export { CanvasHint } from "./CanvasHint";
 export { ValueInput, useValueInput, type ValueInputState, type ValueInputOptions, type ValueInputMode } from "./ValueInput";
+export { LearnPanel } from "./LearnPanel";
+export { QuizCard } from "./QuizCard";
+export { StepTimeline } from "./StepTimeline";
+export { ShareButton } from "./ShareButton";
+export { ShortcutsDialog, type Shortcut } from "./ShortcutsDialog";

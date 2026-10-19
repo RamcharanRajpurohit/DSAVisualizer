@@ -65,3 +65,20 @@
       "controls stage insight";
   }
 }
+
+/* Focus mode: the canvas takes the whole workspace (handy on a projector). */
+.layout.focus {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "stage";
+}
+.layout.focus .controls,
+.layout.focus .insight {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .layout.focus {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}

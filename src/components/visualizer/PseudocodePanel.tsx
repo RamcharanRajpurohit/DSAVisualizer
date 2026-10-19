@@ -15,6 +15,18 @@ export interface PseudocodePanelProps {
 
 /** Pseudocode with the currently executing line(s) highlighted and kept in view. */
 export function PseudocodePanel({ code, active, title = "Pseudocode", className }: PseudocodePanelProps) {
+  return (
+    <section className={cn("rounded-xl border border-line bg-surface/90 p-3", className)}>
+      <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
+        <Code2 size={14} className="text-viz-purple" /> {title}
+      </h3>
+      <PseudoLines code={code} active={active} />
+    </section>
+  );
+}
+
+/** The highlighted, auto-scrolling line list used by PseudocodePanel and CodePanel. */
+export function PseudoLines({ code, active }: { code: readonly string[]; active?: number | readonly number[] }) {
   const lines = active == null ? [] : typeof active === "number" ? [active] : active;
   const activeSet = new Set(lines);
   const boxRef = useRef<HTMLOListElement>(null);
@@ -32,33 +44,25 @@ export function PseudocodePanel({ code, active, title = "Pseudocode", className 
   }, [firstActive]);
 
   return (
-    <section className={cn("rounded-xl border border-line bg-surface/90 p-3", className)}>
-      <h3 className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-fg-dim">
-        <Code2 size={14} className="text-viz-purple" /> {title}
-      </h3>
-      <ol ref={boxRef} className="scroll-thin relative max-h-[360px] overflow-auto rounded-lg bg-bg-elev py-1.5 font-mono text-[11.5px] leading-[1.65]">
-        {code.map((text, i) => {
-          const on = activeSet.has(i + 1);
-          return (
-            <li
-              key={i}
-              className={cn(
-                "flex pr-3 transition-colors duration-200",
-                on ? "bg-viz-blue/15 text-fg" : "text-fg-faint",
-              )}
-              style={on ? { boxShadow: "inset 3px 0 0 var(--viz-blue)" } : undefined}
-            >
-              <span className={cn("w-8 shrink-0 select-none pr-2.5 text-right tabular-nums", on ? "text-viz-blue" : "text-fg-faint/50")}>
-                {i + 1}
-              </span>
-              {/* Soft-wrap long lines with a hanging indent; leading spaces still indent. */}
-              <span className={cn("min-w-0 whitespace-pre-wrap break-words", on && "text-[#e6f3ff]")} style={{ paddingLeft: "3ch", textIndent: "-3ch" }}>
-                {text || " "}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
+    <ol ref={boxRef} className="scroll-thin relative max-h-[360px] overflow-auto rounded-lg bg-bg-elev py-1.5 font-mono text-[11.5px] leading-[1.65]">
+      {code.map((text, i) => {
+        const on = activeSet.has(i + 1);
+        return (
+          <li
+            key={i}
+            className={cn("flex pr-3 transition-colors duration-200", on ? "bg-viz-blue/15 text-fg" : "text-fg-faint")}
+            style={on ? { boxShadow: "inset 3px 0 0 var(--viz-blue)" } : undefined}
+          >
+            <span className={cn("w-8 shrink-0 select-none pr-2.5 text-right tabular-nums", on ? "text-viz-blue" : "text-fg-faint/50")}>
+              {i + 1}
+            </span>
+            {/* Soft-wrap long lines with a hanging indent; leading spaces still indent. */}
+            <span className={cn("min-w-0 whitespace-pre-wrap break-words", on && "text-[#e6f3ff]")} style={{ paddingLeft: "3ch", textIndent: "-3ch" }}>
+              {text || " "}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

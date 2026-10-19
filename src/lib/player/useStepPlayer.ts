@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePreference } from "@/lib/prefs";
 import { clamp } from "@/lib/utils";
 import type { PlaybackApi, StepBase } from "./types";
 
@@ -38,7 +39,8 @@ export function useStepPlayer<S extends StepBase>(
 ): StepPlayer<S> {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(initialSpeed);
+  // Speed is remembered across pages and visits.
+  const [speed, setSpeed] = usePreference<number>("player.speed", initialSpeed);
   const [prevSteps, setPrevSteps] = useState(steps);
 
   // Adjust state while rendering when a new recording arrives (no effect round-trip).
@@ -106,6 +108,6 @@ export function useStepPlayer<S extends StepBase>(
       atStart: i === 0, atEnd: i >= last,
       play, pause, toggle, next, prev, first, last: lastFn, seek, setSpeed,
     }),
-    [steps, step, i, total, playing, last, speed, stepMs, animSec, play, pause, toggle, next, prev, first, lastFn, seek],
+    [steps, step, i, total, playing, last, speed, stepMs, animSec, play, pause, toggle, next, prev, first, lastFn, seek, setSpeed],
   );
 }
